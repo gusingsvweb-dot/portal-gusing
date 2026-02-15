@@ -1,0 +1,154 @@
+.kpi-container {
+    padding: 30px 40px;
+    background-color: #f8fafc;
+    min-height: 85vh;
+    font-family: 'Inter', sans-serif;
+}
+
+.kpi-title {
+    color: #1e293b;
+    margin-bottom: 30px;
+    font-size: 1.8rem;
+}
+
+.kpi-loading {
+    padding: 40px;
+    text-align: center;
+    color: #64748b;
+    font-size: 1.2rem;
+}
+
+/* GRID RESUMEN */
+.kpi-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 40px;
+}
+
+.stat-card {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s;
+    border-bottom: 4px solid transparent;
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+}
+
+.stat-icon {
+    font-size: 2rem;
+    background: #f1f5f9;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.stat-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-value {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 0.85rem;
+    color: #64748b;
+    margin-top: 5px;
+}
+
+/* Border Colors */
+.border-blue {
+    border-bottom-color: #3b82f6;
+}
+
+.border-orange {
+    border-bottom-color: #f97316;
+}
+
+.border-purple {
+    border-bottom-color: #a855f7;
+}
+
+.border-indigo {
+    border-bottom-color: #6366f1;
+}
+
+.border-green {
+    border-bottom-color: #22c55e;
+}
+
+
+/* CHARTS ROW */
+.kpi-charts-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 30px;
+}
+
+.kpi-chart-card {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+.kpi-chart-card h3 {
+    margin: 0 0 20px 0;
+    color: #334155;
+    font-size: 1.1rem;
+}
+
+.chart-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.bar-wrapper {
+    width: 100%;
+}
+
+.bar-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+    color: #475569;
+}
+
+.bar-track {
+    width: 100%;
+    height: 10px;
+    background: #e2e8f0;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.bar-fill {
+    height: 100%;
+    border-radius: 10px;
+    transition: width 0.5s ease-out;
+}
+
+.bar-priority {
+    background: linear-gradient(90deg, #f59e0b, #d97706);
+}
+
+.bar-area {
+    background: linear-gradient(90deg, #3b82f6, #2563eb);
+}

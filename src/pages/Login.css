@@ -1,0 +1,215 @@
+/* ======================
+      LAYOUT GENERAL
+====================== */
+.login-wrapper {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  background: #eef3f7;
+}
+
+/* =======================================
+      COLUMNA IZQUIERDA — PANEL
+======================================= */
+.login-left {
+  flex: 1;
+  position: relative;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  background: linear-gradient(135deg, #e6eef6, #d2deeb);
+}
+
+/* Animaciones base */
+.fade-in {
+  animation: fadeIn 1s ease forwards;
+}
+
+.slide-up {
+  animation: slideUp 0.8s ease forwards;
+}
+
+/* ANIMACIONES */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(40px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* -----------------------------------
+   Panel (tarjeta)
+----------------------------------- */
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  background: rgba(255, 255, 255, 0.92);
+  padding: 50px 45px;
+  border-radius: 20px;
+  text-align: center;
+
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+
+  box-shadow:
+    0px 20px 40px rgba(0, 0, 0, 0.12),
+    0px 10px 20px rgba(0, 0, 0, 0.06);
+}
+
+/* LOGO con animación */
+.logo-gusing {
+  width: 300px;
+  margin-bottom: 0px;
+}
+
+.logo-animate {
+  animation: popIn 0.9s ease;
+}
+
+@keyframes popIn {
+  0% { transform: scale(0.6); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* -----------------------------------
+      Campos y formularios
+----------------------------------- */
+.login-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-top: 20px;
+}
+
+.login-form label {
+  text-align: left;
+  color: #1b2a41;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.login-form input {
+  padding: 14px 15px;
+  border-radius: 10px;
+  border: 1.5px solid #c7d3df;
+  font-size: 15px;
+  background: #f8faff;
+  transition: 0.25s ease;
+}
+
+.login-form input:focus {
+  border-color: #1b2a41;
+  box-shadow: 0 0 8px rgba(27, 42, 65, 0.25);
+  background: white;
+}
+
+/* BOTÓN */
+.btn-login {
+  margin-top: 5px;
+  padding: 15px;
+  border-radius: 12px;
+  border: none;
+  font-size: 17px;
+  font-weight: bold;
+  background: linear-gradient(135deg, #1e3550, #0f1e32);
+  color: white;
+  cursor: pointer;
+  transition: 0.25s ease;
+}
+
+.btn-login:hover {
+  background: linear-gradient(135deg, #152537, #0a1522);
+  transform: translateY(-2px);
+}
+
+/* Recuperar contraseña */
+.forgot-pass {
+  border: none;
+  background: none;
+  color: #2d4260;
+  text-decoration: underline;
+  cursor: pointer;
+  margin-top: 15px;
+  font-size: 14px;
+  transition: 0.2s;
+}
+
+.forgot-pass:hover {
+  color: #0f1e32;
+}
+
+/* FOOTER */
+.login-footer {
+  margin-top: 25px;
+  font-size: 13px;
+  color: #6b7b89;
+}
+
+/* =======================================
+      COLUMNA DERECHA — SLIDESHOW
+======================================= */
+.login-right {
+  flex: 1.35;
+  background-size: cover;
+  background-position: center;
+  transition: background-image 1.3s ease-in-out;
+  position: relative;
+}
+
+.fade-image {
+  animation: fadeBackground 1.3s ease forwards;
+}
+
+@keyframes fadeBackground {
+  from { opacity: 0.2; }
+  to { opacity: 1; }
+}
+
+.login-image-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 20, 35, 0.28);
+  backdrop-filter: blur(1.5px);
+}
+
+/* =======================================
+        PARTÍCULAS
+======================================= */
+.particles {
+  position: absolute;
+  inset: 0;
+  background-image: url("https://diariosanitario.com/wp-content/uploads/2023/06/matraz-2023.png");
+  background-size: 600px;
+  opacity: 0.12;
+  animation: floatParticles 18s linear infinite;
+}
+
+@keyframes floatParticles {
+  0% { transform: translateY(0px); }
+  100% { transform: translateY(-200px); }
+}
+
+/* =======================================
+      RESPONSIVE
+======================================= */
+@media (max-width: 900px) {
+  .login-right {
+    display: none;
+  }
+
+  .login-left {
+    flex: 1;
+    padding: 25px;
+  }
+
+  .login-card {
+    padding: 35px 30px;
+  }
+}

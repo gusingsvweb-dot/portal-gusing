@@ -1,0 +1,126 @@
+/* src/pages/Gerencia.css */
+
+.ge-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.ge-header h2 {
+  margin: 0;
+  color: #1d3557;
+  font-weight: 700;
+}
+
+.ge-subtitle {
+  font-size: 13px;
+  color: #64748b;
+}
+
+/* RESUMEN */
+
+.ge-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+  margin: 10px 0 18px;
+}
+
+.ge-summary-card {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.ge-summary-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+.ge-summary-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+/* Colores según tipo */
+.ge-ok {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+}
+
+.ge-finished {
+  border-color: #bbf7d0;
+  background: #ecfdf3;
+}
+
+.ge-alert {
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
+.ge-warning {
+  border-color: #fed7aa;
+  background: #fff7ed;
+}
+
+/* Fila compacta de selects */
+.ge-filters-row {
+  display: flex;
+  gap: 8px;
+}
+
+/* Por si no lo tienes aún en otro css */
+.pc-filter-input {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e0;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+/* Historial */
+
+.pc-historial {
+  margin-top: 10px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 12px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.pc-hist-item {
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #ffffff;
+  border-left: 4px solid #3b82f6;
+  margin-bottom: 8px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+
+.pc-hist-fecha {
+  font-size: 11px;
+  color: #64748b;
+  margin: 0 0 2px;
+}
+
+.pc-hist-titulo {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0 0 3px;
+}
+
+.pc-hist-detalle {
+  font-size: 12px;
+  color: #475569;
+  margin: 0;
+}

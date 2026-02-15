@@ -1,0 +1,237 @@
+/* ===========================================================
+   WRAPPER GENERAL
+=========================================================== */
+.pc-wrapper {
+  width: 90%;
+  margin: auto;
+  display: grid;
+  grid-template-columns: 28% 72%;
+  gap: 24px;
+  padding: 30px 0;
+  min-height: 80vh;
+  font-family: "Inter", sans-serif;
+}
+
+/* ===========================================================
+   FILTROS SUPERIORES
+=========================================================== */
+.pf-filters {
+  grid-column: span 2;
+  background: #ffffff;
+  padding: 18px 20px;
+  border-radius: 14px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+/* Input búsqueda */
+.pf-input {
+  flex: 2;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  font-size: 14px;
+}
+
+/* Selects */
+.pf-select {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.pf-date-range {
+  display: flex;
+  flex-direction: column;
+}
+
+.pf-date-range label {
+  font-size: 12px;
+  color: #475569;
+  margin-bottom: 3px;
+}
+
+.pf-date-range input {
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  font-size: 14px;
+}
+
+/* ===========================================================
+   LISTA IZQUIERDA
+=========================================================== */
+.pc-list {
+  background: #ffffff;
+  padding: 22px;
+  border-radius: 16px;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+  height: calc(100vh - 220px);
+  overflow-y: auto;
+}
+
+.pc-list h2 {
+  margin-bottom: 18px;
+  color: #1d3557;
+  font-weight: 700;
+}
+
+.pc-item {
+  padding: 16px;
+  background: #f8faff;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  border: 1px solid #d9e2f0;
+  cursor: pointer;
+  transition: 0.2s;
+  position: relative;
+}
+
+.pc-item:hover {
+  background: #eef4ff;
+  border-color: #bcd0f3;
+}
+
+.pc-item-selected {
+  border-color: #1b4bc5;
+  background: #dce6ff;
+}
+
+/* ID Tag */
+.pc-id-tag {
+  position: absolute;
+  right: 12px;
+  bottom: 8px;
+  background: #e0e7ff;
+  color: #1e3a8a;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 999px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+}
+
+/* When hover */
+.pc-item:hover .pc-id-tag {
+  transform: scale(1.05);
+}
+
+/* Texto */
+.pc-item h4 {
+  margin: 0 0 6px;
+  color: #1e293b;
+}
+
+.pc-item p {
+  margin: 2px 0;
+  font-size: 13px;
+  color: #475569;
+}
+
+/* Vacío */
+.pc-empty {
+  text-align: center;
+  color: #7a8ca0;
+  font-style: italic;
+  margin-top: 25px;
+}
+
+/* ===========================================================
+   DETALLE DERECHA
+=========================================================== */
+.pc-detail {
+  background: #ffffff;
+  padding: 26px 28px;
+  border-radius: 16px;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+  animation: fadeIn 0.25s ease;
+}
+
+.pc-detail h3 {
+  font-weight: 700;
+  color: #1d3557;
+  margin-bottom: 18px;
+}
+
+/* GRID INFO */
+.pc-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.pc-detail-grid p {
+  margin: 0;
+  font-size: 14px;
+}
+
+/* ===========================================================
+   HISTORIAL
+=========================================================== */
+.pc-historial {
+  margin-top: 12px;
+  background: #f3f7fe;
+  border: 1px solid #dbe4f3;
+  padding: 15px;
+  border-radius: 12px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.pc-hist-item {
+  padding: 12px;
+  background: white;
+  border-left: 4px solid #2b6ded;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+.pc-hist-fecha {
+  font-size: 13px;
+  font-weight: 700;
+  margin: 0;
+  color: #1e293b;
+}
+
+.pc-hist-titulo {
+  margin: 2px 0 0;
+  color: #374151;
+  font-size: 13px;
+}
+
+/* ===========================================================
+   SCROLLBAR
+=========================================================== */
+.pc-list::-webkit-scrollbar,
+.pc-historial::-webkit-scrollbar {
+  width: 7px;
+}
+
+.pc-list::-webkit-scrollbar-thumb,
+.pc-historial::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+.pc-list::-webkit-scrollbar-track,
+.pc-historial::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+/* ===========================================================
+   ANIMATION
+=========================================================== */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}

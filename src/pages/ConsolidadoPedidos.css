@@ -1,0 +1,275 @@
+/* ============================
+   CONTENEDOR PRINCIPAL
+   ============================ */
+.consolidado-wrapper {
+    min-height: 100vh;
+    background: #f8fafc;
+    padding: 30px 40px;
+    display: flex;
+    flex-direction: column;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.consolidado-header {
+    margin-bottom: 25px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.consolidado-title {
+    font-size: 26px;
+    color: #1e293b;
+    font-weight: 700;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* ============================
+   TABLA MODERNA
+   ============================ */
+.consolidado-table-container {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+    overflow: hidden;
+    /* Para que el border-radius se note */
+    border: 1px solid #e2e8f0;
+    display: flex;
+    flex-direction: column;
+}
+
+.consolidado-scroll-area {
+    overflow: auto;
+    max-height: 75vh;
+}
+
+.consolidado-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 13px;
+    color: #475569;
+}
+
+/* ENCABEZADOS */
+.consolidado-table thead th {
+    position: sticky;
+    top: 0;
+    background: #f1f5f9;
+    color: #334155;
+    font-weight: 600;
+    z-index: 30;
+    padding: 12px 15px;
+    text-align: left;
+    white-space: nowrap;
+    border-bottom: 2px solid #e2e8f0;
+    transition: background 0.2s;
+}
+
+.consolidado-table thead th:hover {
+    background: #e2e8f0;
+}
+
+/* 📌 COLUMNAS STICKY (Horizontal) */
+.consolidado-table .sticky-col {
+    position: sticky;
+    z-index: 20;
+    background: white;
+    box-shadow: 2px 0 4px rgba(0, 0, 0, 0.02);
+}
+
+/* Encabezados sticky horizontales deben tener mayor z-index */
+.consolidado-table .sticky-col-header {
+    z-index: 40 !important;
+    background: #f1f5f9 !important;
+}
+
+/* ID column: 0 to 70px */
+.consolidado-table .col-id {
+    left: 0;
+    width: 70px;
+    min-width: 70px;
+    text-align: center;
+}
+
+/* Cliente column: 70px to 250px (180px width) */
+.consolidado-table .col-cliente {
+    left: 70px;
+    width: 180px;
+    min-width: 180px;
+    white-space: normal;
+    /* Permitir que el nombre del cliente baje si es muy largo */
+}
+
+/* Producto column: 250px to 550px (300px width) */
+.consolidado-table .col-producto {
+    left: 250px;
+    width: 300px;
+    min-width: 300px;
+    border-right: 2px solid #cbd5e1 !important;
+    white-space: normal;
+}
+
+/* FILTROS EN ENCABEZADO */
+.filter-input {
+    display: block;
+    width: 100%;
+    margin-top: 8px;
+    padding: 6px 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 400;
+    background: white;
+    transition: all 0.2s;
+}
+
+.filter-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* CELDAS */
+.consolidado-table td {
+    padding: 10px 15px;
+    border-bottom: 1px solid #f1f5f9;
+    white-space: nowrap;
+    transition: background 0.15s;
+}
+
+.consolidado-table tr:hover td {
+    background-color: #f8fafc !important;
+}
+
+/* Estilo para ID negrita */
+.id-cell {
+    font-weight: 600;
+    color: #0f172a;
+}
+
+/* BADGES PROFESIONALES */
+.badge {
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.badge-alta {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.badge-media {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.badge-bajo {
+    background: #f0fdf4;
+    color: #166534;
+}
+
+.state-label {
+    font-weight: 500;
+    color: #64748b;
+    font-size: 12px;
+}
+
+/* ELEMENTOS DE APOYO */
+.consolidado-count {
+    font-size: 14px;
+    color: #64748b;
+    background: #f1f5f9;
+    padding: 4px 12px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+/* Scrollbar personalizado */
+.consolidado-scroll-area::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.consolidado-scroll-area::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+
+.consolidado-scroll-area::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+.consolidado-scroll-area::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* ============================
+   PAGINACIÓN
+   ============================ */
+.consolidado-pagination {
+    margin-top: 24px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    padding: 10px;
+}
+
+.page-btn {
+    padding: 8px 20px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    color: #475569;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.page-btn:hover:not(:disabled) {
+    border-color: #3b82f6;
+    color: #3b82f6;
+    transform: translateY(-1px);
+}
+
+.page-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #f1f5f9;
+}
+
+.page-info {
+    font-size: 14px;
+    color: #64748b;
+    font-weight: 500;
+}
+
+/* Responsive fixes */
+@media (max-width: 1200px) {
+    .consolidado-wrapper {
+        padding: 20px;
+    }
+}

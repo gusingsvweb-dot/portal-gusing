@@ -1,0 +1,190 @@
+/* Fondo corporativo igual al login */
+.ac-wrapper {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #dce6f2, #cdd8e2);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  padding: 80px 20px;
+  gap: 30px;
+}
+
+/* Tarjeta blanca elegante */
+.ac-card {
+  background: #ffffff;
+  padding: 40px 50px;
+  border-radius: 18px;
+  width: 100%;
+  max-width: 600px;
+  box-shadow: 0px 15px 30px rgba(0, 0, 0, 0.15);
+  transition: max-width 0.4s ease;
+  animation: fadeIn 0.7s ease;
+}
+
+/* Variante ancha para tabla masiva */
+.ac-card.wide {
+  max-width: 1200px;
+}
+
+/* Títulos */
+.ac-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1b2a41;
+  text-align: center;
+}
+
+.ac-subtitle {
+  text-align: center;
+  color: #5f6c7a;
+  margin-bottom: 30px;
+}
+
+/* FORMULARIO */
+.ac-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.ac-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.ac-form label {
+  font-weight: 600;
+  color: #1b2a41;
+}
+
+/* Inputs */
+.ac-form input,
+.ac-form select,
+.ac-form textarea {
+  border: 1.6px solid #c5d0db;
+  background: #f7faff;
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 15px;
+  transition: all 0.25s ease;
+}
+
+.ac-form input:focus,
+.ac-form select:focus,
+.ac-form textarea:focus {
+  border-color: #1b2a41;
+  background: white;
+  box-shadow: 0 0 8px rgba(27, 42, 65, 0.25);
+}
+
+/* Botón */
+.ac-btn {
+  background: linear-gradient(135deg, #1e3550, #0f1e32);
+  border: none;
+  color: white;
+  padding: 14px;
+  font-size: 17px;
+  font-weight: 700;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.ac-btn:hover {
+  background: linear-gradient(135deg, #162536, #0a1522);
+  transform: translateY(-2px);
+}
+
+/* Mensaje */
+.ac-msg {
+  text-align: center;
+  color: green;
+  font-weight: 600;
+  margin-top: -5px;
+}
+
+/* Animación */
+/* TABLA MASIVA */
+.ac-bulk-container {
+  margin-top: 20px;
+  overflow-x: auto;
+}
+
+.ac-bulk-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+.ac-bulk-table th,
+.ac-bulk-table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.ac-bulk-table th {
+  background: #f8f9fa;
+  font-weight: 700;
+  color: #1b2a41;
+}
+
+.ac-bulk-table select,
+.ac-bulk-table input {
+  padding: 8px;
+  border-radius: 6px;
+}
+
+.ac-bulk-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 2px dashed #eee;
+}
+
+.ac-bulk-btn-cancel {
+  background: #6c757d;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+}
+
+.ac-bulk-upload-zone {
+  border: 2px dashed #c5d0db;
+  padding: 20px;
+  text-align: center;
+  border-radius: 12px;
+  cursor: pointer;
+  margin-bottom: 20px;
+  transition: border-color 0.2s;
+}
+
+.ac-bulk-upload-zone:hover {
+  border-color: #1b2a41;
+}
+
+.ac-bulk-upload-zone p {
+  margin: 0;
+  color: #5f6c7a;
+  font-weight: 600;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

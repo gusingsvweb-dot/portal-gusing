@@ -1,0 +1,294 @@
+/* =========================================
+   CALENDARIO CONTAINER
+========================================= */
+.calendar-container {
+    max-width: 1200px;
+    margin: 40px auto;
+    padding: 0 20px;
+    font-family: 'Inter', sans-serif;
+}
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.calendar-header h2 {
+    font-size: 24px;
+    color: #1e293b;
+    margin: 0;
+    text-transform: capitalize;
+}
+
+.calendar-nav {
+    display: flex;
+    gap: 10px;
+}
+
+.calendar-nav button {
+    background: white;
+    border: 1px solid #cbd5e1;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    color: #475569;
+    transition: all 0.2s;
+}
+
+.calendar-nav button:hover {
+    background: #f1f5f9;
+    color: #1e293b;
+}
+
+/* =========================================
+   GRID LAYOUT
+========================================= */
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background: #e2e8f0;
+    gap: 1px;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+/* Header de días (Lun, Mar...) */
+.calendar-day-header {
+    background: #f8fafc;
+    padding: 12px;
+    text-align: center;
+    font-weight: 600;
+    color: #64748b;
+    font-size: 14px;
+}
+
+/* Celdas de días */
+.calendar-day-cell {
+    background: white;
+    min-height: 120px;
+    padding: 10px;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.calendar-day-cell:hover {
+    background: #f8fafc;
+}
+
+.calendar-day-cell.empty {
+    background: #fcfcfc;
+    cursor: default;
+}
+
+/* 🌙 Estilos para días pasados y fines de semana */
+.calendar-day-cell.weekend {
+    background: #f1f5f9;
+    /* Tono más oscuro para fin de semana */
+}
+
+.calendar-day-cell.past-day {
+    background: #e2e8f0;
+    /* Tono más oscuro para días pasados */
+    cursor: default;
+    /* Opcional: indicar que no se puede interactuar igual */
+}
+
+.calendar-day-cell.past-day.weekend {
+    background: #cbd5e1;
+    /* Combinación aún más oscura */
+}
+
+.calendar-day-cell.past-day .day-number {
+    color: #94a3b8;
+    /* Número más tenue en días pasados */
+}
+
+.calendar-day-cell.holiday {
+    background: #e0f2fe;
+    /* Azul claro para festivos */
+    border: 1px solid #7dd3fc;
+}
+
+.calendar-day-cell.holiday:hover {
+    background: #bae6fd;
+}
+
+.day-cell-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+}
+
+.holiday-label {
+    font-size: 10px;
+    background: #3b82f6;
+    color: white;
+    padding: 2px 5px;
+    border-radius: 4px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.holiday-name {
+    font-size: 11px;
+    color: #1d4ed8;
+    font-weight: 600;
+    margin-top: 5px;
+    line-height: 1.2;
+    white-space: normal;
+    background: rgba(255, 255, 255, 0.4);
+    padding: 3px;
+    border-radius: 4px;
+}
+
+.day-number {
+    font-weight: 600;
+    color: #334155;
+    font-size: 14px;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.day-number.today {
+    background: #2b6ded;
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 24px;
+    display: inline-block;
+}
+
+/* =========================================
+   TASK CHIPS (Etiquetas de tareas)
+========================================= */
+.task-chip {
+    background: #eff6ff;
+    border-left: 3px solid #3b82f6;
+    color: #1e40af;
+    font-size: 11px;
+    padding: 4px 6px;
+    border-radius: 4px;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 500;
+}
+
+.task-more {
+    font-size: 11px;
+    color: #64748b;
+    margin-top: 2px;
+    font-style: italic;
+}
+
+/* =========================================
+   MODAL
+========================================= */
+.cal-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.cal-modal {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    width: 400px;
+    max-width: 90%;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.cal-modal h3 {
+    margin-top: 0;
+    color: #1e293b;
+}
+
+.cal-form label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 5px;
+    margin-top: 15px;
+}
+
+.cal-form input,
+.cal-form textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.cal-form textarea {
+    resize: vertical;
+}
+
+.cal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.cal-btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.cal-btn.cancel {
+    background: #f1f5f9;
+    color: #475569;
+}
+
+.cal-btn.save {
+    background: #2b6ded;
+    color: white;
+}
+
+.cal-task-list {
+    margin-top: 15px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.cal-task-item {
+    background: #f8fafc;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.cal-task-item h4 {
+    margin: 0 0 5px;
+    font-size: 14px;
+    color: #334155;
+}
+
+.cal-task-item p {
+    margin: 0;
+    font-size: 13px;
+    color: #64748b;
+}

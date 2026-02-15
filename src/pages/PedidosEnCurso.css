@@ -1,0 +1,274 @@
+/* LISTA IZQUIERDA */
+
+.pc-list {
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 16px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+}
+
+.pc-filters {
+  margin: 10px 0 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pc-filters input[type="text"] {
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid #c7d3df;
+  font-size: 14px;
+}
+
+.pc-filter-dates {
+  display: flex;
+  gap: 10px;
+}
+
+.pc-filter-dates label {
+  display: block;
+  font-size: 12px;
+  color: #6b7b89;
+  margin-bottom: 3px;
+}
+
+.pc-filter-dates input[type="date"] {
+  padding: 6px 8px;
+  border-radius: 10px;
+  border: 1px solid #c7d3df;
+  font-size: 13px;
+}
+
+.pc-btn-secondary {
+  align-self: flex-start;
+  padding: 6px 12px;
+  border-radius: 10px;
+  border: 1px solid #1b2a41;
+  background: #ffffff;
+  color: #1b2a41;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.pc-btn-secondary:hover {
+  background: #f0f4ff;
+}
+
+.pc-item {
+  padding: 15px;
+  background: #f5f8ff;
+  border-radius: 10px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.pc-item-selected {
+  border: 2px solid #1b2a41;
+}
+
+.pc-item:hover {
+  background: #e3ebff;
+}
+
+.pc-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Detalle derecha */
+
+.pc-detail {
+  background: #ffffff;
+  padding: 25px;
+  border-radius: 16px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+}
+
+.pc-detail-grid p {
+  margin-bottom: 6px;
+}
+
+/* Observaciones */
+
+.pc-observaciones {
+  background: #f8faff;
+  padding: 12px;
+  border-radius: 10px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.pc-obs-item {
+  padding: 10px;
+  margin-bottom: 8px;
+  background: #ffffff;
+  border-radius: 8px;
+  border-left: 4px solid #1b2a41;
+}
+
+.pc-observaciones span {
+  display: block;
+  font-size: 12px;
+  margin-top: 4px;
+  color: #687c92;
+}
+
+.pc-empty {
+  font-size: 14px;
+  color: #6b7b89;
+}
+
+/* Añadir observación */
+
+.pc-add-obs {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+}
+
+.pc-add-obs textarea {
+  flex: 1;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid #c7d3df;
+  font-size: 14px;
+}
+
+.pc-add-obs button {
+  padding: 10px 15px;
+  background: #1b2a41;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+/* Paginación */
+
+.pc-pagination {
+  margin-top: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+}
+
+.pc-pagination button {
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid #c7d3df;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.pc-pagination button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* Estado con colores */
+
+.pc-estado {
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* Ajusta estos colores a tu catálogo real */
+.estado-1 { /* En curso */
+  background: #e5f1ff;
+  color: #0b5188;
+}
+.estado-2 { /* Finalizado */
+  background: #e0f7e9;
+  color: #166534;
+}
+.estado-3 { /* En espera / pausado */
+  background: #fff7e0;
+  color: #92400e;
+}
+
+/* Responsive */
+
+@media (max-width: 900px) {
+  .pc-wrapper {
+    grid-template-columns: 1fr;
+  }
+
+  .pc-detail {
+    margin-top: 15px;
+  }
+}
+.pc-select {
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid #c7d3df;
+  font-size: 14px;
+  background: white;
+}
+
+.pc-wrapper {
+  max-width: 90%;
+  margin: 0 auto;
+  padding: 20px 20px 80px;
+}
+
+.pc-item {
+  position: relative;
+}
+
+/* Etiqueta con el #ID */
+.pc-id-tag {
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  background: #1b2a41;
+  color: white;
+  padding: 3px 8px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  opacity: 0.9;
+}
+
+.pc-historial {
+  margin-top: 10px;
+  padding: 14px;
+  background: #f8faff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.pc-hist-item {
+  padding: 12px 10px;
+  border-bottom: 1px solid #edf2f7;
+}
+
+.pc-hist-item:last-child {
+  border-bottom: none;
+}
+
+.pc-hist-fecha {
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 2px;
+}
+
+.pc-hist-titulo {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.pc-hist-detalle {
+  font-size: 13px;
+  color: #475569;
+  margin-top: 2px;
+}
+

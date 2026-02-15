@@ -1,0 +1,70 @@
+/* Contenedor relativo para posicionar la lista flotante */
+.searchable-select-container {
+    position: relative;
+    width: 100%;
+}
+
+/* Input que parece un select pero permite escribir */
+.searchable-input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 1rem;
+    background-color: #fff;
+    cursor: text;
+    transition: box-shadow 0.2s;
+    box-sizing: border-box;
+    /* Asegura que el padding no rompa el ancho */
+}
+
+.searchable-input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+/* Lista flotante de opciones */
+.searchable-options {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    max-height: 250px;
+    overflow-y: auto;
+    background: white;
+    border: 1px solid #ddd;
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    z-index: 1000;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+/* Opción individual */
+.searchable-option {
+    padding: 10px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background 0.1s;
+    color: #333;
+}
+
+.searchable-option:last-child {
+    border-bottom: none;
+}
+
+.searchable-option:hover,
+.searchable-option.selected {
+    background-color: #f8f9fa;
+    color: #007bff;
+}
+
+.searchable-no-results {
+    padding: 12px;
+    color: #888;
+    text-align: center;
+    font-size: 0.9rem;
+}

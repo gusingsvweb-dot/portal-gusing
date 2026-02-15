@@ -1,0 +1,161 @@
+.gc-wrapper {
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+}
+
+/* LISTA IZQUIERDA */
+.gc-list {
+  width: 320px;
+  background: #f8fafc;
+  padding: 20px;
+  border-radius: 12px;
+  height: calc(100vh - 160px);
+  overflow-y: auto;
+}
+
+.gc-item {
+  background: white;
+  padding: 14px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.gc-item:hover {
+  background: #f1f5f9;
+}
+
+.gc-selected {
+  background: #e0f2fe;
+  border-color: #0284c7;
+}
+
+.gc-id {
+  font-size: 12px;
+  color: #64748b;
+}
+
+/* DETALLE */
+.gc-detail {
+  flex: 1;
+  background: white;
+  padding: 25px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.gc-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.gc-box {
+  padding: 10px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.gc-input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  margin-top: 5px;
+}
+
+.gc-btn {
+  margin-top: 15px;
+  background: #0284c7;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 15px;
+}
+
+.gc-error {
+  color: #dc2626;
+  margin-top: 5px;
+}
+.gc-history {
+  background: white;
+  margin: 40px auto;
+  padding: 25px;
+  width: 90%;
+  border-radius: 15px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.07);
+}
+
+.gc-history h2 {
+  margin-bottom: 15px;
+  font-size: 22px;
+  color: #1f3a93;
+}
+
+.gc-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+}
+
+.gc-table th {
+  text-align: left;
+  background: #f5f6fa;
+  padding: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  border-bottom: 2px solid #e1e1e1;
+}
+
+.gc-table td {
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+  font-size: 14px;
+}
+
+.gc-table tr:hover {
+  background: #f0f8ff;
+}
+.gc-filtros {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.gc-filtros select,
+.gc-filtros input {
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+.gc-paginacion {
+  margin-top: 15px;
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  align-items: center;
+}
+
+.gc-paginacion button {
+  padding: 8px 15px;
+  border-radius: 8px;
+  background: #1f3a93;
+  color: white;
+  border: none;
+}
+
+.gc-paginacion button:disabled {
+  background: #999;
+}
+
+.gc-paginacion span {
+  font-weight: bold;
+  color: #333;
+}

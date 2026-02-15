@@ -1,0 +1,316 @@
+/* src/pages/Microbiologia.css */
+/* Simple y parecido al layout de Producción; ajustas luego si quieres */
+
+.mb-wrapper {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.mb-list {
+  width: 360px;
+  min-width: 320px;
+}
+
+.mb-detail {
+  flex: 1;
+  min-width: 0;
+}
+
+.mb-filters {
+  display: flex;
+  gap: 8px;
+  margin: 10px 0 14px;
+  flex-wrap: wrap;
+}
+
+.mb-filters input {
+  flex: 1;
+  min-width: 220px;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.mb-select {
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.mb-btn {
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: #111827;
+  color: #fff;
+  cursor: pointer;
+}
+
+.mb-btn:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+.mb-btn-danger {
+  background: #b91c1c;
+}
+
+.mb-item {
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 12px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  background: #fff;
+  transition: all 0.2s ease;
+}
+
+.mb-item:hover {
+  border-color: #94a3b8;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+.pc-section-title {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+  margin: 15px 0 10px 5px;
+  font-weight: 700;
+}
+
+.mb-item-selected {
+  outline: 2px solid #111827;
+}
+
+.mb-item-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.mb-id {
+  font-weight: 800;
+}
+
+.mb-title {
+  margin: 8px 0 4px;
+}
+
+.mb-sub {
+  margin: 0;
+  color: #475569;
+  font-size: 13px;
+}
+
+.mb-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 14px;
+  background: #fff;
+  margin-bottom: 12px;
+}
+
+.mb-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 14px;
+  margin-top: 10px;
+}
+
+@media (max-width: 900px) {
+  .mb-wrapper {
+    flex-direction: column;
+  }
+
+  .mb-list {
+    width: 100%;
+  }
+
+  .mb-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.mb-chip {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid #e2e8f0;
+  font-size: 12px;
+  color: #0f172a;
+  background: #f8fafc;
+}
+
+.mb-chip-warn {
+  background: #fff7ed;
+  border-color: #fdba74;
+  color: #9a3412;
+}
+
+.mb-chip-ok {
+  background: #ecfdf5;
+  border-color: #6ee7b7;
+  color: #065f46;
+}
+
+.mb-etapas {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.mb-etapa {
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 12px;
+  cursor: pointer;
+}
+
+.mb-etapa-selected {
+  outline: 2px solid #111827;
+}
+
+.mb-etapa-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.mb-etapa-orden {
+  font-weight: 800;
+}
+
+.mb-etapa-nombre {
+  margin-top: 6px;
+  font-weight: 700;
+}
+
+.mb-etapa-fechas {
+  margin-top: 4px;
+  color: #475569;
+}
+
+.mb-acciones {
+  margin-top: 14px;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 12px;
+}
+
+.mb-acciones textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  margin-top: 6px;
+}
+
+.mb-actions-row {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.mb-hist {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.mb-hist-item {
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 12px;
+}
+
+.mb-hist-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mb-hist-orden {
+  font-weight: 900;
+}
+
+.mb-hist-nombre {
+  font-weight: 700;
+}
+
+.mb-hist-fechas {
+  margin-top: 6px;
+  color: #475569;
+}
+
+.mb-hist-libs {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed #e2e8f0;
+}
+
+/* MODALES (copiados de Producción para consistencia) */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 999999;
+}
+
+.modal-card {
+  width: min(500px, 90vw);
+  max-height: 90vh;
+  overflow: auto;
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-card h3 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  font-size: 1.25rem;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.modal-card textarea {
+  width: 100%;
+  margin-top: 15px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 12px;
+  outline: none;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.modal-card textarea:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+.modal-footer {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  justify-content: flex-end;
+}
