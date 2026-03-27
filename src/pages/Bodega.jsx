@@ -144,6 +144,12 @@ export default function Bodega() {
       return;
     }
 
+    // Bloqueo duro por Cuarentena
+    if (!selected.fecha_liberacion_cuarentena) {
+        alert("⚠️ No se puede registrar el despacho: El pedido aún no cuenta con la liberación física de Cuarentena por parte de Control de Calidad.");
+        return;
+    }
+
     // Notificar a Atención al Cliente
     try {
       const { notifyRoles } = await import("../api/notifications");
@@ -518,7 +524,29 @@ export default function Bodega() {
               <p><strong>Fecha Recepción:</strong> {selected.fecha_recepcion_cliente || "—"}</p>
               <p><strong>Hora Solicitud MP:</strong> {selected.fecha_solicitud_materias_primas ? new Date(selected.fecha_solicitud_materias_primas).toLocaleString("es-CO") : "—"}</p>
               <p><strong>Estado:</strong> {selected.estados?.nombre}</p>
+              <p><strong>Liberación Cuarentena:</strong> {selected.fecha_liberacion_cuarentena 
+                  ? <span style={{color: '#10b981', fontWeight: 'bold'}}>✔ Liberada</span> 
+                  : <span style={{color: '#ef4444', fontWeight: 'bold'}}>⏳ Pendiente</span>}
+              </p>
             </div>
+
+            {selected.estado_id >= 11 && !selected.fecha_liberacion_cuarentena && (
+                <div style={{
+                    marginTop: '15px',
+                    padding: '12px',
+                    background: '#fef2f2',
+                    border: '1px solid #fee2e2',
+                    borderRadius: '10px',
+                    color: '#991b1b',
+                    fontSize: '13px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px'
+                }}>
+                    <span style={{fontSize: '18px'}}>🛡️</span>
+                    <p style={{margin: 0}}><strong>Validación de Calidad Requerida:</strong> Este pedido no puede ser despachado hasta que se firme su liberación de Cuarentena.</p>
+                </div>
+            )}
 
             {/* SECCIÓN DE OBSERVACIONES */}
             <div style={{ marginTop: '20px', padding: '15px', backgroundColor: 'var(--bg-app)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
@@ -661,8 +689,10 @@ export default function Bodega() {
               <>
                 <h3 style={{ marginTop: 20 }}>🚀 Despacho de Producto Terminado</h3>
                 <div style={{ backgroundColor: 'rgba(52, 211, 153, 0.1)', padding: '20px', borderRadius: '12px', border: '1px solid #10b981', marginTop: '10px' }}>
-                  <p style={{ color: '#10b981', fontSize: '15px', lineHeight: '1.5', fontWeight: '600' }}>
-                    Este pedido ha sido liberado por <strong>Control de Calidad</strong> y está listo para ser entregado al cliente.
+                  <p style={{ color: selected.fecha_liberacion_cuarentena ? '#10b981' : '#f59e0b', fontSize: '15px', lineHeight: '1.5', fontWeight: '600' }}>
+                    {selected.fecha_liberacion_cuarentena 
+                      ? "Este pedido ha sido liberado por Control de Calidad y está listo para ser entregado al cliente."
+                      : "Este pedido ha sido liberado administrativamente (PT), pero aún requiere liberación física de CUARENTENA."}
                   </p>
 
                   {selected.estado_id === 11 ? (
@@ -688,8 +718,13 @@ export default function Bodega() {
                       </p>
                       <button
                         className="pc-btn"
-                        style={{ background: '#059669', width: '100%' }}
+                        style={{ 
+                          background: selected.fecha_liberacion_cuarentena ? '#059669' : '#94a3b8', 
+                          width: '100%',
+                          cursor: selected.fecha_liberacion_cuarentena ? 'pointer' : 'not-allowed'
+                        }}
                         onClick={despacharProducto}
+                        disabled={!selected.fecha_liberacion_cuarentena}
                       >
                         🚚 Registrar Despacho Físico
                       </button>
