@@ -651,11 +651,27 @@ export default function ControlCalidad() {
       `¿Deseas agregar el resultado final del análisis como observación para este pedido?`,
       async (currentObs, nAnalisis, respManual) => {
         const fechaHoy = new Date().toISOString();
+        
+        // Verificamos si ya tiene liberación de cuarentena
+        const { data: currentPedido } = await supabase
+          .from("pedidos_produccion")
+          .select("fecha_liberacion_cuarentena")
+          .eq("id", selected.id)
+          .single();
+
+        const yaTieneCuarentena = !!currentPedido?.fecha_liberacion_cuarentena;
+
         const update = {
-          estado_id: 11, // Entrega a bodega
-          asignado_a: "bodega",
           fecha_liberacion_pt: fechaHoy
         };
+
+        // SOLO si ya tiene cuarentena (o si no se usa), pasamos a bodega
+        // Pero el requerimiento es que sean separadas, así que el pase a bodega
+        // ocurre cuando AMBAS están listas.
+        if (yaTieneCuarentena) {
+          update.estado_id = 11; // Entrega a bodega
+          update.asignado_a = "bodega";
+        }
 
         if (nAnalisis) update.numero_analisis_pt = nAnalisis;
         if (respManual) update.responsable_liberacion_pt = respManual;
@@ -678,15 +694,20 @@ export default function ControlCalidad() {
           });
         }
 
-        await notifyRoles(
-          ["bodega"],
-          "Pedido Liberado por Calidad",
-          `El pedido #${selected.id} ha sido liberado por Calidad y está listo para despacho en Bodega.`,
-          selected.id,
-          "proceso_completado"
-        );
+        if (yaTieneCuarentena) {
+          await notifyRoles(
+            ["bodega"],
+            "Pedido Liberado por Calidad",
+            `El pedido #${selected.id} ha sido liberado totalmente (PT + Cuarentena) y está listo para despacho.`,
+            selected.id,
+            "proceso_completado"
+          );
+        }
 
-        alert("✔ Producto Terminado liberado. Enviado a Bodega para despacho.");
+        alert(yaTieneCuarentena 
+          ? "✔ Producto Terminado liberado. Pedido enviado a Bodega." 
+          : "✔ Producto Terminado liberado (Esperando Cuarentena)."
+        );
         setSelected(null);
         setObs([]);
         await loadPedidosPT();
@@ -705,11 +726,26 @@ export default function ControlCalidad() {
       `¿Confirmas la liberación de Cuarentena para el pedido #${selected.id}? Esto permitirá el movimiento físico en bodega mientras se espera el PT.`,
       async (currentObs, nAnalisis, respManual) => {
         const fechaHoy = new Date().toISOString();
+
+        // Verificamos si ya tiene liberación de PT
+        const { data: currentPedido } = await supabase
+          .from("pedidos_produccion")
+          .select("fecha_liberacion_pt")
+          .eq("id", selected.id)
+          .single();
+
+        const yaTienePT = !!currentPedido?.fecha_liberacion_pt;
+
         const update = {
           fecha_liberacion_cuarentena: fechaHoy
         };
 
-        // Si el usuario ingresó análisis o responsable, los guardamos (opcional pero útil)
+        // Si ya tiene PT, pasamos a bodega
+        if (yaTienePT) {
+          update.estado_id = 11;
+          update.asignado_a = "bodega";
+        }
+
         if (nAnalisis) update.numero_analisis_cua = nAnalisis; 
         if (respManual) update.responsable_liberacion_cua = respManual;
 
@@ -731,7 +767,20 @@ export default function ControlCalidad() {
           });
         }
 
-        alert("✔ Cuarentena liberada correctamente.");
+        if (yaTienePT) {
+          await notifyRoles(
+            ["bodega"],
+            "Pedido Liberado por Calidad",
+            `El pedido #${selected.id} ha sido liberado totalmente (PT + Cuarentena) y está listo para despacho.`,
+            selected.id,
+            "proceso_completado"
+          );
+        }
+
+        alert(yaTienePT 
+          ? "✔ Cuarentena liberada. Pedido enviado a Bodega." 
+          : "✔ Cuarentena liberada correctamente (Esperando PT)."
+        );
         setSelected(null);
         setObs([]);
         await loadPedidosPT();
