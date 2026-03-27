@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
-import { supabase } from "../api/supabaseClient";
+import { supabase, st } from "../api/supabaseClient";
 import { useAuth } from "../context/AuthContext";
 import "./GarantiaCalidad.css";
 
@@ -92,7 +92,7 @@ export default function GarantiaCalidad() {
         setMsg({ text: "", type: "" });
 
         try {
-            const { error } = await supabase.from('productos').insert([prodForm]);
+            const { error } = await supabase.from(st('productos')).insert([prodForm]);
             if (error) throw error;
 
             setMsg({ text: "Producto creado exitosamente.", type: "success" });

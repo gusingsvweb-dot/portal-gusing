@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
-import { supabase } from "../api/supabaseClient";
+import { supabase, st } from "../api/supabaseClient";
 import { useAuth } from "../context/AuthContext";
 import "./Mantenimiento.css";
 
@@ -17,7 +17,7 @@ export default function Mantenimiento() {
   // ============================
   async function loadSolicitudes() {
     const { data, error } = await supabase
-      .from("solicitudes")
+      .from(st("solicitudes"))
       .select(`
         *,
         tipos_solicitud ( nombre ),
@@ -70,7 +70,7 @@ export default function Mantenimiento() {
     }
 
     const { error } = await supabase
-      .from("solicitudes")
+      .from(st("solicitudes"))
       .update(update)
       .eq("id", selected.id);
 

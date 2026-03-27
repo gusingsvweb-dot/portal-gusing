@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { supabase } from "../api/supabaseClient";
+import { supabase, st } from "../api/supabaseClient";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
 import "../pages/Produccion.css";
@@ -32,7 +32,7 @@ export default function BodegaMP() {
     // Cargar Observaciones
     async function cargarObservaciones(pedidoId) {
         const { data, error } = await supabase
-            .from("observaciones_pedido")
+            .from(st("observaciones_pedido"))
             .select("*")
             .eq("pedido_id", pedidoId)
             .order("created_at", { ascending: false });
@@ -47,7 +47,7 @@ export default function BodegaMP() {
     async function addObs() {
         if (!newObs.trim() || !selected) return;
 
-        const { error } = await supabase.from("observaciones_pedido").insert([{
+        const { error } = await supabase.from(st("observaciones_pedido")).insert([{
             pedido_id: selected.id,
             usuario: usuarioActual?.usuario || "BodegaMP",
             observacion: newObs,
@@ -77,7 +77,7 @@ export default function BodegaMP() {
     async function loadPedidos() {
         // Solo pedidos con items pendientes (estado_id < 11)
         const { data, error } = await supabase
-            .from("pedidos_produccion")
+            .from(st("pedidos_produccion"))
             .select(`
         *,
         productos ( articulo ),
@@ -107,7 +107,7 @@ export default function BodegaMP() {
 
     async function loadHistorial() {
         const { data, error } = await supabase
-            .from("pedidos_produccion")
+            .from(st("pedidos_produccion"))
             .select(`
         id,
         fecha_entrega_de_materias_primas_e_insumos,
@@ -146,7 +146,7 @@ export default function BodegaMP() {
         cargarObservaciones(p.id);
         try {
             const { data: items, error: errItems } = await supabase
-                .from("pedidos_bodega_items")
+                .from(st("pedidos_bodega_items"))
                 .select("*")
                 .eq("pedido_id", p.id)
                 .order("id", { ascending: true });
@@ -154,7 +154,7 @@ export default function BodegaMP() {
             if (errItems) throw errItems;
 
             if (items && items.length > 0) {
-                const { data: catalogo } = await supabase.from("MateriasPrimas").select("REFERENCIA, ARTICULO, UNIDAD");
+                const { data: catalogo } = await supabase.from(st("MateriasPrimas")).select("REFERENCIA, ARTICULO, UNIDAD");
                 const itemsConNombre = items.map(it => {
                     const matched = catalogo?.find(c => Number(c.REFERENCIA) === Number(it.referencia_materia_prima));
                     return { ...it, materia_prima: matched || { ARTICULO: `Ref: ${it.referencia_materia_prima}`, UNIDAD: "—" } };
@@ -165,12 +165,12 @@ export default function BodegaMP() {
     }
 
     async function toggleItemCompletado(item) {
-        await supabase.from("pedidos_bodega_items").update({ completado: !item.completado }).eq("id", item.id);
+        await supabase.from(st("pedidos_bodega_items")).update({ completado: !item.completado }).eq("id", item.id);
         setItemsDetallados(prev => prev.map(i => i.id === item.id ? { ...i, completado: !i.completado } : i));
     }
 
     async function saveItem(item) {
-        await supabase.from("pedidos_bodega_items").update({
+        await supabase.from(st("pedidos_bodega_items")).update({
             cantidad_entregada: item.cantidad_entregada,
             observacion: item.observacion
         }).eq("id", item.id);
@@ -178,7 +178,7 @@ export default function BodegaMP() {
 
     async function ejecutarUpdateEntrega() {
         const ahora = new Date().toISOString();
-        const { error } = await supabase.from("pedidos_produccion").update({
+        const { error } = await supabase.from(st("pedidos_produccion")).update({
             fecha_entrega_de_materias_primas_e_insumos: ahora,
             estado_id: 5,
             asignado_a: "produccion",

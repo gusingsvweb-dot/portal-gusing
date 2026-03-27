@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import { supabase } from "../api/supabaseClient";
+import { supabase, st } from "../api/supabaseClient";
 
 const AuthContext = createContext();
 
@@ -63,7 +63,7 @@ export const AuthProvider = ({ children }) => {
 
       // 2. Insertar en la tabla public.usuarios después de verificar
       const { error: dbError } = await supabase
-        .from("usuarios")
+        .from(st("usuarios"))
         .insert({
           id: session.user.id,
           usuario: usuario,
@@ -112,7 +112,7 @@ export const AuthProvider = ({ children }) => {
         if (!error && data.user) {
           // Si entra por aquí, buscamos sus datos en public.usuarios
           const { data: dbUser } = await supabase
-            .from("usuarios")
+            .from(st("usuarios"))
             .select("*")
             .eq("id", data.user.id)
             .single();
@@ -134,7 +134,7 @@ export const AuthProvider = ({ children }) => {
 
       // Intento 2: Buscar por usuario en la tabla personalizada (Legacy)
       const { data, error } = await supabase
-        .from("usuarios")
+        .from(st("usuarios"))
         .select("*")
         .eq("usuario", usuarioInput)
         .limit(1);
@@ -232,7 +232,7 @@ export const AuthProvider = ({ children }) => {
       // También actualizar en la tabla public.usuarios para el sistema legacy
       if (data.user) {
         await supabase
-          .from("usuarios")
+          .from(st("usuarios"))
           .update({ contrasena: "SUPABASE_AUTH" }) // O la contraseña si se sincroniza
           .eq("id", data.user.id);
       }
@@ -271,7 +271,7 @@ export const AuthProvider = ({ children }) => {
 
       // 2. Insertar en la tabla public.usuarios después de verificar
       const { error: dbError } = await supabase
-        .from("usuarios")
+        .from(st("usuarios"))
         .insert({
           id: session.user.id,
           usuario: usuario,

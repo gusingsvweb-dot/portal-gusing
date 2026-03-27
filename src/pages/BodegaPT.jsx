@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { supabase } from "../api/supabaseClient";
+import { supabase, st } from "../api/supabaseClient";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
 import "../pages/Produccion.css";
@@ -34,7 +34,7 @@ export default function BodegaPT() {
     // Cargar Observaciones
     async function cargarObservaciones(pedidoId) {
         const { data, error } = await supabase
-            .from("observaciones_pedido")
+            .from(st("observaciones_pedido"))
             .select("*")
             .eq("pedido_id", pedidoId)
             .order("created_at", { ascending: false });
@@ -49,7 +49,7 @@ export default function BodegaPT() {
     async function addObs() {
         if (!newObs.trim() || !selected) return;
 
-        const { error } = await supabase.from("observaciones_pedido").insert([{
+        const { error } = await supabase.from(st("observaciones_pedido")).insert([{
             pedido_id: selected.id,
             usuario: usuarioActual?.usuario || "BodegaPT",
             observacion: newObs,
@@ -67,7 +67,7 @@ export default function BodegaPT() {
     async function loadPedidos() {
         // Pedidos liberados (estado_id >= 11)
         const { data, error } = await supabase
-            .from("pedidos_produccion")
+            .from(st("pedidos_produccion"))
             .select(`
         *,
         productos ( articulo ),
@@ -101,7 +101,7 @@ export default function BodegaPT() {
 
     async function solicitarAutorizacion() {
         if (!selected) return;
-        const { error } = await supabase.from("pedidos_produccion").update({ estado_id: 13, asignado_a: "atencion" }).eq("id", selected.id);
+        const { error } = await supabase.from(st("pedidos_produccion")).update({ estado_id: 13, asignado_a: "atencion" }).eq("id", selected.id);
         if (!error) {
             const { notifyRoles } = await import("../api/notifications");
             await notifyRoles(["atencion"], "Autorización Requerida", `Bodega solicita autorización para despacho #${selected.id}`, selected.id, "accion_requerida");
@@ -122,7 +122,7 @@ export default function BodegaPT() {
 
         if (!window.confirm("¿Confirmar DESPACHO FÍSICO?")) return;
         const hoy = new Date().toISOString().slice(0, 10);
-        const { error } = await supabase.from("pedidos_produccion").update({ estado_id: 12, asignado_a: "completado", fecha_entrega_cliente: hoy }).eq("id", selected.id);
+        const { error } = await supabase.from(st("pedidos_produccion")).update({ estado_id: 12, asignado_a: "completado", fecha_entrega_cliente: hoy }).eq("id", selected.id);
         if (!error) {
             const { notifyRoles } = await import("../api/notifications");
             await notifyRoles(["atencion"], "Pedido Despachado", `Pedido #${selected.id} despachado.`, selected.id, "informacion");

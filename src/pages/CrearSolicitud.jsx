@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { supabase } from "../api/supabaseClient";
+import { supabase, st } from "../api/supabaseClient";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
 import "./CrearSolicitud.css";
@@ -30,9 +30,9 @@ export default function CrearSolicitud() {
   // ================================
   useEffect(() => {
     async function loadData() {
-      const { data: a } = await supabase.from("areas").select("*");
-      const { data: t } = await supabase.from("tipos_solicitud").select("*");
-      const { data: p } = await supabase.from("prioridades").select("*");
+      const { data: a } = await supabase.from(st("areas")).select("*");
+      const { data: t } = await supabase.from(st("tipos_solicitud")).select("*");
+      const { data: p } = await supabase.from(st("prioridades")).select("*");
 
       setAreas(a || []);
       setTipos(t || []);
@@ -71,7 +71,7 @@ export default function CrearSolicitud() {
     // 1. Calcular Consecutivo para el Área destino
     let nextConsecutivo = 1;
     const { data: maxData, error: maxError } = await supabase
-      .from("solicitudes")
+      .from(st("solicitudes"))
       .select("consecutivo")
       .eq("area_id", form.area_id)
       .order("consecutivo", { ascending: false })
@@ -82,7 +82,7 @@ export default function CrearSolicitud() {
     }
 
     // 2. Insertar solicitud
-    const { error } = await supabase.from("solicitudes").insert([
+    const { error } = await supabase.from(st("solicitudes")).insert([
       {
         tipo_solicitud_id: form.tipo_solicitud_id,
         prioridad_id: form.prioridad_id,

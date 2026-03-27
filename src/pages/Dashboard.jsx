@@ -1,6 +1,6 @@
 // src/pages/Dashboard.jsx
 import React, { useEffect, useMemo, useState } from "react";
-import { supabase } from "../api/supabaseClient";
+import { supabase, st } from "../api/supabaseClient";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
 import { useTheme } from "../context/ThemeContext";
@@ -48,7 +48,7 @@ export default function Dashboard() {
   // =============================
   async function loadPedidos() {
     const { data, error } = await supabase
-      .from("pedidos_produccion")
+      .from(st("pedidos_produccion"))
       .select(`
         *,
         productos ( articulo ),
@@ -90,7 +90,7 @@ export default function Dashboard() {
       }
 
       if (changed) {
-        updates.push(supabase.from("pedidos_produccion").update(up).eq("id", p.id));
+        updates.push(supabase.from(st("pedidos_produccion")).update(up).eq("id", p.id));
       }
     });
 

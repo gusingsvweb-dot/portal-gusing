@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
-import { supabase } from "../api/supabaseClient";
+import { supabase, st } from "../api/supabaseClient";
 import "./Produccion.css"; // Reuse existing styles for consistency
 import { useAuth } from "../context/AuthContext";
 
@@ -82,7 +82,7 @@ export default function DireccionTecnica() {
 
         try {
             const { error } = await supabase
-                .from('productos')
+                .from(st('productos'))
                 .insert([form]);
 
             if (error) throw error;

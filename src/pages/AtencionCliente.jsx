@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { supabase } from "../api/supabaseClient";
+import { supabase, st } from "../api/supabaseClient";
 import Navbar from "../components/navbar.jsx";
 import Footer from "../components/Footer";
 import { useAuth } from "../context/AuthContext";
@@ -35,12 +35,12 @@ export default function AtencionCliente() {
 
 
   async function cargarClientes() {
-    const { data } = await supabase.from("clientes").select("*").order("nombre");
+    const { data } = await supabase.from(st("clientes")).select("*").order("nombre");
     setClientes(data || []);
   }
 
   async function cargarProductos() {
-    const { data } = await supabase.from("productos").select("*").order("articulo");
+    const { data } = await supabase.from(st("productos")).select("*").order("articulo");
     setProductos(data || []);
   }
 
@@ -141,14 +141,14 @@ export default function AtencionCliente() {
           prioridad: it.prioridad
         };
 
-        const { data: pIns, error: errP } = await supabase.from("pedidos_produccion").insert([nuevoP]).select("*");
+        const { data: pIns, error: errP } = await supabase.from(st("pedidos_produccion")).insert([nuevoP]).select("*");
         if (errP) throw errP;
 
         const pedidoId = pIns[0].id;
 
         // 2. Observación
         if (it.observaciones.trim()) {
-          await supabase.from("observaciones_pedido").insert([{
+          await supabase.from(st("observaciones_pedido")).insert([{
             pedido_id: pedidoId,
             usuario: usuarioActual.usuario,
             observacion: it.observaciones.trim()
@@ -198,13 +198,13 @@ export default function AtencionCliente() {
         prioridad: form.prioridad,
       };
 
-      const { data: pIns, error: errP } = await supabase.from("pedidos_produccion").insert([nuevoPedido]).select("*");
+      const { data: pIns, error: errP } = await supabase.from(st("pedidos_produccion")).insert([nuevoPedido]).select("*");
       if (errP) throw errP;
 
       const pedidoId = pIns[0].id;
 
       if (form.observaciones.trim()) {
-        await supabase.from("observaciones_pedido").insert([{
+        await supabase.from(st("observaciones_pedido")).insert([{
           pedido_id: pedidoId,
           usuario: usuarioActual.usuario,
           observacion: form.observaciones.trim()

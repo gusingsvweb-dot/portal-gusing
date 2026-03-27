@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useMemo } from "react";
-import { supabase } from "../api/supabaseClient";
+import { supabase, st } from "../api/supabaseClient";
 import { useAuth } from "./AuthContext";
 
 const NotificationsContext = createContext();
@@ -20,7 +20,7 @@ export function NotificationsProvider({ children }) {
         if (!userIdInterno) return;
 
         const { data, error } = await supabase
-            .from("notificaciones")
+            .from(st("notificaciones"))
             .select("id, titulo, mensaje, leida, created_at, pedido_id")
             .eq("user_id", userIdInterno)
             .order("created_at", { ascending: false })
@@ -36,7 +36,7 @@ export function NotificationsProvider({ children }) {
         if (ids.length === 0) return;
 
         const { error } = await supabase
-            .from("notificaciones")
+            .from(st("notificaciones"))
             .update({ leida: true })
             .in("id", ids);
 
@@ -49,7 +49,7 @@ export function NotificationsProvider({ children }) {
         if (!userIdInterno || !notifId) return;
 
         const { error } = await supabase
-            .from("notificaciones")
+            .from(st("notificaciones"))
             .update({ leida: true })
             .eq("id", notifId);
 

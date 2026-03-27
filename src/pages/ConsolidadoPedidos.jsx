@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { supabase } from "../api/supabaseClient";
+import { supabase, st } from "../api/supabaseClient";
 import Navbar from "../components/navbar.jsx";
 import Footer from "../components/Footer";
 import { useAuth } from "../context/AuthContext";
@@ -41,7 +41,7 @@ export default function ConsolidadoPedidos() {
         setLoading(true);
         // Hacemos JOIN con clientes, productos y estados para mostrar nombres reales
         const { data, error } = await supabase
-            .from("pedidos_produccion")
+            .from(st("pedidos_produccion"))
             .select(`
         *,
         cliente:clientes(nombre),
@@ -82,7 +82,7 @@ export default function ConsolidadoPedidos() {
             }
 
             if (changed) {
-                updates.push(supabase.from("pedidos_produccion").update(up).eq("id", p.id));
+                updates.push(supabase.from(st("pedidos_produccion")).update(up).eq("id", p.id));
             }
         });
 

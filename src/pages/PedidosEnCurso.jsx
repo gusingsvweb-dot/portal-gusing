@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { supabase } from "../api/supabaseClient";
+import { supabase, st } from "../api/supabaseClient";
 import Navbar from "../components/navbar.jsx";
 import Footer from "../components/Footer.jsx";
 import "./PedidosEnCurso.css";
@@ -82,7 +82,7 @@ export default function PedidosEnCurso() {
     setCargandoPantalla(true);   // 🔵 Activa loader
 
     const { data, error } = await supabase
-      .from("pedidos_produccion")
+      .from(st("pedidos_produccion"))
       .select(`
         *,
         productos ( articulo ),
@@ -244,7 +244,7 @@ export default function PedidosEnCurso() {
   // =======================
   async function cargarObservaciones(idPedido) {
     const { data, error } = await supabase
-      .from("observaciones_pedido")
+      .from(st("observaciones_pedido"))
       .select("*")
       .eq("pedido_id", idPedido)
       .order("created_at", { ascending: false });
@@ -272,7 +272,7 @@ export default function PedidosEnCurso() {
     };
 
     const { error } = await supabase
-      .from("observaciones_pedido")
+      .from(st("observaciones_pedido"))
       .insert([obs]);
 
     if (error) {

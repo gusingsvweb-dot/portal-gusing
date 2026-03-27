@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { supabase } from "../api/supabaseClient";
+import { supabase, st } from "../api/supabaseClient";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
 import { useAuth } from "../context/AuthContext";
@@ -43,7 +43,7 @@ export default function Bodega() {
   async function loadPedidos() {
     // 1. Pedidos asignados explicitamente a bodega
     const { data: dataBodega, error: errBodega } = await supabase
-      .from("pedidos_produccion")
+      .from(st("pedidos_produccion"))
       .select(`
         *,
         productos ( articulo ),
@@ -58,7 +58,7 @@ export default function Bodega() {
     // 2. Pedidos en Produccion con items pendientes (Parciales)
     // Filtramos aquellos que tengan items NO completados
     const { data: dataPendientes, error: errPend } = await supabase
-      .from("pedidos_produccion")
+      .from(st("pedidos_produccion"))
       .select(`
         *,
         productos ( articulo ),
@@ -105,7 +105,7 @@ export default function Bodega() {
     if (!selected) return;
 
     const { error } = await supabase
-      .from("pedidos_produccion")
+      .from(st("pedidos_produccion"))
       .update({
         estado_id: 13, // Pendiente Autorización Atencion Cliente
         asignado_a: "atencion"
@@ -145,7 +145,7 @@ export default function Bodega() {
     const hoy = new Date().toISOString().slice(0, 10);
 
     const { error } = await supabase
-      .from("pedidos_produccion")
+      .from(st("pedidos_produccion"))
       .update({
         estado_id: 12, // Finalizado
         asignado_a: "completado",
@@ -187,7 +187,7 @@ export default function Bodega() {
   =========================================================== */
   async function loadHistorial() {
     const { data, error } = await supabase
-      .from("pedidos_produccion")
+      .from(st("pedidos_produccion"))
       .select(`
         id,
         fecha_entrega_de_materias_primas_e_insumos,
@@ -205,7 +205,7 @@ export default function Bodega() {
   // ==========================
   async function cargarObservaciones(pedidoId) {
     const { data, error } = await supabase
-      .from("observaciones_pedido")
+      .from(st("observaciones_pedido"))
       .select("*")
       .eq("pedido_id", pedidoId)
       .order("created_at", { ascending: false });
@@ -220,7 +220,7 @@ export default function Bodega() {
   async function addObs() {
     if (!newObs.trim() || !selected) return;
 
-    const { error } = await supabase.from("observaciones_pedido").insert([{
+    const { error } = await supabase.from(st("observaciones_pedido")).insert([{
       pedido_id: selected.id,
       usuario: usuarioActual?.usuario || "Bodega",
       observacion: newObs,
@@ -269,7 +269,7 @@ export default function Bodega() {
     try {
       // 1. Cargar items del pedido
       const { data: items, error: errItems } = await supabase
-        .from("pedidos_bodega_items")
+        .from(st("pedidos_bodega_items"))
         .select("*")
         .eq("pedido_id", p.id)
         .order("id", { ascending: true });
@@ -279,7 +279,7 @@ export default function Bodega() {
       if (items && items.length > 0) {
         // 2. Cargar catálogo de materias primas para cruzar nombres
         const { data: catalogo, error: errCat } = await supabase
-          .from("MateriasPrimas")
+          .from(st("MateriasPrimas"))
           .select("REFERENCIA, ARTICULO, UNIDAD");
 
         if (errCat) throw errCat;
@@ -307,7 +307,7 @@ export default function Bodega() {
   =========================================================== */
   async function toggleItemCompletado(item) {
     const { error } = await supabase
-      .from("pedidos_bodega_items")
+      .from(st("pedidos_bodega_items"))
       .update({ completado: !item.completado, updated_at: new Date().toISOString() })
       .eq("id", item.id);
 
@@ -335,7 +335,7 @@ export default function Bodega() {
 
   async function saveItem(item) {
     const { error } = await supabase
-      .from("pedidos_bodega_items")
+      .from(st("pedidos_bodega_items"))
       .update({
         cantidad_entregada: item.cantidad_entregada,
         observacion: item.observacion,
@@ -402,7 +402,7 @@ export default function Bodega() {
       // AVANZAR A PRODUCCION (Estado 5)
       const ahora = new Date().toISOString();
       const { error } = await supabase
-        .from("pedidos_produccion")
+        .from(st("pedidos_produccion"))
         .update({
           fecha_entrega_de_materias_primas_e_insumos: ahora,
           estado_id: 5,

@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
-import { supabase } from "../api/supabaseClient";
+import { supabase, st } from "../api/supabaseClient";
 import { useAuth } from "../context/AuthContext";
 import "./Compras.css";
 
@@ -30,7 +30,7 @@ export default function Compras() {
   async function loadSolicitudes() {
     // 1(Pendiente), 17(Rev), 18(Ger), 23(CrearOC), 24(RevOC), 19(Comprar), 14(Fin)
     const { data, error } = await supabase
-      .from("solicitudes")
+      .from(st("solicitudes"))
       .select(`
         *,
         tipos_solicitud ( nombre ),
@@ -116,7 +116,7 @@ export default function Compras() {
         estado_aprobacion: extraFields.estado_aprobacion || null
       };
       // Upsert simple logic
-      await supabase.from("aprobaciones").upsert(payload, { onConflict: "solicitud_id" });
+      await supabase.from(st("aprobaciones")).upsert(payload, { onConflict: "solicitud_id" });
     }
 
     // 2. Actualizar solicitud
@@ -124,7 +124,7 @@ export default function Compras() {
     if (extraFields.accion_realizada) updatePayload.accion_realizada = extraFields.accion_realizada;
     if (extraFields.fecha_cierre) updatePayload.fecha_cierre = extraFields.fecha_cierre;
 
-    const { error } = await supabase.from("solicitudes").update(updatePayload).eq("id", id);
+    const { error } = await supabase.from(st("solicitudes")).update(updatePayload).eq("id", id);
 
     if (error) {
       setError(error.message);

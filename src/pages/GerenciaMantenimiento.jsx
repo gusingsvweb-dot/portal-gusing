@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
-import { supabase } from "../api/supabaseClient";
+import { supabase, st } from "../api/supabaseClient";
 import { useNavigate } from "react-router-dom"; // Importar hook
 import "./Mantenimiento.css"; // Reusing styles
 
@@ -16,7 +16,7 @@ export default function GerenciaMantenimiento() {
     // ============================
     async function loadSolicitudes() {
         const { data, error } = await supabase
-            .from("solicitudes")
+            .from(st("solicitudes"))
             .select(`
         *,
         tipos_solicitud ( nombre ),

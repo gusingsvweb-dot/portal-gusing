@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { supabase } from "../api/supabaseClient";
+import { supabase, st } from "../api/supabaseClient";
 import Navbar from "../components/navbar.jsx";
 import Footer from "../components/Footer";
 import { notifyRoles } from "../api/notifications";
@@ -19,7 +19,7 @@ export default function AutorizarDespachos() {
     async function cargarPendientesAutorizar() {
         setLoading(true);
         const { data } = await supabase
-            .from("pedidos_produccion")
+            .from(st("pedidos_produccion"))
             .select(`
         *,
         productos ( articulo ),
@@ -39,7 +39,7 @@ export default function AutorizarDespachos() {
         const fechaHoy = new Date().toISOString().slice(0, 10);
 
         const { error } = await supabase
-            .from("pedidos_produccion")
+            .from(st("pedidos_produccion"))
             .update({
                 estado_id: 13, // Mantiene estado 13 (Pendiente)
                 asignado_a: "bodega", // Devuelve a bodega

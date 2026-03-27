@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { supabase } from "../api/supabaseClient";
+import { supabase, st } from "../api/supabaseClient";
 import Navbar from "../components/navbar.jsx";
 import { useAuth } from "../context/AuthContext";
 import "./CalendarioProduccion.css";
@@ -60,7 +60,7 @@ export default function CalendarioProduccion() {
         const end = new Date(year, month + 1, 0).toISOString();
 
         const { data, error } = await supabase
-            .from("tareas_produccion")
+            .from(st("tareas_produccion"))
             .select("*")
             .gte("fecha", start)
             .lte("fecha", end);
@@ -126,7 +126,7 @@ export default function CalendarioProduccion() {
             created_by: usuarioActual?.usuario?.id
         };
 
-        const { error } = await supabase.from("tareas_produccion").insert([nuevaTarea]);
+        const { error } = await supabase.from(st("tareas_produccion")).insert([nuevaTarea]);
 
         if (error) {
             alert("Error al guardar tarea");

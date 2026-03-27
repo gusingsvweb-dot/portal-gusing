@@ -1,7 +1,7 @@
 // src/pages/Acondicionamiento.jsx
 import React, { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { supabase } from "../api/supabaseClient";
+import { supabase, st } from "../api/supabaseClient";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
 import { useAuth } from "../context/AuthContext";
@@ -32,7 +32,7 @@ export default function Acondicionamiento() {
 
   async function loadHistorial() {
     const { data, error } = await supabase
-      .from("pedidos_produccion")
+      .from(st("pedidos_produccion"))
       .select(`
         id,
         productos ( articulo ),
@@ -75,7 +75,7 @@ export default function Acondicionamiento() {
 ============================================================ */
   async function loadPedidos() {
     const { data, error } = await supabase
-      .from("pedidos_produccion")
+      .from(st("pedidos_produccion"))
       .select(`
         *,
         productos ( articulo, presentacion_comercial ),
@@ -115,7 +115,7 @@ export default function Acondicionamiento() {
   ============================================================ */
   async function cargarObservaciones(id) {
     const { data } = await supabase
-      .from("observaciones_pedido")
+      .from(st("observaciones_pedido"))
       .select("*")
       .eq("pedido_id", id)
       .order("created_at", { ascending: false });
@@ -129,7 +129,7 @@ export default function Acondicionamiento() {
   async function cargarEtapasPedido(pedidoId) {
     if (!pedidoId) return;
     const { data, error } = await supabase
-      .from("pedido_etapas")
+      .from(st("pedido_etapas"))
       .select("*")
       .eq("pedido_id", pedidoId)
       .order("orden", { ascending: true });
@@ -162,7 +162,7 @@ export default function Acondicionamiento() {
   async function addObs() {
     if (!newObs.trim()) return;
 
-    const { error } = await supabase.from("observaciones_pedido").insert([
+    const { error } = await supabase.from(st("observaciones_pedido")).insert([
       {
         pedido_id: selected.id,
         usuario: rolUsuario,
@@ -188,7 +188,7 @@ export default function Acondicionamiento() {
 
     try {
       const { error } = await supabase
-        .from("pedido_etapas")
+        .from(st("pedido_etapas"))
         .update({
           estado: "completada",
           fecha_inicio: etapaParticulas.fecha_inicio || new Date().toISOString(),
@@ -198,7 +198,7 @@ export default function Acondicionamiento() {
 
       if (error) throw error;
 
-      await supabase.from("observaciones_pedido").insert({
+      await supabase.from(st("observaciones_pedido")).insert({
         pedido_id: selected.id,
         usuario: "Acondicionamiento",
         observacion: "📌 REVISIÓN DE PARTÍCULAS VISIBLES: Completada en Acondicionamiento."
@@ -236,7 +236,7 @@ export default function Acondicionamiento() {
     };
 
     const { error } = await supabase
-      .from("pedidos_produccion")
+      .from(st("pedidos_produccion"))
       .update(update)
       .eq("id", selected.id);
 
@@ -281,7 +281,7 @@ export default function Acondicionamiento() {
     };
 
     const { error } = await supabase
-      .from("pedidos_produccion")
+      .from(st("pedidos_produccion"))
       .update(update)
       .eq("id", selected.id);
 

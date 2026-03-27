@@ -1,7 +1,7 @@
 // src/pages/Produccion.jsx
 import React, { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
-import { supabase } from "../api/supabaseClient";
+import { supabase, st } from "../api/supabaseClient";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
 import { useAuth } from "../context/AuthContext";
@@ -226,13 +226,13 @@ export default function Produccion() {
         // 1. Update pedidos_bodega_items (sumar a cantidad_devuelta)
         const devueltosActuales = Number(it.cantidad_devuelta || 0) + Number(it.devolver);
         await supabase
-          .from("pedidos_bodega_items")
+          .from(st("pedidos_bodega_items"))
           .update({ cantidad_devuelta: devueltosActuales })
           .eq("id", it.id);
 
         // 2. Update MateriasPrimas (sumar a stock_actual)
         const { data: mpData } = await supabase
-          .from("MateriasPrimas")
+          .from(st("MateriasPrimas"))
           .select("stock_actual")
           .eq("REFERENCIA", it.referencia_materia_prima)
           .single();
@@ -240,7 +240,7 @@ export default function Produccion() {
         const nuevoStock = Number(mpData?.stock_actual || 0) + Number(it.devolver);
 
         await supabase
-          .from("MateriasPrimas")
+          .from(st("MateriasPrimas"))
           .update({ stock_actual: nuevoStock })
           .eq("REFERENCIA", it.referencia_materia_prima);
 
@@ -248,7 +248,7 @@ export default function Produccion() {
       }
 
       // 3. Crear observación en pedido
-      await supabase.from("observaciones_pedido").insert({
+      await supabase.from(st("observaciones_pedido")).insert({
         pedido_id: selected.id,
         usuario: usuarioActual?.usuario || "Producción",
         observacion: `♻️ DEVOLUCIÓN DE SOBRANTES DE MP`
@@ -277,7 +277,7 @@ export default function Produccion() {
     if (!pedidoId || !areaMicroId) return;
 
     const { data, error } = await supabase
-      .from("solicitudes")
+      .from(st("solicitudes"))
       .select("id")
       .eq("consecutivo", pedidoId)
       .eq("area_id", areaMicroId)
@@ -296,7 +296,7 @@ export default function Produccion() {
 
     // 1. Cargar items del pedido (SIN JOIN para evitar error de FK)
     const { data: items, error: errItems } = await supabase
-      .from("pedidos_bodega_items")
+      .from(st("pedidos_bodega_items"))
       .select("*")
       .eq("pedido_id", pedidoId)
       .order("id", { ascending: true });
@@ -308,7 +308,7 @@ export default function Produccion() {
 
     // 2. Cargar catálogo de materias primas para cruzar nombres
     const { data: catalogo, error: errCat } = await supabase
-      .from("MateriasPrimas")
+      .from(st("MateriasPrimas"))
       .select("REFERENCIA, ARTICULO, UNIDAD");
 
     if (errCat) {
@@ -405,11 +405,11 @@ export default function Produccion() {
   ============================================================ */
   useEffect(() => {
     async function loadSolicitudCatalogos() {
-      const { data: a, error: ea } = await supabase.from("areas").select("*");
-      const { data: t, error: et } = await supabase.from("tipos_solicitud").select("*");
-      const { data: p, error: ep } = await supabase.from("prioridades").select("*");
+      const { data: a, error: ea } = await supabase.from(st("areas")).select("*");
+      const { data: t, error: et } = await supabase.from(st("tipos_solicitud")).select("*");
+      const { data: p, error: ep } = await supabase.from(st("prioridades")).select("*");
       const { data: f, error: ef } = await supabase
-        .from("flujos_forma")
+        .from(st("flujos_forma"))
         .select("*")
         .eq("activo", true);
 
@@ -435,7 +435,7 @@ export default function Produccion() {
   }, []);
 
   async function loadMateriales() {
-    const { data, error } = await supabase.from("MateriasPrimas").select("*").order("ARTICULO", { ascending: true });
+    const { data, error } = await supabase.from(st("MateriasPrimas")).select("*").order("ARTICULO", { ascending: true });
     if (error) console.error("Error cargando materias primas:", error);
     else setMaterialesCatalogo(data || []);
   }
@@ -462,7 +462,7 @@ export default function Produccion() {
   ============================================================ */
   async function loadPedidos() {
     const { data, error } = await supabase
-      .from("pedidos_produccion")
+      .from(st("pedidos_produccion"))
       .select(
         `
         *,
@@ -517,7 +517,7 @@ export default function Produccion() {
 
     async function loadEtapasBatch() {
       const { data } = await supabase
-        .from("pedido_etapas")
+        .from(st("pedido_etapas"))
         .select("pedido_id, nombre, estado, orden")
         .in("pedido_id", pedidosEnEtapas)
         .neq("estado", "completada");
@@ -593,7 +593,7 @@ export default function Produccion() {
   ============================================================ */
   async function cargarObservaciones(pedidoId) {
     const { data, error } = await supabase
-      .from("observaciones_pedido")
+      .from(st("observaciones_pedido"))
       .select("*")
       .eq("pedido_id", pedidoId)
       .order("created_at", { ascending: false });
@@ -614,7 +614,7 @@ export default function Produccion() {
     setEtapasLoading(true);
 
     const { data, error } = await supabase
-      .from("pedido_etapas")
+      .from(st("pedido_etapas"))
       .select("*, pedido_etapas_liberaciones(*)")
       .eq("pedido_id", pedidoId)
       .order("orden", { ascending: true });
@@ -673,7 +673,7 @@ export default function Produccion() {
     await loadPedidos();
 
     const { data, error } = await supabase
-      .from("pedidos_produccion")
+      .from(st("pedidos_produccion"))
       .select(
         `
         *,
@@ -735,7 +735,7 @@ export default function Produccion() {
         return;
       }
 
-      const { error: errItems } = await supabase.from("pedidos_bodega_items").insert(rawInserts);
+      const { error: errItems } = await supabase.from(st("pedidos_bodega_items")).insert(rawInserts);
       if (errItems) {
         console.error("Error guardando items adicionales:", errItems);
         alert("Error al guardar items adicionales.");
@@ -779,7 +779,7 @@ export default function Produccion() {
         }));
 
       if (rawInserts.length > 0) {
-        const { error: errItems } = await supabase.from("pedidos_bodega_items").insert(rawInserts);
+        const { error: errItems } = await supabase.from(st("pedidos_bodega_items")).insert(rawInserts);
         if (errItems) {
           console.error("Error guardando items de bodega:", errItems);
           alert("Error al guardar la lista de materiales.");
@@ -798,7 +798,7 @@ export default function Produccion() {
     }
 
     const { error } = await supabase
-      .from("pedidos_produccion")
+      .from(st("pedidos_produccion"))
       .update({
         fecha_solicitud_materias_primas: ahoraISO(),
         asignado_a: "bodega",
@@ -843,7 +843,7 @@ export default function Produccion() {
     }
 
     // 1. Agregar observación
-    const { error: errObs } = await supabase.from("observaciones_pedido").insert([{
+    const { error: errObs } = await supabase.from(st("observaciones_pedido")).insert([{
       pedido_id: selected.id,
       usuario: usuarioActual?.usuario || "Producción",
       observacion: `🚫 DEVOLUCIÓN A BODEGA (Material Incompleto): ${razon}`
@@ -853,7 +853,7 @@ export default function Produccion() {
 
     // 2. Cambiar estado y asignación
     const { error } = await supabase
-      .from("pedidos_produccion")
+      .from(st("pedidos_produccion"))
       .update({
         estado_id: 4, // Vuelve a Esperando Materia Prima
         asignado_a: "bodega",
@@ -869,7 +869,7 @@ export default function Produccion() {
 
     // 3. Resetear items para que bodega los vuelva a marcar
     await supabase
-      .from("pedidos_bodega_items")
+      .from(st("pedidos_bodega_items"))
       .update({ completado: false })
       .eq("pedido_id", selected.id);
 
@@ -914,7 +914,7 @@ export default function Produccion() {
 
     // 0) Si ya existen, no duplicar
     const { data: ya, error: errYa } = await supabase
-      .from("pedido_etapas")
+      .from(st("pedido_etapas"))
       .select("id")
       .eq("pedido_id", pedido.id)
       .limit(1);
@@ -947,7 +947,7 @@ export default function Produccion() {
     // Nota: Aunque ya tenemos 'flujos' en estado, aquí hacemos la query segura 
     // para obtener el ID exacto y asegurarnos que existe en BD al momento de crear.
     const { data: flujo, error: errFlujo } = await supabase
-      .from("flujos_forma")
+      .from(st("flujos_forma"))
       .select("id, forma_farmaceutica, activo")
       .ilike("forma_farmaceutica", forma.trim())   // ayuda por mayúsculas
       .eq("activo", true)
@@ -978,7 +978,7 @@ export default function Produccion() {
 
     // 2) Traer catálogo de etapas del flujo
     const { data: cat, error: errCat } = await supabase
-      .from("flujos_forma_etapas")
+      .from(st("flujos_forma_etapas"))
       .select("flujo_id, orden, nombre, requiere_liberacion, rol_liberador")
       .eq("flujo_id", flujo.id)
       .order("orden", { ascending: true });
@@ -1023,7 +1023,7 @@ export default function Produccion() {
 
 
 
-    const { error: errIns } = await supabase.from("pedido_etapas").insert(inserts);
+    const { error: errIns } = await supabase.from(st("pedido_etapas")).insert(inserts);
     if (errIns) {
       console.error("❌ [crearEtapasParaPedidoSiNoExisten] insert pedido_etapas:", errIns);
       throw errIns;
@@ -1031,7 +1031,7 @@ export default function Produccion() {
 
     // 4) Crear liberaciones pendientes para las que requieren liberación
     const { data: creadas, error: errCreadas } = await supabase
-      .from("pedido_etapas")
+      .from(st("pedido_etapas"))
       .select("id, rol_liberador, requiere_liberacion")
       .eq("pedido_id", pedido.id)
       .eq("requiere_liberacion", true);
@@ -1058,7 +1058,7 @@ export default function Produccion() {
 
     if (libInserts.length) {
       const { error: errLib } = await supabase
-        .from("pedido_etapas_liberaciones")
+        .from(st("pedido_etapas_liberaciones"))
         .insert(libInserts);
 
       if (errLib) {
@@ -1119,7 +1119,7 @@ export default function Produccion() {
     // Usamos REFERENCIA para enlazar, ya que no tenemos el ID directo visible a veces
     if (!formaEsValida && solForm.formaManual && selected.referencia) {
       const { error: errProd } = await supabase
-        .from("productos")
+        .from(st("productos"))
         .update({ forma_farmaceutica: solForm.formaManual })
         .eq("referencia", selected.referencia);
 
@@ -1127,7 +1127,7 @@ export default function Produccion() {
     }
 
     // 1) Crear solicitud
-    const { error: errSol } = await supabase.from("solicitudes").insert([
+    const { error: errSol } = await supabase.from(st("solicitudes")).insert([
       {
         tipo_solicitud_id: solForm.tipo_solicitud_id,
         prioridad_id: solForm.prioridad_id,
@@ -1150,7 +1150,7 @@ export default function Produccion() {
 
     // 2) Actualizar pedido: fecha_entrada_mb y pasar a estado 8
     const { error: errPedido } = await supabase
-      .from("pedidos_produccion")
+      .from(st("pedidos_produccion"))
       .update({
         fecha_entrada_mb: hoyISO(),
         estado_id: 8,
@@ -1230,7 +1230,7 @@ export default function Produccion() {
           // A) Crear la solicitud unificada en la tabla solicitudes
           const descLote = `[LOTE_DESPIROGENIZACION] IDs Seleccionados: ${listaIds}. Solicitado por Producción para proceso conjunto.`;
           
-          const { error: errSol } = await supabase.from("solicitudes").insert([
+          const { error: errSol } = await supabase.from(st("solicitudes")).insert([
             {
               tipo_solicitud_id: 1, // Análisis Microbiológico
               prioridad_id: 2, // Normal
@@ -1247,7 +1247,7 @@ export default function Produccion() {
 
           // B) Actualizar cada pedido en el lote
           for (const p of seleccionados) {
-            await supabase.from("pedidos_produccion").update({
+            await supabase.from(st("pedidos_produccion")).update({
               fecha_entrada_mb: hoyISO(),
               estado_id: 8,
               asignado_a: "produccion"
@@ -1307,7 +1307,7 @@ export default function Produccion() {
       // NUEVO: Guardar forma manual en el producto si se usó (y era diferente/inválida original)
       if (formaManual && formaManual !== formaProd && selected.producto_id) {
         const { error: errProd } = await supabase
-          .from("productos")
+          .from(st("productos"))
           .update({ forma_farmaceutica: formaManual })
           .eq("id", selected.producto_id);
 
@@ -1320,7 +1320,7 @@ export default function Produccion() {
 
       // 3. Actualizar pedido directo a estado 8
       const { error: errUpd } = await supabase
-        .from("pedidos_produccion")
+        .from(st("pedidos_produccion"))
         .update({
           fecha_entrada_mb: hoyISO(), // Se marca como cumplido este hito
           estado_id: 8,
@@ -1368,7 +1368,7 @@ export default function Produccion() {
     // 1. Actualizar el estado de la etapa
     if (etapaActual.requiere_liberacion) {
       const { error } = await supabase
-        .from("pedido_etapas")
+        .from(st("pedido_etapas"))
         .update({
           estado: ESTADO_ETAPA.EN_REVISION,
           fecha_inicio: etapaActual.fecha_inicio || ahoraISO(),
@@ -1383,7 +1383,7 @@ export default function Produccion() {
 
       // Resetear liberaciones previas (por si fue rechazada antes)
       await supabase
-        .from("pedido_etapas_liberaciones")
+        .from(st("pedido_etapas_liberaciones"))
         .update({ liberada: false, comentario: "", usuario_id: null })
         .eq("pedido_etapa_id", etapaActual.id);
 
@@ -1409,7 +1409,7 @@ export default function Produccion() {
     } else {
       // ✅ SI NO REQUIERE LIBERACIÓN: Producción sí puede completarla
       const { error } = await supabase
-        .from("pedido_etapas")
+        .from(st("pedido_etapas"))
         .update({
           estado: ESTADO_ETAPA.COMPLETADA,
           fecha_inicio: etapaActual.fecha_inicio || ahoraISO(),
@@ -1536,7 +1536,7 @@ export default function Produccion() {
       }
 
       const { error } = await supabase
-        .from("pedidos_produccion")
+        .from(st("pedidos_produccion"))
         .update({ estado_id: 2, asignado_a: "produccion" })
         .eq("id", selected.id);
 
@@ -1617,7 +1617,7 @@ export default function Produccion() {
     }
 
     const { error } = await supabase
-      .from("pedidos_produccion")
+      .from(st("pedidos_produccion"))
       .update(update)
       .eq("id", selected.id);
 
@@ -1654,7 +1654,7 @@ export default function Produccion() {
     if (!selected) return alert("No hay pedido seleccionado.");
     if (!newObs.trim()) return;
 
-    const { error } = await supabase.from("observaciones_pedido").insert([
+    const { error } = await supabase.from(st("observaciones_pedido")).insert([
       {
         pedido_id: selected.id,
         usuario: rolUsuario,
@@ -1943,7 +1943,7 @@ export default function Produccion() {
 
     try {
       // 1. Insertar observación con motivo
-      const { error: errObs } = await supabase.from("observaciones_pedido").insert([{
+      const { error: errObs } = await supabase.from(st("observaciones_pedido")).insert([{
         pedido_id: selected.id,
         usuario: usuarioActual?.usuario || usuarioActual?.email || "Producción",
         observacion: `🚫 PEDIDO CANCELADO. Motivo: ${cancelReason}`
@@ -1952,7 +1952,7 @@ export default function Produccion() {
 
       // 2. Actualizar estado a 22 (Cancelado)
       const { error: errUpd } = await supabase
-        .from("pedidos_produccion")
+        .from(st("pedidos_produccion"))
         .update({ estado_id: 22, asignado_a: null })
         .eq("id", selected.id);
 

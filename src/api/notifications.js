@@ -1,11 +1,11 @@
-import { supabase } from "./supabaseClient";
+import { supabase, st } from "./supabaseClient";
 
 /**
  * Envía una notificación a un usuario específico.
  */
 export async function notifyUser(userId, titulo, mensaje, pedidoId = null) {
     try {
-        const { error } = await supabase.from("notificaciones").insert([
+        const { error } = await supabase.from(st("notificaciones")).insert([
             {
                 user_id: userId,
                 titulo,
@@ -34,7 +34,7 @@ export async function notifyRoles(roles, titulo, mensaje, pedidoId = null, tipo 
 
         // 2. Buscar TODOS los usuarios y filtrar en memoria por tolerancia a tildes/espacios
         const { data: allUsers, error: errUsers } = await supabase
-            .from("usuarios")
+            .from(st("usuarios"))
             .select("id, rol");
 
         if (errUsers) throw errUsers;
@@ -67,7 +67,7 @@ export async function notifyRoles(roles, titulo, mensaje, pedidoId = null, tipo 
 
         // 4. Insertar
         const { error: errIns } = await supabase
-            .from("notificaciones")
+            .from(st("notificaciones"))
             .insert(notificaciones);
 
         if (errIns) throw errIns;
@@ -88,7 +88,7 @@ export async function notifyRoles(roles, titulo, mensaje, pedidoId = null, tipo 
 export async function checkAndNotifyFlowCompletion(pedidoId) {
     try {
         const { data: etapas, error } = await supabase
-            .from("pedido_etapas")
+            .from(st("pedido_etapas"))
             .select("estado, nombre")
             .eq("pedido_id", pedidoId);
 

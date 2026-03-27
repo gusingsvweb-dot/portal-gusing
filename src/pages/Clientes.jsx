@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "../api/supabaseClient";
+import { supabase, st } from "../api/supabaseClient";
 import { useNotifications } from "../context/NotificationsContext";
 import { useTheme } from "../context/ThemeContext";
 import Navbar from "../components/navbar";
@@ -37,7 +37,7 @@ export default function Clientes() {
         try {
             setLoading(true);
             const { data, error } = await supabase
-                .from('clientes')
+                .from(st('clientes'))
                 .select('*')
                 .order('created_at', { ascending: false });
 
@@ -70,7 +70,7 @@ export default function Clientes() {
 
         try {
             const { data, error } = await supabase
-                .from('clientes')
+                .from(st('clientes'))
                 .insert([
                     {
                         nombre: formData.nombre.trim(),

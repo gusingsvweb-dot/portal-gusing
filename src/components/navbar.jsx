@@ -3,11 +3,13 @@ import "./Navbar.css";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationsContext";
 import { useTheme } from "../context/ThemeContext";
+import { useConfig } from "../context/ConfigContext";
 import { useMemo, useState, useEffect, useRef } from "react";
 
 export default function Navbar() {
   const { usuarioActual, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { isNoOficial, setIsNoOficial } = useConfig();
   const navigate = useNavigate();
 
   const rol = usuarioActual?.rol || "general";
@@ -343,6 +345,23 @@ export default function Navbar() {
           title={`Activar modo ${theme === 'light' ? 'oscuro' : 'claro'}`}
         >
           {theme === 'light' ? '🌙' : '☀️'}
+        </button>
+
+        <button
+          className="nav-theme-toggle"
+          onClick={() => setIsNoOficial(!isNoOficial)}
+          title={`Cambiar a versión ${isNoOficial ? 'Oficial' : 'No Oficial'}`}
+          style={{ 
+            backgroundColor: isNoOficial ? '#fef2f2' : 'transparent',
+            border: isNoOficial ? '1px solid #ef4444' : 'none',
+            borderRadius: '8px',
+            color: isNoOficial ? '#b91c1c' : 'inherit'
+          }}
+        >
+          {isNoOficial ? '🧪' : '🏢'}
+          <span style={{ fontSize: '10px', marginLeft: '4px', fontWeight: 'bold' }}>
+            {isNoOficial ? 'NO' : 'OF'}
+          </span>
         </button>
 
         <button className="nav-logout" onClick={cerrarSesion}>

@@ -1,7 +1,7 @@
 // src/pages/Microbiologia.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { supabase } from "../api/supabaseClient";
+import { supabase, st } from "../api/supabaseClient";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
 import { useAuth } from "../context/AuthContext";
@@ -204,13 +204,13 @@ export default function Microbiologia() {
   useEffect(() => {
     async function init() {
       // 1. Cargar área
-      const { data: areasData } = await supabase.from("areas").select("*");
+      const { data: areasData } = await supabase.from(st("areas")).select("*");
       const areaMB = (areasData || []).find(x => (x.nombre || "").toLowerCase().includes("micro"));
       setAreaMicroId(areaMB?.id || null);
 
       // 2. Cargar responsables MB
       const { data: resp } = await supabase
-        .from("responsables_liberacion")
+        .from(st("responsables_liberacion"))
         .select("*")
         .eq("area", "microbiologia")
         .eq("activo", true);
@@ -283,7 +283,7 @@ export default function Microbiologia() {
   // 1. Etapas Intermedias (FIX BUG: solo en_revision)
   async function loadEtapasIntermedias() {
     const { data, error } = await supabase
-      .from("pedido_etapas")
+      .from(st("pedido_etapas"))
       .select(`
         *,
         pedidos_produccion (
@@ -310,7 +310,7 @@ export default function Microbiologia() {
   async function loadSolicitudesIniciales() {
     if (!areaMicroId) return;
     const { data, error } = await supabase
-      .from("solicitudes")
+      .from(st("solicitudes"))
       .select(`
         *,
         tipos_solicitud ( nombre ),
@@ -333,7 +333,7 @@ export default function Microbiologia() {
       const ids = solis.map(s => s.consecutivo).filter(Boolean);
       if (ids.length > 0) {
         const { data: pedidos } = await supabase
-          .from("pedidos_produccion")
+          .from(st("pedidos_produccion"))
           .select("id, fecha_inicio_analisis_mb, productos(articulo, forma_farmaceutica)")
           .in("id", ids);
 
@@ -365,7 +365,7 @@ export default function Microbiologia() {
     if (tipo === 'solicitud') {
       // Intentar traer datos del pedido para mayor detalle
       const { data: pedido } = await supabase
-        .from("pedidos_produccion")
+        .from(st("pedidos_produccion"))
         .select(`
           *,
           productos ( articulo, forma_farmaceutica ),
@@ -394,7 +394,7 @@ export default function Microbiologia() {
   // ==========================
   async function cargarObservaciones(pedidoId) {
     const { data, error } = await supabase
-      .from("observaciones_pedido")
+      .from(st("observaciones_pedido"))
       .select("*")
       .eq("pedido_id", pedidoId)
       .order("created_at", { ascending: false });
@@ -411,7 +411,7 @@ export default function Microbiologia() {
     const pid = selected.tipoItem === 'etapa' ? selected.pedido_id : selected.consecutivo;
     if (!pid) return alert("No se puede agregar observación sin pedido vinculado.");
 
-    const { error } = await supabase.from("observaciones_pedido").insert([{
+    const { error } = await supabase.from(st("observaciones_pedido")).insert([{
       pedido_id: pid,
       usuario: usuarioActual?.usuario || "Microbiología",
       observacion: newObs,
@@ -436,7 +436,7 @@ export default function Microbiologia() {
 
     // 1) Traer todas las etapas del pedido
     const { data: etapas, error: errE } = await supabase
-      .from("pedido_etapas")
+      .from(st("pedido_etapas"))
       .select("id, orden, nombre, rol_liberador, requiere_liberacion, estado, fecha_inicio, fecha_fin")
       .eq("pedido_id", pedidoId)
       .order("orden", { ascending: true });
@@ -453,7 +453,7 @@ export default function Microbiologia() {
 
     if (etapaIds.length) {
       const { data: l, error: errL } = await supabase
-        .from("pedido_etapas_liberaciones")
+        .from(st("pedido_etapas_liberaciones"))
         .select("*")
         .in("pedido_etapa_id", etapaIds)
         .order("created_at", { ascending: false });
@@ -488,7 +488,7 @@ export default function Microbiologia() {
   async function loadHistorialGlobal() {
     // 1) Liberaciones de etapas hechas por Microbiología
     const { data: dataEtapas, error: errEtapas } = await supabase
-      .from("pedido_etapas_liberaciones")
+      .from(st("pedido_etapas_liberaciones"))
       .select(`
         id,
         created_at,
@@ -512,7 +512,7 @@ export default function Microbiologia() {
 
     // 2) Solicitudes de liberación completadas (estado_id = 2)
     const { data: dataSolicitudes, error: errSols } = await supabase
-      .from("solicitudes")
+      .from(st("solicitudes"))
       .select(`
         id,
         consecutivo,
@@ -536,7 +536,7 @@ export default function Microbiologia() {
     const mappingPedidos = {};
     if (pedidoIds.length > 0) {
       const { data: dataP } = await supabase
-        .from("pedidos_produccion")
+        .from(st("pedidos_produccion"))
         .select("id, op, lote, productos(articulo)")
         .in("id", pedidoIds);
       (dataP || []).forEach(p => {
@@ -601,7 +601,7 @@ export default function Microbiologia() {
 
         // 1) Marcar liberación en tabla liberaciones
         const { error: errLib } = await supabase
-          .from("pedido_etapas_liberaciones")
+          .from(st("pedido_etapas_liberaciones"))
           .update(updateData)
           .eq("pedido_etapa_id", selected.id)
           .eq("rol", "microbiologia");
@@ -615,7 +615,7 @@ export default function Microbiologia() {
 
         // 2) Verificar si ya todos liberaron para cerrar etapa
         const { data: todasLibs, error: errCheck } = await supabase
-          .from("pedido_etapas_liberaciones")
+          .from(st("pedido_etapas_liberaciones"))
           .select("liberada")
           .eq("pedido_etapa_id", selected.id);
 
@@ -633,7 +633,7 @@ export default function Microbiologia() {
           if (nuevoEstado === "completada") updateObj.fecha_fin = ahoraISO();
 
           const { error: errEt } = await supabase
-            .from("pedido_etapas")
+            .from(st("pedido_etapas"))
             .update(updateObj)
             .eq("id", selected.id);
 
@@ -646,7 +646,7 @@ export default function Microbiologia() {
 
         // 2.5) Guardar en historial oficial (observaciones_pedido) si hay comentario
         if (currentComment && currentComment.trim()) {
-          await supabase.from("observaciones_pedido").insert({
+          await supabase.from(st("observaciones_pedido")).insert({
             pedido_id: selected.pedido_id,
             usuario: usuarioActual?.usuario || "Microbiología",
             observacion: `✅ ETAPA LIBERADA (${selected.nombre}): ${currentComment}`,
@@ -690,7 +690,7 @@ export default function Microbiologia() {
 
         // 1) Guardar en liberaciones
         const { error: errLib } = await supabase
-          .from("pedido_etapas_liberaciones")
+          .from(st("pedido_etapas_liberaciones"))
           .update({
             liberada: false,
             usuario_id: usuarioActual?.id || null, // UUID
@@ -708,7 +708,7 @@ export default function Microbiologia() {
 
         // 2) Devolver a pendiente
         const { error: errEtapa } = await supabase
-          .from("pedido_etapas")
+          .from(st("pedido_etapas"))
           .update({ estado: "pendiente" })
           .eq("id", selected.id);
 
@@ -720,7 +720,7 @@ export default function Microbiologia() {
         }
 
         // 3) Guardar observación oficial del pedido
-        await supabase.from("observaciones_pedido").insert({
+        await supabase.from(st("observaciones_pedido")).insert({
           pedido_id: selected.pedido_id,
           usuario: usuarioActual?.usuario || "Microbiología",
           observacion: `❌ ETAPA RECHAZADA (${selected.nombre}): ${currentComment}`,
@@ -755,7 +755,7 @@ export default function Microbiologia() {
         setAccionLoading(true);
 
         const { error } = await supabase
-          .from("solicitudes")
+          .from(st("solicitudes"))
           .update({
             estado_id: 3, // 3 asumimos como Rechazado
             accion_realizada: `Rechazado: ${currentComment}`
@@ -770,7 +770,7 @@ export default function Microbiologia() {
 
         // Guardar en historial oficial
         if (selected.consecutivo) {
-          await supabase.from("observaciones_pedido").insert({
+          await supabase.from(st("observaciones_pedido")).insert({
             pedido_id: selected.consecutivo,
             usuario: usuarioActual?.usuario || "Microbiología",
             observacion: `❌ SOLICITUD RECHAZADA (${selected.tipos_solicitud?.nombre || 'General'}): ${currentComment}`,
@@ -816,7 +816,7 @@ export default function Microbiologia() {
 
         // 1. Marcar la solicitud como liberada
         const { error: errSol } = await supabase
-          .from("solicitudes")
+          .from(st("solicitudes"))
           .update(updateData)
           .eq("id", selected.id);
 
@@ -872,14 +872,14 @@ export default function Microbiologia() {
     const accionBase = esEsterilizacion ? "✅ TIRILLA APROBADA" : "✅ LIBERACIÓN INICIAL MB";
     const obsTexto = comment ? `${accionBase}: ${comment}` : `${accionBase}`;
 
-    await supabase.from("observaciones_pedido").insert({
+    await supabase.from(st("observaciones_pedido")).insert({
       pedido_id: pid,
       usuario: usuarioActual?.usuario || "Microbiología",
       observacion: obsTexto,
     });
 
     // Actualizar pedido
-    await supabase.from("pedidos_produccion").update({ 
+    await supabase.from(st("pedidos_produccion")).update({ 
       fecha_salida_mb: ahoraISO(),
     }).eq("id", pid);
 
@@ -899,7 +899,7 @@ export default function Microbiologia() {
   async function procesarLiberacionAutomaticaEtapa(pid, comment, nAnalisis, respManual) {
     // 1. Buscar la etapa activa que sea Lavado o Despirogenización para este pedido
     const { data: etapas } = await supabase
-      .from("pedido_etapas")
+      .from(st("pedido_etapas"))
       .select("id, nombre")
       .eq("pedido_id", pid)
       .neq("estado", "completada");
@@ -921,26 +921,26 @@ export default function Microbiologia() {
     if (respManual) upLib.responsable_manual = respManual;
 
     await supabase
-      .from("pedido_etapas_liberaciones")
+      .from(st("pedido_etapas_liberaciones"))
       .update(upLib)
       .eq("pedido_etapa_id", etapaBatch.id)
       .eq("rol", "microbiologia");
 
     // 3. Verificar si se completa la etapa (si solo micro liberaba)
     const { data: todas } = await supabase
-      .from("pedido_etapas_liberaciones")
+      .from(st("pedido_etapas_liberaciones"))
       .select("liberada")
       .eq("pedido_etapa_id", etapaBatch.id);
 
     if (todas?.every(l => l.liberada)) {
       await supabase
-        .from("pedido_etapas")
+        .from(st("pedido_etapas"))
         .update({ estado: "completada", fecha_fin: ahoraISO() })
         .eq("id", etapaBatch.id);
     }
 
     // 4. Trazabilidad y Notificación
-    await supabase.from("observaciones_pedido").insert({
+    await supabase.from(st("observaciones_pedido")).insert({
       pedido_id: pid,
       usuario: usuarioActual?.usuario || "Microbiología",
       observacion: `✅ LIBERACIÓN EN LOTE (Etapa: ${etapaBatch.nombre}): ${comment || "Sin comentarios"}`,
@@ -958,7 +958,7 @@ export default function Microbiologia() {
 
     setAccionLoading(true);
     const { error } = await supabase
-      .from("pedidos_produccion")
+      .from(st("pedidos_produccion"))
       .update({ fecha_inicio_analisis_mb: ahoraISO() })
       .eq("id", pid);
 
@@ -967,7 +967,7 @@ export default function Microbiologia() {
       alert("Error al iniciar análisis.");
     } else {
       // Dejar trazabilidad obligatoria en observaciones
-      await supabase.from("observaciones_pedido").insert({
+      await supabase.from(st("observaciones_pedido")).insert({
         pedido_id: pid,
         usuario: usuarioActual?.usuario || "Microbiología",
         observacion: `🧪 INICIO DE ANÁLISIS MICROBIOLÓGICO registrado.`,

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo, useRef } from "react";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
-import { supabase } from "../api/supabaseClient";
+import { supabase, st } from "../api/supabaseClient";
 import { useAuth } from "../context/AuthContext";
 import "./MisSolicitudes.css";
 
@@ -24,7 +24,7 @@ export default function MisSolicitudes() {
     if (!usuarioActual?.usuario) return;
 
     const { data, error } = await supabase
-      .from("solicitudes")
+      .from(st("solicitudes"))
       .select(`
         *,
         tipos_solicitud ( nombre ),
@@ -113,7 +113,7 @@ export default function MisSolicitudes() {
     }
 
     const { error } = await supabase
-      .from("solicitudes")
+      .from(st("solicitudes"))
       .update({
         estado_id: 15, // Calificado
         calificacion,

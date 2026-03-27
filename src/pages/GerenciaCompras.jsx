@@ -1,6 +1,6 @@
 // src/pages/GerenciaCompras.jsx
 import React, { useEffect, useMemo, useState } from "react";
-import { supabase } from "../api/supabaseClient";
+import { supabase, st } from "../api/supabaseClient";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
 import { useAuth } from "../context/AuthContext";
@@ -26,7 +26,7 @@ export default function GerenciaCompras() {
 
     // OJO: Traemos todo el flujo de supervision
     const { data, error } = await supabase
-      .from("solicitudes")
+      .from(st("solicitudes"))
       .select(`
         *,
         tipos_solicitud ( nombre ),
@@ -95,7 +95,7 @@ export default function GerenciaCompras() {
 
     // 1. Verificar si existe registro previo
     const { data: existing, error: errFind } = await supabase
-      .from("aprobaciones")
+      .from(st("aprobaciones"))
       .select("id")
       .eq("solicitud_id", solicitudId)
       .maybeSingle();
@@ -105,13 +105,13 @@ export default function GerenciaCompras() {
     // 2. Insertar o Actualizar manualmente
     if (existing) {
       const { error } = await supabase
-        .from("aprobaciones")
+        .from(st("aprobaciones"))
         .update(payload)
         .eq("id", existing.id);
       if (error) throw error;
     } else {
       const { error } = await supabase
-        .from("aprobaciones")
+        .from(st("aprobaciones"))
         .insert(payload);
       if (error) throw error;
     }
@@ -143,7 +143,7 @@ export default function GerenciaCompras() {
       if (selected.estado_id === 24) nextState = 19;
 
       const { error: errSol } = await supabase
-        .from("solicitudes")
+        .from(st("solicitudes"))
         .update({ estado_id: nextState })
         .eq("id", selected.id);
 
@@ -174,7 +174,7 @@ export default function GerenciaCompras() {
         comentario: comentarioGerencia.trim(),
       });
 
-      await supabase.from("solicitudes").update({ estado_id: 17 }).eq("id", selected.id);
+      await supabase.from(st("solicitudes")).update({ estado_id: 17 }).eq("id", selected.id);
       closeModal();
       loadSolicitudes();
     } catch (e) { console.error(e); alert(e.message); }
