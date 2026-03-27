@@ -998,6 +998,19 @@ export default function Produccion() {
       return;
     }
 
+    // 🔔 NOTIFICAR A MICROBIOLOGÍA
+    try {
+      await notifyRoles(
+        ["microbiologia"],
+        "Nueva Solicitud a Microbiología",
+        `Producción ha creado una solicitud para el Pedido #${selected.id}.`,
+        selected.id,
+        "accion_requerida"
+      );
+    } catch (errorNotif) {
+      console.error("❌ Error notificando a microbiología:", errorNotif);
+    }
+
     setSolLoading(false);
     setHaSolicitadoMicro(true);
 
