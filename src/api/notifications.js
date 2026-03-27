@@ -95,8 +95,11 @@ export async function checkAndNotifyFlowCompletion(pedidoId) {
         if (error) throw error;
         if (!etapas || etapas.length === 0) return false;
 
-        // FILTRAR: Ignoramos "Acondicionamiento" para la lógica de completitud
-        const relevantes = etapas.filter(e => !e.nombre.toLowerCase().includes("acondicionamiento"));
+        // FILTRAR: Ignoramos "Acondicionamiento" y "Revisión de partículas" para la lógica de completitud de Producción
+        const relevantes = etapas.filter(e => {
+            const n = e.nombre.toLowerCase();
+            return !n.includes("acondicionamiento") && !n.includes("partículas visibles");
+        });
 
         if (relevantes.length === 0) return false;
 

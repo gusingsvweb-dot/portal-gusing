@@ -15,6 +15,9 @@ export default function Acondicionamiento() {
   const [obs, setObs] = useState([]);
   const [newObs, setNewObs] = useState("");
 
+  const [pedidoEtapas, setPedidoEtapas] = useState([]);
+  const [etapaParticulas, setEtapaParticulas] = useState(null);
+
   // 🟦 HISTORIAL (estados globales)
   const [historial, setHistorial] = useState([]);
   const [busqueda, setBusqueda] = useState("");
@@ -106,11 +109,36 @@ export default function Acondicionamiento() {
   }
 
   /* ===========================================================
+      CARGAR ETAPAS INTERNAS DEL PEDIDO
+  ============================================================ */
+  async function cargarEtapasPedido(pedidoId) {
+    if (!pedidoId) return;
+    const { data, error } = await supabase
+      .from("pedido_etapas")
+      .select("*")
+      .eq("pedido_id", pedidoId)
+      .order("orden", { ascending: true });
+
+    if (error) {
+      console.error("❌ Error cargando etapas:", error);
+      return;
+    }
+    setPedidoEtapas(data || []);
+
+    // Buscar específicamente la etapa de partículas visibles
+    const particulas = (data || []).find(e =>
+      e.nombre.toLowerCase().includes("partículas visibles")
+    );
+    setEtapaParticulas(particulas || null);
+  }
+
+  /* ===========================================================
       SELECCIONAR PEDIDO
   ============================================================ */
   function seleccionarPedido(p) {
     setSelected(p);
     cargarObservaciones(p.id);
+    cargarEtapasPedido(p.id);
   }
 
   /* ===========================================================
@@ -137,11 +165,53 @@ export default function Acondicionamiento() {
   }
 
   /* ===========================================================
+      LIBERAR PARTÍCULAS VISIBLES
+  ============================================================ */
+  async function liberarParticulas() {
+    if (!etapaParticulas) return;
+    setLoadingAction(true);
+
+    try {
+      const { error } = await supabase
+        .from("pedido_etapas")
+        .update({
+          estado: "completada",
+          fecha_inicio: etapaParticulas.fecha_inicio || new Date().toISOString(),
+          fecha_fin: new Date().toISOString()
+        })
+        .eq("id", etapaParticulas.id);
+
+      if (error) throw error;
+
+      await supabase.from("observaciones_pedido").insert({
+        pedido_id: selected.id,
+        usuario: "Acondicionamiento",
+        observacion: "📌 REVISIÓN DE PARTÍCULAS VISIBLES: Completada en Acondicionamiento."
+      });
+
+      alert("✔ Revisión de partículas completada.");
+      await cargarEtapasPedido(selected.id);
+      cargarObservaciones(selected.id);
+    } catch (err) {
+      console.error("Error liberando particulas:", err);
+      alert("Error al liberar partículas.");
+    } finally {
+      setLoadingAction(false);
+    }
+  }
+
+  /* ===========================================================
       AVANZAR ETAPA (SOLO ESTADO 8)
   ============================================================ */
   async function avanzarAcondicionamiento() {
     if (!selected) return;
     if (selected.estado_id !== 8) return;
+
+    // BLOQUEO: Si tiene etapa de partículas y no está completada
+    if (etapaParticulas && etapaParticulas.estado !== "completada") {
+      alert("No puedes iniciar el acondicionamiento sin antes completar la Revisión de Partículas Visibles.");
+      return;
+    }
 
     const fechaHoy = new Date().toISOString().slice(0, 10);
     const update = {
@@ -173,6 +243,13 @@ export default function Acondicionamiento() {
   function solicitarConfirmacion() {
     if (!selected) return;
     if (selected.estado_id !== 9) return;
+
+    // BLOQUEO (doble check): Si tiene etapa de partículas y no está completada
+    if (etapaParticulas && etapaParticulas.estado !== "completada") {
+      alert("Error: La revisión de partículas visibles debe estar completada.");
+      return;
+    }
+
     setShowConfirmModal(true);
   }
 
@@ -396,6 +473,24 @@ export default function Acondicionamiento() {
                 </span>
               </p>
             </div>
+
+            {/* NUEVO: Panel de Revisión de Partículas Visibles */}
+            {etapaParticulas && etapaParticulas.estado !== "completada" && (
+              <div className="pc-box" style={{ borderLeft: '4px solid #f59e0b', background: '#fffbeb', marginBottom: '20px' }}>
+                <h4 style={{ color: '#92400e' }}>🔍 Revisión de Partículas Visibles Pendiente</h4>
+                <p style={{ fontSize: '13px', color: '#b45309', marginBottom: '15px' }}>
+                  Este es un producto de <strong>Soluciones Estériles</strong>. Debe realizar y registrar la revisión de partículas antes de proceder con el acondicionamiento.
+                </p>
+                <button 
+                  className="pc-btn" 
+                  style={{ background: '#f59e0b' }} 
+                  onClick={liberarParticulas}
+                  disabled={loadingAction}
+                >
+                  {loadingAction ? "Procesando..." : "✔ Confirmar Revisión de Partículas"}
+                </button>
+              </div>
+            )}
 
             {renderEtapa()}
 

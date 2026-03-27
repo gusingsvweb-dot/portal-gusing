@@ -374,7 +374,13 @@ export default function Produccion() {
   }
 
   const etapasPendientes = useMemo(() => {
-    return (pedidoEtapas || []).filter((e) => e.estado !== ESTADO_ETAPA.COMPLETADA);
+    return (pedidoEtapas || []).filter((e) => {
+      const isCompletada = e.estado === ESTADO_ETAPA.COMPLETADA;
+      const isParticulas = e.nombre?.toLowerCase().includes("partículas visibles");
+      // Si ya está completada, no es pendiente.
+      // Si es partículas visibles, NO la mostramos ni la contamos aquí para Producción.
+      return !isCompletada && !isParticulas;
+    });
   }, [pedidoEtapas]);
 
 
