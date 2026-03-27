@@ -66,6 +66,9 @@ export default function Microbiologia() {
 
   // Helper para identificar si es "Liberación de Área" (Ampollas/Viales)
   function isAreaRelease(req) {
+    const tipo = toLowerSafe(req.tipos_solicitud?.nombre);
+    if (tipo.includes("esterilizaci")) return false; // Las de esterilización van a Pendientes de Inicio
+
     const forma = req.pedidoData?.productos?.forma_farmaceutica || "";
     // Regex para detectar Ampolla o Vial (case insensitive)
     return /ampolla|vial/i.test(forma);
@@ -684,6 +687,57 @@ export default function Microbiologia() {
     );
   }
 
+  async function rechazarSolicitud() {
+    if (!selected || selected.tipoItem !== 'solicitud') return;
+
+    pedirConfirmacion(
+      "❌ Rechazar Solicitud",
+      "Indica el motivo por el cual estás rechazando esta solicitud. Este comentario se guardará en el historial del pedido y notificará a Producción.",
+      async (currentComment) => {
+        setAccionLoading(true);
+
+        const { error } = await supabase
+          .from("solicitudes")
+          .update({
+            estado_id: 3, // 3 asumimos como Rechazado
+            accion_realizada: `Rechazado: ${currentComment}`
+          })
+          .eq("id", selected.id);
+
+        if (error) {
+          alert("Error al rechazar la solicitud.");
+          setAccionLoading(false);
+          return;
+        }
+
+        // Guardar en historial oficial
+        if (selected.consecutivo) {
+          await supabase.from("observaciones_pedido").insert({
+            pedido_id: selected.consecutivo,
+            usuario: usuarioActual?.usuario || "Microbiología",
+            observacion: `❌ SOLICITUD RECHAZADA (${selected.tipos_solicitud?.nombre || 'General'}): ${currentComment}`,
+          });
+
+          // Retrocedemos el pedido a estado 5 (Asignado a Producción) opcional? No, el usuario no dijo que cambiara el estado del pedido a 5. Sólo notificar.
+          
+          await notifyRoles(
+            ["produccion"],
+            "Solicitud Rechazada (MB)",
+            `Microbiología ha RECHAZADO la solicitud #${selected.id} (Pedido #${selected.consecutivo}). Motivo: ${currentComment.substring(0, 50)}...`,
+            selected.consecutivo,
+            "urgente"
+          );
+        }
+
+        setAccionLoading(false);
+        setComentario("");
+        setSelected(null);
+        await loadTodo();
+      },
+      true // isRejection = true (hace que el comentario sea obligatorio)
+    );
+  }
+
   async function liberarSolicitud() {
     if (!selected || selected.tipoItem !== 'solicitud') return;
 
@@ -993,22 +1047,32 @@ export default function Microbiologia() {
                       </div>
                     ) : (
                       /* CASO 2: YA INICIADO -> MOSTRAR FORMULARIO DE LIBERACIÓN */
-                      <>
-                        <h3>✅ Atender Solicitud</h3>
-                        <p style={{ fontSize: 13, color: '#64748b', marginBottom: 10 }}>
-                          Registra el resultado del análisis inicial para liberar el pedido a producción/acondicionamiento.
-                        </p>
-                        <label>Acción / Comentario realizado</label>
-                        <textarea
-                          rows="3"
-                          value={comentario}
-                          onChange={(e) => setComentario(e.target.value)}
-                          placeholder="Ej: Muestra analizada sin hallazgos, se autoriza liberación inicial..."
-                        />
-                        <button className="mb-btn" style={{ width: '100%' }} onClick={liberarSolicitud} disabled={accionLoading}>
-                          {accionLoading ? "Procesando…" : "Confirmar y Liberar Solicitud"}
-                        </button>
-                      </>
+                      (function() {
+                        const esEsterilizacion = toLowerSafe(selected.tipos_solicitud?.nombre).includes("esterilizaci");
+                        return (
+                          <>
+                            <h3>✅ Atender Solicitud</h3>
+                            <p style={{ fontSize: 13, color: '#64748b', marginBottom: 10 }}>
+                              Registra el resultado del análisis para liberar o rechazar el pedido.
+                            </p>
+                            <label>Acción / Comentario realizado</label>
+                            <textarea
+                              rows="3"
+                              value={comentario}
+                              onChange={(e) => setComentario(e.target.value)}
+                              placeholder="Ej: Muestra analizada sin hallazgos, se autoriza liberación..."
+                            />
+                            <div className="mb-actions-row" style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                              <button className="mb-btn mb-btn-danger" style={{ flex: 1 }} onClick={rechazarSolicitud} disabled={accionLoading}>
+                                {accionLoading ? "Procesando…" : "Rechazar (Obligatorio)"}
+                              </button>
+                              <button className="mb-btn" style={{ flex: 1 }} onClick={liberarSolicitud} disabled={accionLoading}>
+                                {accionLoading ? "Procesando…" : (esEsterilizacion ? "✅ Aprobar tirilla" : "Confirmar y Liberar")}
+                              </button>
+                            </div>
+                          </>
+                        );
+                      })()
                     )}
                   </div>
                 </>
