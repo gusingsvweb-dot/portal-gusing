@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 import { useNavigate } from "react-router-dom";
 import "./Login.css";
 
 export default function Login() {
   const { login, register, verifyEmailCode, sendResetCode, verifyResetCode, updatePassword } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   // Estados UI
@@ -19,6 +21,7 @@ export default function Login() {
   const [contrasena, setContrasena] = useState("");
   const [codigo, setCodigo] = useState("");
   const [nuevaContrasena, setNuevaContrasena] = useState("");
+  const [showChangelog, setShowChangelog] = useState(false);
 
   // === SLIDESHOW ===
   const images = [
@@ -51,14 +54,7 @@ export default function Login() {
       }
       redirigirPorRol(result.rol);
     }
-    else if (mode === "register") {
-      const result = await register(usuario, correo, contrasena);
-      if (result.ok) {
-        setMode("verify");
-      } else {
-        setError(result.message || "Error al registrarse");
-      }
-    }
+    /* Registro público deshabilitado - movido a Garantía de Calidad */
     else if (mode === "verify") {
       const result = await verifyEmailCode(correo, codigo, usuario);
       if (result.ok) {
@@ -102,7 +98,15 @@ export default function Login() {
       case "produccion": navigate("/produccion"); break;
       case "usuario": navigate("/usuario/crear-solicitud"); break;
       case "acondicionamiento": navigate("/acondicionamiento"); break;
-      case "bodega": navigate("/bodega"); break;
+      case "bodega":
+        navigate("/bodega");
+        break;
+      case "bodega_mp":
+        navigate("/bodega-mp");
+        break;
+      case "bodega_pt":
+        navigate("/bodega-pt");
+        break;
       case "microbiologia": navigate("/microbiologia"); break;
       case "controlcalidad": navigate("/controlcalidad"); break;
       case "planeacion": navigate("/Dashboard"); break;
@@ -110,99 +114,107 @@ export default function Login() {
       case "compras": navigate("/compras"); break;
       case "gestioncalidad": navigate("/gestioncalidad"); break;
       case "direcciontecnica": navigate("/direccion-tecnica"); break;
+      case "garantiacalidad": navigate("/garantiacalidad"); break;
       default: navigate("/");
     }
   };
 
+  // === PASSWORD VISIBILITY ===
+  const [showPassword, setShowPassword] = useState(false);
+
   return (
     <div className="login-wrapper">
-      <div className="login-left fade-in">
-        <div className="particles"></div>
-        <div className="login-card slide-up">
-          <img
-            className="logo-gusing logo-animate"
-            src="https://gqspcolombia.org/wp-content/uploads/2025/09/21.png"
-            alt="Laboratorios Gusing"
-          />
+      {/* LEFT COLUMN (60%) - Corporate Background */}
+      <div className="login-image-section">
+        <div className="login-image-overlay-text">
+          <h1>Excelencia Farmacéutica</h1>
+          <p>Innovación y calidad en cada proceso.</p>
+        </div>
+      </div>
 
-          <h2 className="login-title">
-            {mode === "login" ? "Portal Interno" :
-              mode === "register" ? "Crear Cuenta" :
-                mode === "verify" ? "Verificar Correo" :
-                  mode === "forgot" ? "Recuperar Acceso" :
-                    "Nueva Contraseña"}
-          </h2>
-          <p className="subtitle">Laboratorios Gusing S.A.S</p>
+      {/* RIGHT COLUMN (40%) - Login Form */}
+      <div className="login-form-container fade-in">
+        <div className="login-card slide-up">
+          <div className="login-header">
+            <img
+              className="logo-gusing"
+              src="https://gqspcolombia.org/wp-content/uploads/2025/09/21.png"
+              alt="Laboratorios Gusing"
+            />
+            <h2 className="login-title">Bienvenido al Portal Corporativo</h2>
+            <p className="subtitle">Acceso exclusivo para personal autorizado</p>
+          </div>
 
           <form onSubmit={handleSubmit} className="login-form">
             {mode === "login" && (
               <>
-                <label>Usuario / Correo</label>
-                <input
-                  type="text"
-                  value={usuario}
-                  onChange={(e) => setUsuario(e.target.value)}
-                  placeholder="Ingrese su usuario o correo"
-                  required
-                />
-                <label>Contraseña</label>
-                <input
-                  type="password"
-                  value={contrasena}
-                  onChange={(e) => setContrasena(e.target.value)}
-                  placeholder="********"
-                  required
-                />
+                <div className="input-group">
+                  <label>Usuario o correo</label>
+                  <input
+                    type="text"
+                    value={usuario}
+                    onChange={(e) => setUsuario(e.target.value)}
+                    placeholder="Ingrese su usuario o correo"
+                    required
+                  />
+                </div>
+                <div className="input-group">
+                  <label>Contraseña</label>
+                  <div className="password-wrapper">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={contrasena}
+                      onChange={(e) => setContrasena(e.target.value)}
+                      placeholder="Ingrese su contraseña"
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="password-toggle"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? "👁️" : "👁️‍🗨️"}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="login-actions">
+                  <label className="checkbox-container">
+                    <input type="checkbox" />
+                    <span className="checkmark"></span>
+                    Recordarme
+                  </label>
+                  <button
+                    type="button"
+                    className="forgot-pass-link"
+                    onClick={() => { setMode("forgot"); setError(""); setSuccess(""); }}
+                  >
+                    ¿Olvidó su contraseña?
+                  </button>
+                </div>
               </>
             )}
 
-            {mode === "register" && (
-              <>
-                <label>Usuario</label>
-                <input
-                  type="text"
-                  value={usuario}
-                  onChange={(e) => setUsuario(e.target.value)}
-                  placeholder="Elija un nombre de usuario"
-                  required
-                />
-                <label>Correo Electrónico</label>
-                <input
-                  type="email"
-                  value={correo}
-                  onChange={(e) => setCorreo(e.target.value)}
-                  placeholder="ejemplo@gusing.com"
-                  required
-                />
-                <label>Contraseña</label>
-                <input
-                  type="password"
-                  value={contrasena}
-                  onChange={(e) => setContrasena(e.target.value)}
-                  placeholder="Mínimo 6 caracteres"
-                  required
-                  minLength={6}
-                />
-              </>
-            )}
-
+            {/* Verification and Reset Modes */}
             {(mode === "verify" || mode === "reset") && (
               <>
-                <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '15px' }}>
+                <div className="info-badge">
                   {mode === "verify"
-                    ? `Hemos enviado un código a ${correo}.`
-                    : `Ingresa el código enviado a ${correo} y tu nueva contraseña.`}
-                </p>
-                <label>Código de Verificación</label>
-                <input
-                  type="text"
-                  value={codigo}
-                  onChange={(e) => setCodigo(e.target.value)}
-                  placeholder="000000"
-                  required
-                />
+                    ? `Código enviado a ${correo}`
+                    : `Ingrese código y nueva contraseña`}
+                </div>
+                <div className="input-group">
+                  <label>Código de Verificación</label>
+                  <input
+                    type="text"
+                    value={codigo}
+                    onChange={(e) => setCodigo(e.target.value)}
+                    placeholder="000000"
+                    required
+                  />
+                </div>
                 {mode === "reset" && (
-                  <>
+                  <div className="input-group">
                     <label>Nueva Contraseña</label>
                     <input
                       type="password"
@@ -212,70 +224,84 @@ export default function Login() {
                       required
                       minLength={6}
                     />
-                  </>
+                  </div>
                 )}
               </>
             )}
 
             {mode === "forgot" && (
               <>
-                <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '15px' }}>
-                  Ingresa tu correo electrónico para recibir un código de recuperación.
+                <p className="instruction-text">
+                  Ingrese su correo corporativo para restablecer el acceso.
                 </p>
-                <label>Correo Electrónico</label>
-                <input
-                  type="email"
-                  value={correo}
-                  onChange={(e) => setCorreo(e.target.value)}
-                  placeholder="ejemplo@gusing.com"
-                  required
-                />
+                <div className="input-group">
+                  <label>Correo Electrónico</label>
+                  <input
+                    type="email"
+                    value={correo}
+                    onChange={(e) => setCorreo(e.target.value)}
+                    placeholder="ejemplo@gusing.com"
+                    required
+                  />
+                </div>
               </>
             )}
 
-            {error && <p className="error-text">{error}</p>}
-            {success && <p style={{ color: '#10b981', fontSize: '13px', marginBottom: '10px', textAlign: 'center', fontWeight: 'bold' }}>{success}</p>}
+            {error && <div className="error-banner">⚠️ {error}</div>}
+            {success && <div className="success-banner">✅ {success}</div>}
 
             <button type="submit" className="btn-login" disabled={loading}>
-              {loading ? "Procesando..." :
+              {loading ? <span className="loader"></span> :
                 mode === "login" ? "Iniciar Sesión" :
-                  mode === "register" ? "Registrarse" :
-                    mode === "verify" ? "Verificar" :
-                      mode === "forgot" ? "Enviar Código" :
-                        "Actualizar Contraseña"}
+                  mode === "verify" ? "Verificar Acceso" :
+                    mode === "forgot" ? "Enviar Código" :
+                      "Actualizar Credenciales"}
             </button>
           </form>
 
-          <div style={{ marginTop: '20px', textAlign: 'center' }}>
-            {mode === "login" ? (
-              <p style={{ fontSize: '14px', color: '#64748b' }}>
-                ¿No tiene cuenta? <button className="forgot-pass" onClick={() => { setMode("register"); setError(""); setSuccess(""); }}>Crear una ahora</button>
-              </p>
-            ) : (
-              <p style={{ fontSize: '14px', color: '#64748b' }}>
-                ¿Ya tiene cuenta? <button className="forgot-pass" onClick={() => { setMode("login"); setError(""); setSuccess(""); }}>Volver al login</button>
-              </p>
-            )}
-          </div>
-
-          {mode === "login" && (
-            <button className="forgot-pass" onClick={() => { setMode("forgot"); setError(""); setSuccess(""); }}>
-              ¿Olvidó su contraseña?
+          {mode !== "login" && (
+            <button className="back-link" onClick={() => { setMode("login"); setError(""); setSuccess(""); }}>
+              ← Volver al inicio
             </button>
           )}
+
+          <div className="trust-badges">
+            <span>🔒 Conexión segura SSL</span>
+            <span>🛡 Acceso protegido</span>
+          </div>
         </div>
 
         <footer className="login-footer">
-          © {new Date().getFullYear()} Laboratorios Gusing S.A.S — Todos los derechos reservados.
+          <p>© {new Date().getFullYear()} Laboratorios Gusing S.A.S. • Todos los derechos reservados</p>
+          <div className="system-status">
+            <span className="status-dot"></span> Estado del sistema: Operativo
+          </div>
         </footer>
+
+        <button className="login-theme-toggle-corner" onClick={toggleTheme} type="button">
+          {theme === "light" ? "🌙" : "☀️"}
+        </button>
       </div>
 
-      {/* DERECHA SLIDESHOW */}
-      <div
-        className="login-right fade-image"
-        style={{ backgroundImage: `url(${images[currentImage]})` }}
-      >
-        <div className="login-image-overlay"></div>
+      <div className="changelog-container">
+        <button
+          className={`changelog-btn ${showChangelog ? 'active' : ''}`}
+          onClick={() => setShowChangelog(!showChangelog)}
+          type="button"
+        >
+          <span>{showChangelog ? '✖️' : '✨'}</span>
+        </button>
+
+        {showChangelog && (
+          <div className="changelog-dropdown slide-up">
+            <h3>Novedades del Portal</h3>
+            <ul>
+              <li><strong>🚀 Nuevo Diseño Enterprise:</strong> Interfaz corporativa de alto nivel.</li>
+              <li><strong>🧪 Microbiología:</strong> Flujo de Liberación de Área.</li>
+              <li><strong>✅ Mejoras:</strong> Correcciones post capacitacion a cada implicado en el sistema.</li>
+            </ul>
+          </div>
+        )}
       </div>
     </div>
   );
