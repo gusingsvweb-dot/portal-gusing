@@ -615,6 +615,7 @@ export default function Microbiologia() {
 
         setAccionLoading(false);
         setComentario("");
+        window.scrollTo({ top: 0, left: 0 }); // Fix jump BEFORE layout shift
         setSelected(null);
         await loadTodo();
       },
@@ -682,6 +683,7 @@ export default function Microbiologia() {
 
         setAccionLoading(false);
         setComentario("");
+        window.scrollTo({ top: 0, left: 0 }); // Fix jump BEFORE layout shift
         setSelected(null);
         await loadTodo();
       },
@@ -733,6 +735,7 @@ export default function Microbiologia() {
 
         setAccionLoading(false);
         setComentario("");
+        window.scrollTo({ top: 0, left: 0 }); // Fix jump BEFORE layout shift
         setSelected(null);
         await loadTodo();
       },
@@ -803,6 +806,7 @@ export default function Microbiologia() {
 
         setAccionLoading(false);
         setComentario("");
+        window.scrollTo({ top: 0, left: 0 }); // Fix jump BEFORE layout shift
         setSelected(null);
         await loadTodo();
       },
@@ -837,8 +841,9 @@ export default function Microbiologia() {
 
       // Recargar para que cambie de lista
       await loadTodo();
+      window.scrollTo({ top: 0, left: 0 }); // Fix jump BEFORE layout shift
       setSelected(null);
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 100);
     }
     setAccionLoading(false);
   }
