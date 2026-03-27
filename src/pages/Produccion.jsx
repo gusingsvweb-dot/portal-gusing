@@ -1728,152 +1728,147 @@ export default function Produccion() {
 
         {etapasLoading && <p style={{ marginTop: 8 }}>Cargando etapas…</p>}
 
-        {!etapasLoading && (!pedidoEtapas || pedidoEtapas.length === 0) && (
-          <p style={{ marginTop: 8, color: "#64748b" }}>
-            Aún no hay etapas creadas para este pedido. Se crean automáticamente cuando envías la Solicitud a Microbiología.
-          </p>
-        )}
+             {!etapasLoading && pedidoEtapas?.length > 0 && (() => {
+          const etapasVisibles = pedidoEtapas.filter(e => {
+            const n = (e.nombre || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            return !n.includes("particulas visibles");
+          });
 
-        {!etapasLoading && pedidoEtapas?.length > 0 && (
-          <>
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 8 }}>
-              <span className="pc-chip">
-                Total: {pedidoEtapas.length}
-              </span>
-              <span className={`pc-chip ${flujoCompleto ? "estado-12" : "estado-6"}`}>
-                {flujoCompleto ? "Flujo completo" : `Pendientes: ${etapasPendientes.length}`}
-              </span>
-            </div>
+          return (
+            <>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 8 }}>
+                <span className="pc-chip">
+                  Total: {etapasVisibles.length}
+                </span>
+                <span className={`pc-chip ${flujoCompleto ? "estado-12" : "estado-6"}`}>
+                  {flujoCompleto ? "Flujo completo" : `Pendientes: ${etapasPendientes.length}`}
+                </span>
+              </div>
 
-            <div style={{ marginTop: 10 }}>
-              {pedidoEtapas.map((e) => {
-                // DESAPARECER: No mostrar revisión de partículas en producción
-                if (e.nombre?.toLowerCase().includes("partículas visibles")) return null;
+              <div style={{ marginTop: 10 }}>
+                {etapasVisibles.map((e) => {
+                  const est = (e.estado || "").toLowerCase();
+                  const chip =
+                    est === "completada" ? "estado-12" :
+                      est === "en_revision" ? "estado-6" :
+                        "estado-4";
 
-                const est = (e.estado || "").toLowerCase();
-                const chip =
-                  est === "completada" ? "estado-12" :
-                    est === "en_revision" ? "estado-6" :
-                      "estado-4";
-
-                return (
-                  <div key={e.id} className="pc-hist-item" style={{ borderLeft: "3px solid #e2e8f0" }}>
-                    <p className="pc-hist-fecha">#{e.orden}</p>
-                    <p className="pc-hist-titulo">
-                      {e.nombre}{" "}
-                      <span className={`pc-chip ${chip}`} style={{ marginLeft: 8 }}>
-                        {est || "pendiente"}
-                      </span>
-                      {e.requiere_liberacion && (
-                        <span className="pc-chip" style={{ marginLeft: 8 }}>
-                          Libera: {e.rol_liberador}
+                  return (
+                    <div key={e.id} className="pc-hist-item" style={{ borderLeft: "3px solid #e2e8f0" }}>
+                      <p className="pc-hist-fecha">#{e.orden}</p>
+                      <p className="pc-hist-titulo">
+                        {e.nombre}{" "}
+                        <span className={`pc-chip ${chip}`} style={{ marginLeft: 8 }}>
+                          {est || "pendiente"}
                         </span>
-                      )}
-                    </p>
-                    <p className="pc-hist-detalle" style={{ marginTop: 4 }}>
-                      Inicio: {e.fecha_inicio ? new Date(e.fecha_inicio).toLocaleString("es-CO") : "-"}{" "}
-                      | Fin: {e.fecha_fin ? new Date(e.fecha_fin).toLocaleString("es-CO") : "-"}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-
-            {etapaActual && (
-              <div style={{ marginTop: 12 }}>
-                <p style={{ marginBottom: 8 }}>
-                  <strong>Etapa actual:</strong> #{etapaActual.orden} – {etapaActual.nombre}
-                </p>
-
-                {(() => {
-                  const est = (etapaActual.estado || "").toLowerCase();
-
-                  const ff = (selected.productos?.forma_farmaceutica || "").toLowerCase();
-                  const esEsteril = ff.includes("esteril") || ff.includes("estéril");
-                  const nombreBajo = etapaActual.nombre.toLowerCase();
-
-                  // Regla: No estériles -> Envasado. Estériles -> Esterilización.
-                  const esEtapaCorrectaMB = esEsteril
-                    ? nombreBajo.includes("esterilización")
-                    : nombreBajo.includes("envasado");
-
-                  if (est === "en_revision") {
-                    return (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                        <p style={{ color: "#b45309" }}>
-                          ⏳ Esta etapa está en revisión. Pendiente por:{" "}
-                          <strong>
-                            {(etapaActual.pedido_etapas_liberaciones || [])
-                              .filter(l => !l.liberada)
-                              .map(l => l.rol)
-                              .join(", ") || etapaActual.rol_liberador}
-                          </strong>
-                        </p>
-                        {esEtapaCorrectaMB && !haSolicitadoMicro && (
-                          <button
-                            className="pc-btn"
-                            style={{ background: "#7c3aed", width: 'fit-content' }}
-                            onClick={() => {
-                              setSolMsg("");
-                              setSolForm(prev => ({
-                                ...prev,
-                                tipo_solicitud_id: "",
-                                prioridad_id: "",
-                                descripcion: `Solicitado desde la etapa: ${etapaActual.nombre}`,
-                                justificacion: "",
-                              }));
-                              setShowSolicitudMB(true);
-                            }}
-                          >
-                            🧫 Solicitar Microbiología (si no se ha hecho)
-                          </button>
+                        {e.requiere_liberacion && (
+                          <span className="pc-chip" style={{ marginLeft: 8 }}>
+                            Libera: {e.rol_liberador}
+                          </span>
                         )}
-                      </div>
-                    );
-                  }
+                      </p>
+                      <p className="pc-hist-detalle" style={{ marginTop: 4 }}>
+                        Inicio: {e.fecha_inicio ? new Date(e.fecha_inicio).toLocaleString("es-CO") : "-"}{" "}
+                        | Fin: {e.fecha_fin ? new Date(e.fecha_fin).toLocaleString("es-CO") : "-"}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
 
-                  if (etapaActual.requiere_liberacion) {
+              {etapaActual && (
+                <div style={{ marginTop: 12 }}>
+                  <p style={{ marginBottom: 8 }}>
+                    <strong>Etapa actual:</strong> #{etapaActual.orden} – {etapaActual.nombre}
+                  </p>
+
+                  {(() => {
+                    const est = (etapaActual.estado || "").toLowerCase();
+                    const ff = (selected.productos?.forma_farmaceutica || "").toLowerCase();
+                    const esEsteril = ff.includes("esteril") || ff.includes("estéril");
+                    const nombreBajo = etapaActual.nombre.toLowerCase();
+                    const esEtapaCorrectaMB = esEsteril
+                      ? nombreBajo.includes("esterilización")
+                      : nombreBajo.includes("envasado");
+
+                    if (est === "en_revision") {
+                      return (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          <p style={{ color: "#b45309" }}>
+                            ⏳ Esta etapa está en revisión. Pendiente por:{" "}
+                            <strong>
+                              {(etapaActual.pedido_etapas_liberaciones || [])
+                                .filter(l => !l.liberada)
+                                .map(l => l.rol)
+                                .join(", ") || etapaActual.rol_liberador}
+                            </strong>
+                          </p>
+                          {esEtapaCorrectaMB && !haSolicitadoMicro && (
+                            <button
+                              className="pc-btn"
+                              style={{ background: "#7c3aed", width: 'fit-content' }}
+                              onClick={() => {
+                                setSolMsg("");
+                                setSolForm(prev => ({
+                                  ...prev,
+                                  tipo_solicitud_id: "",
+                                  prioridad_id: "",
+                                  descripcion: `Solicitado desde la etapa: ${etapaActual.nombre}`,
+                                  justificacion: "",
+                                }));
+                                setShowSolicitudMB(true);
+                              }}
+                            >
+                              🧫 Solicitar Microbiología (si no se ha hecho)
+                            </button>
+                          )}
+                        </div>
+                      );
+                    }
+
+                    if (etapaActual.requiere_liberacion) {
+                      return (
+                        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                          {esEtapaCorrectaMB ? (
+                            <button
+                              className="pc-btn"
+                              style={{ background: "#2563eb" }}
+                              onClick={() => avanzarEtapaFlujo(false, true)}
+                            >
+                              🚀 Enviar a revisión y Solicitar MB
+                            </button>
+                          ) : (
+                            <button className="pc-btn" onClick={() => avanzarEtapaFlujo()}>
+                              Enviar a revisión ({etapaActual.rol_liberador?.split(',').join(' + ')})
+                            </button>
+                          )}
+                        </div>
+                      );
+                    }
+
                     return (
                       <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
                         {esEtapaCorrectaMB ? (
                           <button
                             className="pc-btn"
-                            style={{ background: "#2563eb" }}
+                            style={{ background: "#22c55e" }}
                             onClick={() => avanzarEtapaFlujo(false, true)}
                           >
-                            🚀 Enviar a revisión y Solicitar MB
+                            ✅ Completar etapa y Solicitar MB
                           </button>
                         ) : (
                           <button className="pc-btn" onClick={() => avanzarEtapaFlujo()}>
-                            Enviar a revisión ({etapaActual.rol_liberador?.split(',').join(' + ')})
+                            Completar etapa (sin liberación)
                           </button>
                         )}
                       </div>
                     );
-                  }
-
-                  return (
-                    <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                      {esEtapaCorrectaMB ? (
-                        <button
-                          className="pc-btn"
-                          style={{ background: "#22c55e" }}
-                          onClick={() => avanzarEtapaFlujo(false, true)}
-                        >
-                          ✅ Completar etapa y Solicitar MB
-                        </button>
-                      ) : (
-                        <button className="pc-btn" onClick={() => avanzarEtapaFlujo()}>
-                          Completar etapa (sin liberación)
-                        </button>
-                      )}
-                    </div>
-                  );
-                })()}
-              </div>
-            )}
-          </>
-        )}
+                  })()}
+                </div>
+              )}
+            </>
+          );
+        })()}
       </div>
     );
   }
