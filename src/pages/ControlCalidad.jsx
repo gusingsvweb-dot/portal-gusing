@@ -47,6 +47,7 @@ export default function ControlCalidad() {
   // Accordion Sidebar
   const [expanded, setExpanded] = useState({
     etapas: false,
+    cuarentena: true, // Por defecto abierta si hay pendientes?
     pt: false
   });
 
@@ -190,10 +191,10 @@ export default function ControlCalidad() {
         clientes ( nombre ),
         estados ( nombre )
       `)
-      .eq("estado_id", 10) // Liberación PT
+      .eq("estado_id", 10) // Liberación PT (y ahora Cuarentena)
       .order("id", { ascending: true });
 
-    if (error) console.error("Error cargando pedidos PT:", error);
+    if (error) console.error("Error cargando pedidos QC:", error);
     setPedidosPT(data || []);
   }
 
@@ -231,8 +232,22 @@ export default function ControlCalidad() {
 
   const pedidosPTFiltrados = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
-    if (!q) return pedidosPT;
-    return pedidosPT.filter(p =>
+    // Filtro para PT: Solo los que NO han sido liberados de PT
+    const pts = pedidosPT.filter(p => !p.fecha_liberacion_pt);
+    if (!q) return pts;
+    return pts.filter(p =>
+      p.productos?.articulo?.toLowerCase().includes(q) ||
+      p.clientes?.nombre?.toLowerCase().includes(q) ||
+      String(p.consecutivo || p.id).includes(q)
+    );
+  }, [pedidosPT, busqueda]);
+
+  const pedidosCuarentenaFiltrados = useMemo(() => {
+    const q = busqueda.trim().toLowerCase();
+    // Filtro para Cuarentena: Solo los que NO han sido liberados de Cuarentena
+    const cua = pedidosPT.filter(p => !p.fecha_liberacion_cuarentena);
+    if (!q) return cua;
+    return cua.filter(p =>
       p.productos?.articulo?.toLowerCase().includes(q) ||
       p.clientes?.nombre?.toLowerCase().includes(q) ||
       String(p.consecutivo || p.id).includes(q)
@@ -372,24 +387,25 @@ export default function ControlCalidad() {
       .order("created_at", { ascending: false })
       .limit(20);
 
-    // 2) Producto Terminado (Pedidos con fecha_liberacion_pt)
-    const { data: dataPT, error: errPT } = await supabase
+    // 2) Producto Terminado y Cuarentena
+    const { data: dataCC, error: errCC } = await supabase
       .from("pedidos_produccion")
       .select(`
         id,
         fecha_liberacion_pt,
+        fecha_liberacion_cuarentena,
         cantidad,
         op,
         lote,
         productos ( articulo ),
         clientes ( nombre )
       `)
-      .not("fecha_liberacion_pt", "is", null)
-      .order("fecha_liberacion_pt", { ascending: false })
-      .limit(20);
+      .or("fecha_liberacion_pt.not.is.null,fecha_liberacion_cuarentena.not.is.null")
+      .order("id", { ascending: false })
+      .limit(30);
 
-    if (errEtapas || errPT) {
-      console.error("❌ Error historial CC:", errEtapas || errPT);
+    if (errEtapas || errCC) {
+      console.error("❌ Error historial CC:", errEtapas || errCC);
       return;
     }
 
@@ -406,18 +422,35 @@ export default function ControlCalidad() {
       fecha: l.created_at
     }));
 
-    const hPT = (dataPT || []).map(p => ({
-      id: `pt-${p.id}`,
-      originalId: p.id,
-      tipo: 'Producto Terminado',
-      pedidoId: p.id,
-      articulo: p.productos?.articulo,
-      cliente: p.clientes?.nombre,
-      op: p.op,
-      lote: p.lote,
-      detalle: 'Liberación Final PT',
-      fecha: p.fecha_liberacion_pt
-    }));
+    const hPT = [];
+    (dataCC || []).forEach(p => {
+      if (p.fecha_liberacion_pt) {
+        hPT.push({
+          id: `pt-${p.id}`,
+          tipo: 'Prod. Terminado',
+          pedidoId: p.id,
+          articulo: p.productos?.articulo,
+          cliente: p.clientes?.nombre,
+          op: p.op,
+          lote: p.lote,
+          detalle: 'Liberación Final PT',
+          fecha: p.fecha_liberacion_pt
+        });
+      }
+      if (p.fecha_liberacion_cuarentena) {
+        hPT.push({
+          id: `cua-${p.id}`,
+          tipo: 'Cuarentena',
+          pedidoId: p.id,
+          articulo: p.productos?.articulo,
+          cliente: p.clientes?.nombre,
+          op: p.op,
+          lote: p.lote,
+          detalle: 'Liberación área física',
+          fecha: p.fecha_liberacion_cuarentena
+        });
+      }
+    });
 
     const merged = [...hEtapas, ...hPT].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
     setHistorial(merged);
@@ -617,7 +650,7 @@ export default function ControlCalidad() {
       "📦 Liberar Producto Terminado",
       `¿Deseas agregar el resultado final del análisis como observación para este pedido?`,
       async (currentObs, nAnalisis, respManual) => {
-        const fechaHoy = new Date().toISOString().slice(0, 10);
+        const fechaHoy = new Date().toISOString();
         const update = {
           estado_id: 11, // Entrega a bodega
           asignado_a: "bodega",
@@ -637,7 +670,6 @@ export default function ControlCalidad() {
           return;
         }
 
-        // Si hubiera un comentario, lo guardamos como observación
         if (currentObs && currentObs.trim()) {
           await supabase.from("observaciones_pedido").insert({
             pedido_id: selected.id,
@@ -646,7 +678,6 @@ export default function ControlCalidad() {
           });
         }
 
-        // Notificar a Bodega
         await notifyRoles(
           ["bodega"],
           "Pedido Liberado por Calidad",
@@ -661,8 +692,53 @@ export default function ControlCalidad() {
         await loadPedidosPT();
         await loadHistorial();
       },
-      false, // isRejection
-      true   // isChoice
+      false,
+      true
+    );
+  }
+
+  async function liberarCuarentena() {
+    if (!selected || selected.tipoItem !== 'cuarentena') return;
+
+    pedirConfirmacion(
+      "🛡️ Liberación de Cuarentena",
+      `¿Confirmas la liberación de Cuarentena para el pedido #${selected.id}? Esto permitirá el movimiento físico en bodega mientras se espera el PT.`,
+      async (currentObs, nAnalisis, respManual) => {
+        const fechaHoy = new Date().toISOString();
+        const update = {
+          fecha_liberacion_cuarentena: fechaHoy
+        };
+
+        // Si el usuario ingresó análisis o responsable, los guardamos (opcional pero útil)
+        if (nAnalisis) update.numero_analisis_cua = nAnalisis; 
+        if (respManual) update.responsable_liberacion_cua = respManual;
+
+        const { error } = await supabase
+          .from("pedidos_produccion")
+          .update(update)
+          .eq("id", selected.id);
+
+        if (error) {
+          alert("Error liberando Cuarentena.");
+          return;
+        }
+
+        if (currentObs && currentObs.trim()) {
+          await supabase.from("observaciones_pedido").insert({
+            pedido_id: selected.id,
+            usuario: usuarioActual?.usuario || "Control Calidad",
+            observacion: `🛡️ LIBERACIÓN CUARENTENA: ${currentObs}`,
+          });
+        }
+
+        alert("✔ Cuarentena liberada correctamente.");
+        setSelected(null);
+        setObs([]);
+        await loadPedidosPT();
+        await loadHistorial();
+      },
+      false,
+      true
     );
   }
 
@@ -718,6 +794,29 @@ export default function ControlCalidad() {
                 </div>
                 <p className="mb-title">{e.pedidos_produccion?.productos?.articulo || 'Sin Producto'}</p>
                 <p className="mb-sub"><strong>Etapa:</strong> {e.nombre}</p>
+              </div>
+            ))}
+          </SidebarSection>
+
+          <SidebarSection
+            title="Cuarentena"
+            count={pedidosCuarentenaFiltrados.length}
+            isOpen={expanded.cuarentena}
+            onToggle={() => toggleSection("cuarentena")}
+          >
+            {pedidosCuarentenaFiltrados.map((p) => (
+              <div
+                key={p.id}
+                className={`mb-item mb-item-cua ${selected?.id === p.id && selected?.tipoItem === 'cuarentena' ? "mb-item-selected" : ""}`}
+                onClick={() => seleccionarItem(p, 'cuarentena')}
+                style={{ borderLeft: "4px solid #f59e0b" }}
+              >
+                <div className="mb-item-top">
+                  <span className="mb-id">ID PEDIDO: #{p.consecutivo || p.id}</span>
+                  <span className="mb-chip" style={{ background: "#fef3c7", color: "#92400e" }}>CUARENTENA</span>
+                </div>
+                <p className="mb-title">{p.productos?.articulo || 'Sin Producto'}</p>
+                <p className="mb-sub"><strong>Cliente:</strong> {p.clientes?.nombre}</p>
               </div>
             ))}
           </SidebarSection>
@@ -783,6 +882,51 @@ export default function ControlCalidad() {
                         ✔ Confirmar y Liberar Etapa
                       </button>
                     </div>
+                  </div>
+                </>
+              ) : selected.tipoItem === 'cuarentena' ? (
+                /* VISTA DETALLE PARA CUARENTENA */
+                <>
+                  <div className="mb-card" style={{ borderTop: "4px solid #f59e0b" }}>
+                    <h3>🛡️ Liberación de Cuarentena - Pedido #{selected.id}</h3>
+                    <div className="mb-grid">
+                      <p><strong>Producto:</strong> {selected.productos?.articulo}</p>
+                      <p><strong>Forma Farm.:</strong> {selected.productos?.forma_farmaceutica || "-"}</p>
+                      <p><strong>Cliente:</strong> {selected.clientes?.nombre}</p>
+                      <p><strong>Cantidad:</strong> {selected.cantidad}</p>
+                      <p><strong>OP:</strong> {selected.op || "-"}</p>
+                      <p><strong>Lote:</strong> {selected.lote || "-"}</p>
+                      <p><strong>Vence:</strong> {selected.fecha_vencimiento || "-"}</p>
+                      <p><strong>Estado Actual:</strong> {selected.estados?.nombre}</p>
+                    </div>
+                  </div>
+
+                  <div className="mb-card">
+                    <h3>✅ Liberación para Cuarentena Física</h3>
+                    <div className="mb-status-box success" style={{
+                      padding: "15px",
+                      borderRadius: "10px",
+                      marginBottom: "15px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "10px",
+                      background: "#fef3c7",
+                      border: "1px solid #fcd34d"
+                    }}>
+                      <span style={{ fontSize: "20px" }}>ℹ️</span>
+                      <p style={{ margin: 0, color: "#92400e" }}>
+                        Esta liberación permite el traslado del producto al área de cuarentena. 
+                        <strong> No requiere esperar el análisis de esterilidad.</strong>
+                      </p>
+                    </div>
+
+                    <button
+                      className="pc-btn"
+                      style={{ width: '100%', background: "#f59e0b" }}
+                      onClick={liberarCuarentena}
+                    >
+                      ✔ Liberar para Cuarentena
+                    </button>
                   </div>
                 </>
               ) : (
