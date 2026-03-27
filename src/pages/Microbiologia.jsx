@@ -1072,7 +1072,7 @@ export default function Microbiologia() {
                                 {accionLoading ? "Procesando…" : "Rechazar (Obligatorio)"}
                               </button>
                               <button className="mb-btn" style={{ flex: 1 }} onClick={liberarSolicitud} disabled={accionLoading}>
-                                {accionLoading ? "Procesando…" : (esEsterilizacion ? "✅ Aprobar tirilla" : "Confirmar y Liberar")}
+                                {accionLoading ? "Procesando…" : (esEsterilizacion ? "✅ Resultado positivo MB (Liberar)" : "Confirmar y Liberar")}
                               </button>
                             </div>
                           </>
