@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "../api/supabaseClient";
 import { useNotifications } from "../context/NotificationsContext";
 import { useTheme } from "../context/ThemeContext";
+import Navbar from "../components/navbar";
 import "./Clientes.css";
 
 export default function Clientes() {
     const { theme } = useTheme();
     const { addNotification } = useNotifications();
+    const navigate = useNavigate();
 
     // Estados Generales
     const [clientes, setClientes] = useState([]);
@@ -109,16 +112,21 @@ export default function Clientes() {
     });
 
     return (
-        <div className={`clientes-wrapper ${theme === 'dark' ? 'dark-theme' : ''}`}>
-            <div className={`clientes-header ${theme === 'dark' ? 'dark' : 'light'}`}>
-                <div className="header-info">
-                    <h1>👥 Gestión de Clientes</h1>
-                    <p>Base de datos comercial para atención y pedidos cruzados.</p>
+        <>
+            <Navbar />
+            <div className={`clientes-wrapper ${theme === 'dark' ? 'dark-theme' : ''}`}>
+                <div className={`clientes-header ${theme === 'dark' ? 'dark' : 'light'}`}>
+                    <div className="header-info">
+                        <button className="btn-back" onClick={() => navigate("/atencion")}>
+                            ⬅ Volver al Perfil
+                        </button>
+                        <h1>👥 Gestión de Clientes</h1>
+                        <p>Base de datos comercial para atención y pedidos cruzados.</p>
+                    </div>
+                    <button className="btn-add-cliente" onClick={() => setShowModal(true)}>
+                        <span>➕</span> Nuevo Cliente
+                    </button>
                 </div>
-                <button className="btn-add-cliente" onClick={() => setShowModal(true)}>
-                    <span>➕</span> Nuevo Cliente
-                </button>
-            </div>
 
             <div className="clientes-controls">
                 <input
@@ -237,5 +245,6 @@ export default function Clientes() {
                 </div>
             )}
         </div>
+        </>
     );
 }
