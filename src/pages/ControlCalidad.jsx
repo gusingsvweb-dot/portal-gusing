@@ -351,10 +351,10 @@ export default function ControlCalidad() {
     const pid = tipo === 'etapa' ? item.pedido_id : item.id;
     cargarObservaciones(pid);
 
-    if (tipo === 'pt') {
+    if (tipo === 'cuarentena') {
       await checkMicroStatus(item.id, item);
     } else {
-      setMicroLiberado(true);
+      setMicroLiberado(true); // PT ahora es directo, o Etapas
       setMicroStatusMsg("");
     }
   }
@@ -902,30 +902,42 @@ export default function ControlCalidad() {
                   </div>
 
                   <div className="mb-card">
-                    <h3>✅ Liberación para Cuarentena Física</h3>
-                    <div className="mb-status-box success" style={{
-                      padding: "15px",
-                      borderRadius: "10px",
-                      marginBottom: "15px",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "10px",
-                      background: "#fef3c7",
-                      border: "1px solid #fcd34d"
-                    }}>
-                      <span style={{ fontSize: "20px" }}>ℹ️</span>
-                      <p style={{ margin: 0, color: "#92400e" }}>
-                        Esta liberación permite el traslado del producto al área de cuarentena. 
-                        <strong> No requiere esperar el análisis de esterilidad.</strong>
-                      </p>
-                    </div>
+                    <h3>✅ Liberación de Cuarentena (Control Microbiológico)</h3>
+                    
+                    {microLoading ? (
+                      <p>Verificando estado de Microbiología...</p>
+                    ) : (
+                      <div className={`mb-status-box ${microLiberado ? "success" : "warning"}`} style={{
+                        padding: "15px",
+                        borderRadius: "10px",
+                        marginBottom: "15px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px"
+                      }}>
+                        <span style={{ fontSize: "20px" }}>{microLiberado ? "✔" : "⚠️"}</span>
+                        <p style={{ margin: 0 }}>
+                          {microStatusMsg || "Pendiente de verificación microbiológica."}
+                        </p>
+                      </div>
+                    )}
+
+                    <p className="mb-sub" style={{ marginBottom: '15px' }}>
+                      Esta liberación permite el traslado del producto al área de cuarentena. 
+                      <strong> Requiere el análisis de esterilidad para productos estériles.</strong>
+                    </p>
 
                     <button
                       className="pc-btn"
-                      style={{ width: '100%', background: "#f59e0b" }}
+                      style={{ 
+                        width: '100%', 
+                        background: "#f59e0b",
+                        cursor: microLiberado ? "pointer" : "not-allowed"
+                      }}
                       onClick={liberarCuarentena}
+                      disabled={!microLiberado || microLoading}
                     >
-                      ✔ Liberar para Cuarentena
+                      {microLoading ? "Verificando..." : "✔ Liberar para Cuarentena"}
                     </button>
                   </div>
                 </>
@@ -946,27 +958,25 @@ export default function ControlCalidad() {
                     </div>
                   </div>
 
-                  {/* BLOQUEO POR MICROBIOLOGÍA */}
+                  {/* LIBERACIÓN DIRECTA PT */}
                   <div className="mb-card">
                     <h3>✅ Liberación Final PT</h3>
 
-                    {microLoading ? (
-                      <p>Verificando estado de Microbiología...</p>
-                    ) : (
-                      <div className={`mb-status-box ${microLiberado ? "success" : "warning"}`} style={{
-                        padding: "15px",
-                        borderRadius: "10px",
-                        marginBottom: "15px",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "10px"
-                      }}>
-                        <span style={{ fontSize: "20px" }}>{microLiberado ? "✔" : "⚠️"}</span>
-                        <p style={{ margin: 0 }}>
-                          {microStatusMsg}
-                        </p>
-                      </div>
-                    )}
+                    <div className="mb-status-box success" style={{
+                      padding: "15px",
+                      borderRadius: "10px",
+                      marginBottom: "15px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "10px",
+                      background: "#dcfce7",
+                      border: "1px solid #86efac"
+                    }}>
+                      <span style={{ fontSize: "20px" }}>⚡</span>
+                      <p style={{ margin: 0, color: "#166534" }}>
+                        Liberación final de Producto Terminado. <strong>No requiere validación microbiológica adicional en este paso.</strong>
+                      </p>
+                    </div>
 
                     <p className="mb-sub" style={{ marginBottom: '15px' }}>
                       Revisión final tras Acondicionamiento. Si apruebas, el pedido pasará a <strong>Entrega a Bodega</strong>.
@@ -974,14 +984,10 @@ export default function ControlCalidad() {
 
                     <button
                       className="pc-btn"
-                      style={{
-                        width: '100%',
-                        cursor: microLiberado ? "pointer" : "not-allowed"
-                      }}
+                      style={{ width: '100%' }}
                       onClick={liberarPT}
-                      disabled={!microLiberado || microLoading}
                     >
-                      {microLoading ? "Verificando..." : "✔ Aprobar y Liberar PT"}
+                      ✔ Aprobar y Liberar PT
                     </button>
                   </div>
                 </>
