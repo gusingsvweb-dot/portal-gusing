@@ -281,7 +281,7 @@ export default function ControlCalidad() {
     // 1. Buscar en Etapas Intermedias
     const e = etapas.find(it => it.pedido_id === targetId);
     if (e) {
-      seleccionarEtapa(e);
+      seleccionarItem(e, 'etapa');
       // Limpiar URL para evitar re-selección infinita si el usuario navega
       window.history.replaceState({}, '', window.location.pathname);
       return;

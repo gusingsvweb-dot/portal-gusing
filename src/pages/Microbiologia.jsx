@@ -201,7 +201,7 @@ export default function Microbiologia() {
 
   // Seleccionar automáticamente si viene un ?id= en la URL
   useEffect(() => {
-    if (pedidos.length === 0 && solicitudesIniciales.length === 0 && etapas.length === 0) return;
+    if (solicitudesIniciales.length === 0 && etapas.length === 0) return;
     const idParam = searchParams.get("id");
     if (!idParam) return;
     const targetId = Number(idParam);
@@ -220,7 +220,7 @@ export default function Microbiologia() {
       seleccionarSolicitud(s);
       window.history.replaceState({}, '', window.location.pathname);
     }
-  }, [pedidos, solicitudesIniciales, etapas, searchParams]);
+  }, [solicitudesIniciales, etapas, searchParams]);
 
   /* ===========================================================
      FILTROS (Memo)
