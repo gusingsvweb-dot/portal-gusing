@@ -555,8 +555,8 @@ export default function Produccion() {
   ============================================================ */
   const pedidosFiltrados = useMemo(() => {
     return pedidos.filter((p) => {
-      // Ocultar finalizados por defecto (solo ver en Cerrados o si se filtra específicamente)
-      if (p.estado_id === 12 && filtroEstado !== "12") return false;
+      // Ocultar finalizados (12) y cancelados (22) por defecto (solo ver en Cerrados o si se filtra específicamente)
+      if ((p.estado_id === 12 || p.estado_id === 22) && filtroEstado === "todos") return false;
 
       // Modo Lote vía URL (Filtro Especial)
       if (isModoLoteUrl) {

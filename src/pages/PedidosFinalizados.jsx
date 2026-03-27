@@ -29,7 +29,7 @@ export default function PedidosFinalizados() {
         clientes ( nombre ),
         estados ( nombre )
       `)
-      .eq("estado_id", 12)
+      .in("estado_id", [12, 22])
       .order("id", { ascending: false });
 
     if (error) {
@@ -135,6 +135,7 @@ export default function PedidosFinalizados() {
             <option value="todos">Estado: Todos</option>
             <option value="11">Entregado a Bodega</option>
             <option value="12">Producción Finalizada</option>
+            <option value="22">Cancelado</option>
           </select>
 
           {/* Responsable */}
