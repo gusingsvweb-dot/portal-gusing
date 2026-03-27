@@ -293,8 +293,8 @@ export default function Bodega() {
         const { notifyRoles } = await import("../api/notifications");
         await notifyRoles(
           ["produccion"],
-          "Entrega Parcial Bodega",
-          `Bodega acaba de marcar como entregado el ítem "${item.articulo_nombre}" para el Pedido #${selected.id}.`,
+          "Insumos Bodega",
+          `Bodega entrego insumos para el pedido #${selected.id}`,
           selected.id,
           "informacion"
         );
@@ -400,10 +400,13 @@ export default function Bodega() {
       // Notificar (Generico)
       try {
         const { notifyRoles } = await import("../api/notifications");
-        const msgTitulo = "Materias Primas/insumos ENVIADAS";
-        const msgCuerpo = `Bodega ha enviado insumos para el Pedido #${selected.id}`;
-
-        await notifyRoles(["produccion"], msgTitulo, msgCuerpo, selected.id, "accion_requerida");
+        await notifyRoles(
+          ["produccion"], 
+          "Insumos Bodega", 
+          `Bodega entrego insumos para el pedido #${selected.id}`, 
+          selected.id, 
+          "accion_requerida"
+        );
       } catch (err) { console.error(err); }
 
       alert("Entrega registrada. Pedido enviado a Producción.");
@@ -420,8 +423,8 @@ export default function Bodega() {
         const { notifyRoles } = await import("../api/notifications");
         await notifyRoles(
           ["produccion"],
-          "Actualización de Insumos",
-          `Bodega ha actualizado insumos para el Pedido #${selected.id}.`,
+          "Insumos Bodega",
+          `Bodega entrego insumos para el pedido #${selected.id}`,
           selected.id,
           "informacion"
         );
