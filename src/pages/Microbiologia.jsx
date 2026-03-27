@@ -837,8 +837,8 @@ export default function Microbiologia() {
 
       // Recargar para que cambie de lista
       await loadTodo();
-      // Opcional: mantener seleccionado o limpiar
       setSelected(null);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
     setAccionLoading(false);
   }
