@@ -98,6 +98,17 @@ export default function Microbiologia() {
   // OBSERVACIONES
   const [obs, setObs] = useState([]);
   const [newObs, setNewObs] = useState("");
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [successMsg, setSuccessMsg] = useState("");
+
+  function notifySuccess(msg) {
+    setSuccessMsg(msg);
+    setShowSuccess(true);
+    setTimeout(() => {
+      setShowSuccess(false);
+      setSuccessMsg("");
+    }, 5000);
+  }
 
   const commentRef = React.useRef("");
   useEffect(() => {
@@ -647,9 +658,11 @@ export default function Microbiologia() {
 
         setAccionLoading(false);
         setComentario("");
-        window.scrollTo({ top: 0, left: 0 }); // Fix jump BEFORE layout shift
+        window.scrollTo({ top: 0, left: 0 }); 
+        const nombreEtapa = selected.nombre;
         setSelected(null);
         await loadTodo();
+        notifySuccess(`✅ Etapa "${nombreEtapa}" liberada correctamente para Control de Calidad.`);
       },
       false, // isRejection
       true,   // isChoice
@@ -829,6 +842,7 @@ export default function Microbiologia() {
         window.scrollTo({ top: 0, left: 0 });
         setSelected(null);
         await loadTodo();
+        notifySuccess("✅ Análisis inicial liberado correctamente para Control de Calidad.");
       },
       false, // isRejection
       true,   // isChoice
@@ -1086,6 +1100,22 @@ export default function Microbiologia() {
 
         {/* DETALLE DERECHA */}
         <div className="mb-detail">
+          {showSuccess && (
+            <div className="fadeIn" style={{ 
+              background: '#ecfdf5', 
+              color: '#065f46', 
+              padding: '15px', 
+              borderRadius: '8px', 
+              border: '1px solid #10b981',
+              marginBottom: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              fontWeight: '500'
+            }}>
+              <span>✨</span> {successMsg}
+            </div>
+          )}
           {!selected ? (
             <div className="mb-card">
               <p>Selecciona un elemento para ver detalles y liberar.</p>
