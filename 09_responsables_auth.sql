@@ -16,8 +16,9 @@ CREATE TABLE IF NOT EXISTS responsables_liberacion (
 
 INSERT INTO responsables_liberacion (nombre, area, clave)
 VALUES 
-('Analista CC 1', 'control_calidad', '1234'),
-('Jefe Calidad', 'control_calidad', '5678'),
+('Jefe Control de Calidad', 'control_calidad', '4678'),
+('Coordinador Control de Calidad', 'control_calidad', '0495'),
+('Auxiliar Control de Calidad', 'control_calidad', '1025'),
 ('Microbiólogo 1', 'microbiologia', '1111'),
 ('Jefe Microbiología', 'microbiologia', '2222');
 

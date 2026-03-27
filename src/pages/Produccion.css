@@ -56,6 +56,16 @@ body {
   background-color: var(--bg-app);
 }
 
+.pc-item-in-batch {
+  border-color: #3b82f6 !important;
+  background-color: #eff6ff !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.pc-item-in-batch:hover {
+  background-color: #dbeafe !important;
+}
+
 /* Texto interno */
 .pc-item p,
 .pc-item h4 {

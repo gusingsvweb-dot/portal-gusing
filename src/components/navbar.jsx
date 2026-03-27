@@ -68,6 +68,7 @@ export default function Navbar() {
         title: "Producción",
         items: [
           { to: "/produccion", label: "Asignados", icon: "⚙️" },
+          { to: "/produccion?lote=true", label: "Desp. en Lote", icon: "🧫" },
           { to: "/calendario", label: "Agenda", icon: "📅" },
           { to: "/pedidos-finalizados", label: "Cerrados", icon: "📂" },
           { to: "/consolidado", label: "Consolidado", icon: "📊" },

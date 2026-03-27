@@ -760,53 +760,41 @@ export default function Microbiologia() {
         if (nAnalisis) updateData.numero_analisis = nAnalisis;
         if (respManual) updateData.responsable_manual = respManual;
 
-        const { error } = await supabase
+        // 1. Marcar la solicitud como liberada
+        const { error: errSol } = await supabase
           .from("solicitudes")
           .update(updateData)
           .eq("id", selected.id);
 
-        if (error) {
-          alert("Error liberando solicitud.");
+        if (errSol) {
+          alert("Error liberando solicitud: " + errSol.message);
           setAccionLoading(false);
           return;
         }
 
-        // Guardar en historial oficial SIEMPRE para trazabilidad de fecha/hora
-        if (selected.consecutivo) {
-          const esEsterilizacion = toLowerSafe(selected.tipos_solicitud?.nombre).includes("esterilizaci") || toLowerSafe(selected.descripcion).includes("esterilizaci");
-          const accionBase = esEsterilizacion ? "✅ TIRILLA APROBADA / ESTERILIZACIÓN LIBERADA" : "✅ LIBERACIÓN INICIAL MB";
-          const obsTexto = currentComment ? `${accionBase}: ${currentComment}` : `${accionBase} (sin comentario adicional)`;
+        // 2. DETECTAR SI ES LOTE
+        const desc = selected.descripcion || "";
+        const esLote = desc.includes("[LOTE_DESPIROGENIZACION]");
+        
+        if (esLote) {
+          // Extraer IDs usando regex (e.g. #75, #76)
+          const matches = desc.match(/#(\d+)/g) || [];
+          const idsLote = matches.map(m => parseInt(m.replace("#", ""), 10));
 
-          await supabase.from("observaciones_pedido").insert({
-            pedido_id: selected.consecutivo,
-            usuario: usuarioActual?.usuario || "Microbiología",
-            observacion: obsTexto,
-          });
-        }
-
-        if (selected.consecutivo) {
-          // ACTUALIZAR FECHA SALIDA MB EN PEDIDO (Fin Análisis)
-          // Si no había inicio marcado, lo igualamos a salida para que no quede nulo
-          await supabase
-            .from("pedidos_produccion")
-            .update({ 
-              fecha_salida_mb: ahoraISO(),
-              ...(selected.pedidoVinculado && !selected.pedidoVinculado.fecha_inicio_analisis_mb ? { fecha_inicio_analisis_mb: ahoraISO() } : {})
-            })
-            .eq("id", selected.consecutivo);
-
-          await notifyRoles(
-            ["produccion", "controlcalidad"],
-            "Liberación MB Inicial",
-            `Microbiología ha liberado la solicitud inicial #${selected.id} (Pedido #${selected.consecutivo}).`,
-            selected.consecutivo,
-            "proceso_completado"
-          );
+          if (idsLote.length > 0) {
+            for (const pid of idsLote) {
+              await procesarLiberacionAutomaticaEtapa(pid, currentComment, nAnalisis, respManual);
+            }
+            alert(`Lote procesado. Se liberaron ${idsLote.length} pedidos.`);
+          }
+        } else if (selected.consecutivo) {
+          // Lógica normal para un solo pedido
+          await registrarSalidaMBSimple(selected.consecutivo, currentComment, nAnalisis, respManual);
         }
 
         setAccionLoading(false);
         setComentario("");
-        window.scrollTo({ top: 0, left: 0 }); // Fix jump BEFORE layout shift
+        window.scrollTo({ top: 0, left: 0 });
         setSelected(null);
         await loadTodo();
       },
@@ -814,6 +802,89 @@ export default function Microbiologia() {
       true,   // isChoice
       "liberar"
     );
+  }
+
+  /* ===========================================================
+     HELPERS PARA LIBERACIÓN (Individual y Lote)
+  ============================================================ */
+
+  // Registra salida de un pedido simple (solicitud inicial)
+  async function registrarSalidaMBSimple(pid, comment, nAnalisis, respManual) {
+    const pData = (pedidos || []).find(p => p.id === pid); // si lo tenemos en memoria
+    
+    // Trazabilidad
+    const esEsterilizacion = toLowerSafe(selected?.tipos_solicitud?.nombre).includes("esterilizaci") || toLowerSafe(selected?.descripcion).includes("esterilizaci");
+    const accionBase = esEsterilizacion ? "✅ TIRILLA APROBADA" : "✅ LIBERACIÓN INICIAL MB";
+    const obsTexto = comment ? `${accionBase}: ${comment}` : `${accionBase}`;
+
+    await supabase.from("observaciones_pedido").insert({
+      pedido_id: pid,
+      usuario: usuarioActual?.usuario || "Microbiología",
+      observacion: obsTexto,
+    });
+
+    // Actualizar pedido
+    await supabase.from("pedidos_produccion").update({ 
+      fecha_salida_mb: ahoraISO(),
+    }).eq("id", pid);
+
+    // Notificar
+    await notifyRoles(["produccion"], "Liberación MB", `Liberado Pedido #${pid}`, pid, "proceso_completado");
+  }
+
+  // Busca y libera la etapa de "Despirogenización/Lavado" de un pedido específico
+  async function procesarLiberacionAutomaticaEtapa(pid, comment, nAnalisis, respManual) {
+    // 1. Buscar la etapa activa que sea Lavado o Despirogenización para este pedido
+    const { data: etapas } = await supabase
+      .from("pedido_etapas")
+      .select("id, nombre")
+      .eq("pedido_id", pid)
+      .neq("estado", "completada");
+
+    const etapaBatch = (etapas || []).find(e => 
+      e.nombre.toLowerCase().includes("lavado") || 
+      e.nombre.toLowerCase().includes("despirogeniza")
+    );
+
+    if (!etapaBatch) return;
+
+    // 2. Marcar liberación por Micro
+    const upLib = {
+      liberada: true,
+      usuario_id: usuarioActual?.id || null,
+      comentario: comment || "Liberado en Lote por Microbiología.",
+    };
+    if (nAnalisis) upLib.numero_analisis = nAnalisis;
+    if (respManual) upLib.responsable_manual = respManual;
+
+    await supabase
+      .from("pedido_etapas_liberaciones")
+      .update(upLib)
+      .eq("pedido_etapa_id", etapaBatch.id)
+      .eq("rol", "microbiologia");
+
+    // 3. Verificar si se completa la etapa (si solo micro liberaba)
+    const { data: todas } = await supabase
+      .from("pedido_etapas_liberaciones")
+      .select("liberada")
+      .eq("pedido_etapa_id", etapaBatch.id);
+
+    if (todas?.every(l => l.liberada)) {
+      await supabase
+        .from("pedido_etapas")
+        .update({ estado: "completada", fecha_fin: ahoraISO() })
+        .eq("id", etapaBatch.id);
+    }
+
+    // 4. Trazabilidad y Notificación
+    await supabase.from("observaciones_pedido").insert({
+      pedido_id: pid,
+      usuario: usuarioActual?.usuario || "Microbiología",
+      observacion: `✅ LIBERACIÓN EN LOTE (Etapa: ${etapaBatch.nombre}): ${comment || "Sin comentarios"}`,
+    });
+
+    await notifyRoles(["produccion"], "Lote Liberado", `Etapa ${etapaBatch.nombre} liberada para #${pid}`, pid, "proceso_completado");
+    await checkAndNotifyFlowCompletion(pid);
   }
 
   // NUEVA FUNCIÓN: INICIAR ANÁLISIS

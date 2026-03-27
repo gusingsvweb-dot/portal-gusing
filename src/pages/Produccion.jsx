@@ -1,5 +1,6 @@
 // src/pages/Produccion.jsx
 import React, { useState, useEffect, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "../api/supabaseClient";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
@@ -99,6 +100,9 @@ function CollapsibleSection({ title, children, isOpen, onToggle }) {
    COMPONENTE PRINCIPAL
 =========================================================== */
 export default function Produccion() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const isModoLoteUrl = searchParams.get("lote") === "true";
+
   const { usuarioActual } = useAuth(); // { usuario, rol, areadetrabajo, correo ... }
   const rolUsuario = usuarioActual?.rol || "produccion";
   const esProduccion = rolUsuario === "produccion";
@@ -165,6 +169,7 @@ export default function Produccion() {
   const [itemsSolicitados, setItemsSolicitados] = useState([]);
   const [showItemsSolicitados, setShowItemsSolicitados] = useState(false);
   const [haSolicitadoMicro, setHaSolicitadoMicro] = useState(false);
+  const [selectedBatchIds, setSelectedBatchIds] = useState([]); // Array de IDs seleccionados para lote
 
   // NUEVO: Modal de devolución de sobrantes
   const [showDevolucionModal, setShowDevolucionModal] = useState(false);
@@ -489,6 +494,41 @@ export default function Produccion() {
 
     loadEtapasBatch();
   }, [pedidos]);
+
+  /* ===========================================================
+     FILTRADO DE PEDIDOS
+  ============================================================ */
+  const pedidosFiltrados = useMemo(() => {
+    return pedidos.filter((p) => {
+      // Modo Lote vía URL (Filtro Especial)
+      if (isModoLoteUrl) {
+        const canBatch = p.id && p.estado_id === 8 && (
+          (etapasDict[p.id] || "").toLowerCase().includes("lavado") || 
+          (etapasDict[p.id] || "").toLowerCase().includes("despirogeniza")
+        );
+        const esEsteril = (p.productos?.forma_farmaceutica || "").toLowerCase().includes("esteril") || 
+                          (p.productos?.forma_farmaceutica || "").toLowerCase().includes("estéril");
+        return esEsteril && canBatch;
+      }
+
+      const texto = filtroTexto.toLowerCase();
+      const matchTexto = !texto ||
+        p.productos?.articulo?.toLowerCase().includes(texto) ||
+        p.clientes?.nombre?.toLowerCase().includes(texto) ||
+        p.id.toString().includes(texto);
+
+      const matchEstado =
+        filtroEstado === "todos" || String(p.estado_id) === String(filtroEstado);
+
+      const matchAsignado =
+        filtroAsignado === "todos" ||
+        (filtroAsignado === "produccion" && p.asignado_a === "produccion") ||
+        (filtroAsignado === "bodega" && p.asignado_a === "bodega") ||
+        (filtroAsignado === "sin" && !p.asignado_a);
+
+      return matchTexto && matchEstado && matchAsignado;
+    }).sort((a, b) => b.id - a.id);
+  }, [pedidos, filtroTexto, filtroEstado, filtroAsignado, etapasDict, isModoLoteUrl]);
 
   /* ===========================================================
      CARGAR OBSERVACIONES
@@ -1111,6 +1151,75 @@ export default function Produccion() {
     await reloadSelected();
   }
 
+  /* ===========================================================
+     CREAR SOLICITUD MB EN LOTE (Múltiples pedidos)
+  ============================================================ */
+  async function crearSolicitudLoteMB() {
+    if (selectedBatchIds.length < 2) return;
+
+    // 1. Filtrar los pedidos seleccionados del estado local
+    const seleccionados = pedidos.filter(p => selectedBatchIds.includes(p.id));
+    
+    // 2. Pedir confirmación
+    const listaIds = seleccionados.map(p => `#${p.id}`).join(", ");
+    pedirConfirmacion(
+      `¿Confirmas enviar una solicitud UNIFICADA para los pedidos: ${listaIds}?`,
+      async () => {
+        setLoading(true);
+
+        try {
+          // A) Crear la solicitud unificada en la tabla solicitudes
+          const descLote = `[LOTE_DESPIROGENIZACION] IDs Seleccionados: ${listaIds}. Solicitado por Producción para proceso conjunto.`;
+          
+          const { error: errSol } = await supabase.from("solicitudes").insert([
+            {
+              tipo_solicitud_id: 1, // Análisis Microbiológico
+              prioridad_id: 2, // Normal
+              descripcion: descLote,
+              usuario_id: usuarioActual?.usuario,
+              area_solicitante: "produccion",
+              estado_id: 1,
+              area_id: areaMicroId,
+              consecutivo: seleccionados[0].id, // Referencia principal
+            },
+          ]);
+
+          if (errSol) throw errSol;
+
+          // B) Actualizar cada pedido en el lote
+          for (const p of seleccionados) {
+            await supabase.from("pedidos_produccion").update({
+              fecha_entrada_mb: hoyISO(),
+              estado_id: 8,
+              asignado_a: "produccion"
+            }).eq("id", p.id);
+
+            // Crear etapas si no existen
+            await crearEtapasParaPedidoSiNoExisten(p);
+          }
+
+          // 🔔 NOTIFICAR A MICROBIOLOGÍA
+          await notifyRoles(
+            ["microbiologia"],
+            "Solicitud en LOTE a Microbiología",
+            `Se ha creado un lote de despirogenización consolidado para: ${listaIds}.`,
+            seleccionados[0].id,
+            "urgente"
+          );
+
+          alert("Solicitud en lote enviada con éxito.");
+          setSelectedBatchIds([]);
+          await loadPedidos();
+        } catch (err) {
+          console.error("❌ Error en solicitud lote:", err);
+          alert("Error al procesar el lote: " + err.message);
+        } finally {
+          setLoading(false);
+        }
+      }
+    );
+  }
+
   // NUEVO: Avanzar sin solicitud (si no es estéril)
   async function avanzarSinSolicitudMB() {
     if (!selected) return;
@@ -1571,27 +1680,6 @@ export default function Produccion() {
   const puedeEditar =
     selected &&
     (!selected.asignado_a || selected.asignado_a.trim().toLowerCase() === "produccion");
-
-  const pedidosFiltrados = pedidos.filter((p) => {
-    const texto = filtroTexto.toLowerCase();
-
-    const coincideTexto =
-      !texto ||
-      p.productos?.articulo?.toLowerCase().includes(texto) ||
-      p.clientes?.nombre?.toLowerCase().includes(texto) ||
-      (p.op && String(p.op).toLowerCase().includes(texto));
-
-    const coincideEstado =
-      filtroEstado === "todos" || String(p.estado_id) === String(filtroEstado);
-
-    const coincideAsignado =
-      filtroAsignado === "todos" ||
-      (filtroAsignado === "produccion" && p.asignado_a === "produccion") ||
-      (filtroAsignado === "bodega" && p.asignado_a === "bodega") ||
-      (filtroAsignado === "sin" && !p.asignado_a);
-
-    return coincideTexto && coincideEstado && coincideAsignado;
-  });
 
   /* ===========================================================
      RENDER: bloque de flujo nuevo
@@ -2140,7 +2228,83 @@ export default function Produccion() {
       <div className="pc-wrapper">
         {/* LISTA IZQUIERDA */}
         <div className="pc-list">
-          <h2>🏭 Producción</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <h2 style={{ margin: 0 }}>🏭 Producción</h2>
+            {isModoLoteUrl && (
+              <span style={{ 
+                background: '#2563eb', 
+                color: 'white', 
+                fontSize: '11px', 
+                padding: '4px 8px', 
+                borderRadius: '12px',
+                fontWeight: '600',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}>
+                🧫 Modo Lote
+              </span>
+            )}
+          </div>
+
+          {isModoLoteUrl && (
+            <div style={{ 
+              marginBottom: '10px', 
+              fontSize: '12px', 
+              color: '#64748b',
+              background: '#f8fafc',
+              padding: '8px',
+              borderRadius: '6px',
+              border: '1px solid #e2e8f0',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <span>Viendo solo estériles para batch</span>
+              <button 
+                style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', fontWeight: 'bold' }}
+                onClick={() => setSearchParams({})}
+              >
+                Ver todos
+              </button>
+            </div>
+          )}
+
+          {/* BARRA DE ACCIONES EN LOTE (Sticky superior) */}
+          {selectedBatchIds.length >= 2 && (
+            <div className="fadeIn" style={{ 
+              background: '#eff6ff', 
+              padding: '12px', 
+              borderRadius: '8px', 
+              marginBottom: '15px', 
+              border: '1px solid #bfdbfe',
+              boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+              position: 'sticky',
+              top: '0',
+              zIndex: 100
+            }}>
+              <p style={{ fontSize: '13px', color: '#1e40af', margin: '0 0 10px 0', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <span style={{ background: '#2563eb', color: 'white', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}>{selectedBatchIds.length}</span> 
+                Pedidos seleccionados para Lote
+              </p>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button 
+                  className="pc-btn" 
+                  style={{ background: '#2563eb', fontSize: '12px', padding: '6px 12px', flex: 1, border: 'none' }}
+                  onClick={crearSolicitudLoteMB}
+                >
+                  🧫 Solicitar Lote MB
+                </button>
+                <button 
+                  className="pc-btn" 
+                  style={{ background: '#f8fafc', color: '#64748b', fontSize: '12px', padding: '6px 12px', border: '1px solid #cbd5e1' }}
+                  onClick={() => setSelectedBatchIds([])}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="pc-filters">
             <input
@@ -2181,13 +2345,39 @@ export default function Produccion() {
             </select>
           </div>
 
-          {pedidosFiltrados.map((p) => (
-            <div
-              key={p.id}
-              className={`pc-item ${selected?.id === p.id ? "pc-item-selected" : ""}`}
-              onClick={() => seleccionarPedido(p)}
-            >
-              <span className="pc-id-tag">#{p.id}</span>
+          {pedidosFiltrados.map((p) => {
+            const isSelected = selected?.id === p.id;
+            const inBatch = selectedBatchIds.includes(p.id);
+            const canBatch = p.estado_id === 8 && ((etapasDict[p.id] || "").toLowerCase().includes("lavado") || (etapasDict[p.id] || "").toLowerCase().includes("despirogeniza"));
+            const esEsteril = (p.productos?.forma_farmaceutica || "").toLowerCase().includes("esteril") || (p.productos?.forma_farmaceutica || "").toLowerCase().includes("estéril");
+
+            return (
+              <div
+                key={p.id}
+                className={`pc-item ${isSelected ? "pc-item-selected" : ""} ${inBatch ? "pc-item-in-batch" : ""}`}
+                style={{ position: 'relative' }}
+                onClick={() => seleccionarPedido(p)}
+              >
+                {/* CHECKBOX PARA LOTE (Solo si aplica) */}
+                {esEsteril && (
+                  <div 
+                    style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 10 }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedBatchIds(prev => 
+                        prev.includes(p.id) ? prev.filter(id => id !== p.id) : [...prev, p.id]
+                      );
+                    }}
+                  >
+                    <input 
+                      type="checkbox" 
+                      checked={inBatch} 
+                      onChange={() => {}} // handled by div click
+                      style={{ cursor: 'pointer', transform: 'scale(1.2)' }}
+                    />
+                  </div>
+                )}
+                <span className="pc-id-tag">#{p.id}</span>
 
               <h4>{p.productos?.articulo}</h4>
               <small style={{ display: 'block', color: '#64748b', marginBottom: '4px' }}>
@@ -2215,8 +2405,9 @@ export default function Produccion() {
               <p style={{ fontSize: "13px", marginTop: "6px", color: "#475569" }}>
                 <strong>Asignado a:</strong> {p.asignado_a || "Sin asignar"}
               </p>
-            </div>
-          ))}
+                </div>
+              );
+            })}
 
           {pedidosFiltrados.length === 0 && (
             <p style={{ marginTop: 10, fontSize: 14, color: "#777" }}>
