@@ -1628,6 +1628,22 @@ export default function Produccion() {
     }
 
     await reloadSelected();
+    
+    // 🔔 NOTIFICAR AL NUEVO ASIGNADO (si cambió y no es producción)
+    if (update.asignado_a && update.asignado_a !== "produccion") {
+      try {
+        await notifyRoles(
+          [update.asignado_a],
+          "Nuevo pedido asignado",
+          `Se te ha asignado el Pedido #${selected.id} (${selected.productos?.articulo || "Sin producto"}). Estado: ${selected.estados?.nombre || "Actualizado"}.`,
+          selected.id,
+          "accion_requerida"
+        );
+      } catch (errNotif) {
+        console.error("Error enviando notificación de asignación:", errNotif);
+      }
+    }
+
     setFormData({});
   }
 

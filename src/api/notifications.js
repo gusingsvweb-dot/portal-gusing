@@ -107,7 +107,7 @@ export async function checkAndNotifyFlowCompletion(pedidoId) {
 
         if (todasCompletas) {
             await notifyRoles(
-                ["produccion"],
+                ["produccion", "acondicionamiento"],
                 "🚀 Flujo de Etapas Completo",
                 `Todas las etapas internas del Pedido #${pedidoId} han finalizado. Ya puede ingresar a Acondicionamiento.`,
                 pedidoId,
