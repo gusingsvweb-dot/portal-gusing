@@ -193,10 +193,18 @@ export default function Navbar() {
     []
   );
 
-  const getNotificationRoute = (pedidoId) => {
-    if (!pedidoId) return null;
+  const getNotificationRoute = (n) => {
+    if (!n.pedido_id) return null;
+
+    if (rol === "atencion") {
+      const t = (n.titulo || "").toLowerCase();
+      if (t.includes("autoriza")) {
+        return `/autorizar-despachos?id=${n.pedido_id}`;
+      }
+      return `/pedidos-curso?id=${n.pedido_id}`;
+    }
+
     const routes = {
-      atencion: "/atencion",
       produccion: "/produccion",
       bodega: "/bodega",
       bodega_mp: "/bodega-mp",
@@ -208,15 +216,16 @@ export default function Navbar() {
       controlcalidad: "/ControlCalidad",
       direcciontecnica: "/direccion-tecnica",
       garantiacalidad: "/garantiacalidad",
-      usuario: "/usuario/mis-solicitudes"
+      usuario: "/usuario/mis-solicitudes",
+      atencion: "/pedidos-curso"
     };
     const base = routes[rol] || "/dashboard";
-    return `${base}?id=${pedidoId}`;
+    return `${base}?id=${n.pedido_id}`;
   };
 
   const handleNotifClick = (n) => {
     if (!n.leida) marcarLeida(n.id);
-    const route = getNotificationRoute(n.pedido_id);
+    const route = getNotificationRoute(n);
     if (route) {
       setOpen(false);
       navigate(route);

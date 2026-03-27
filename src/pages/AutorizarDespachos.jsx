@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "../api/supabaseClient";
 import Navbar from "../components/navbar.jsx";
 import Footer from "../components/Footer";
@@ -6,6 +7,8 @@ import { notifyRoles } from "../api/notifications";
 import "./AtencionCliente.css";
 
 export default function AutorizarDespachos() {
+    const [searchParams] = useSearchParams();
+    const highlightedId = Number(searchParams.get("id")) || null;
     const [pendientes, setPendientes] = useState([]);
     const [loading, setLoading] = useState(false);
 
@@ -95,7 +98,7 @@ export default function AutorizarDespachos() {
                                 </thead>
                                 <tbody>
                                     {pendientes.map(p => (
-                                        <tr key={p.id}>
+                                        <tr key={p.id} style={{ backgroundColor: highlightedId === p.id ? "#e0f2fe" : "transparent", transition: "background-color 0.3s" }}>
                                             <td><strong>#{p.id}</strong></td>
                                             <td>{p.productos?.articulo}</td>
                                             <td>{p.clientes?.nombre}</td>
