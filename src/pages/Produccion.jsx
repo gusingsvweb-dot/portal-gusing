@@ -390,7 +390,11 @@ export default function Produccion() {
 
   const etapaActual = useMemo(() => {
     if (!pedidoEtapas?.length) return null;
-    const pendientes = pedidoEtapas.filter((e) => e.estado !== ESTADO_ETAPA.COMPLETADA);
+    const pendientes = pedidoEtapas.filter((e) => {
+      const isCompletada = e.estado === ESTADO_ETAPA.COMPLETADA;
+      const isParticulas = e.nombre?.toLowerCase().includes("partículas visibles");
+      return !isCompletada && !isParticulas;
+    });
     pendientes.sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0));
     return pendientes[0] || null;
   }, [pedidoEtapas]);
@@ -1743,6 +1747,9 @@ export default function Produccion() {
 
             <div style={{ marginTop: 10 }}>
               {pedidoEtapas.map((e) => {
+                // DESAPARECER: No mostrar revisión de partículas en producción
+                if (e.nombre?.toLowerCase().includes("partículas visibles")) return null;
+
                 const est = (e.estado || "").toLowerCase();
                 const chip =
                   est === "completada" ? "estado-12" :
