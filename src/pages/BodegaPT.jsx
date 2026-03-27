@@ -87,6 +87,13 @@ export default function BodegaPT() {
 
     async function despacharProducto() {
         if (!selected) return;
+        
+        // Bloqueo por Cuarentena
+        if (!selected.fecha_liberacion_cuarentena) {
+            alert("⚠️ No se puede despachar: El pedido aún no ha sido liberado de Cuarentena por Control de Calidad.");
+            return;
+        }
+
         if (!window.confirm("¿Confirmar DESPACHO FÍSICO?")) return;
         const hoy = new Date().toISOString().slice(0, 10);
         const { error } = await supabase.from("pedidos_produccion").update({ estado_id: 12, asignado_a: "completado", fecha_entrega_cliente: hoy }).eq("id", selected.id);
@@ -132,7 +139,29 @@ export default function BodegaPT() {
                             <p><strong>Cliente:</strong> {selected.clientes?.nombre}</p>
                             <p><strong>Estado:</strong> {selected.estados?.nombre}</p>
                             <p><strong>Fecha Recepción:</strong> {selected.fecha_recepcion_cliente || "—"}</p>
+                            <p><strong>Liberación Cuarentena:</strong> {selected.fecha_liberacion_cuarentena 
+                                ? <span style={{color: '#10b981'}}>✔ Liberada</span> 
+                                : <span style={{color: '#ef4444'}}>⏳ Pendiente</span>}
+                            </p>
                         </div>
+
+                        {!selected.fecha_liberacion_cuarentena && (
+                            <div style={{
+                                marginTop: '15px',
+                                padding: '10px',
+                                background: '#fef2f2',
+                                border: '1px solid #fee2e2',
+                                borderRadius: '8px',
+                                color: '#991b1b',
+                                fontSize: '13px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px'
+                            }}>
+                                <span>⚠️</span>
+                                <p style={{margin: 0}}><strong>Atención:</strong> Este pedido no puede ser despachado físicamente hasta que sea liberado de Cuarentena por Control de Calidad.</p>
+                            </div>
+                        )}
 
                         {/* SECCIÓN DE OBSERVACIONES */}
                         <div style={{ marginTop: '20px', padding: '15px', backgroundColor: 'var(--bg-app)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>

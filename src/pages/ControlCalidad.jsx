@@ -182,7 +182,8 @@ export default function ControlCalidad() {
   }
 
   // Cargar pedidos para liberación PT (Estado 10)
-  async function loadPedidosPT() {
+  async function loadPedidosQC() {
+    // PT y Cuarentena pueden estar en estado 10 o 11 (si PT se liberó pero Cuarentena no)
     const { data, error } = await supabase
       .from("pedidos_produccion")
       .select(`
@@ -191,7 +192,7 @@ export default function ControlCalidad() {
         clientes ( nombre ),
         estados ( nombre )
       `)
-      .eq("estado_id", 10) // Liberación PT (y ahora Cuarentena)
+      .in("estado_id", [10, 11]) 
       .order("id", { ascending: true });
 
     if (error) console.error("Error cargando pedidos QC:", error);
@@ -232,8 +233,8 @@ export default function ControlCalidad() {
 
   const pedidosPTFiltrados = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
-    // Filtro para PT: Solo los que NO han sido liberados de PT
-    const pts = pedidosPT.filter(p => !p.fecha_liberacion_pt);
+    // PT: Solo en estado 10 y sin fecha
+    const pts = pedidosPT.filter(p => p.estado_id === 10 && !p.fecha_liberacion_pt);
     if (!q) return pts;
     return pts.filter(p =>
       p.productos?.articulo?.toLowerCase().includes(q) ||
@@ -244,8 +245,8 @@ export default function ControlCalidad() {
 
   const pedidosCuarentenaFiltrados = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
-    // Filtro para Cuarentena: Solo los que NO han sido liberados de Cuarentena
-    const cua = pedidosPT.filter(p => !p.fecha_liberacion_cuarentena);
+    // Cuarentena: En estado 10 o 11, pero sin fecha de liberación de cuarentena
+    const cua = pedidosPT.filter(p => (p.estado_id === 10 || p.estado_id === 11) && !p.fecha_liberacion_cuarentena);
     if (!q) return cua;
     return cua.filter(p =>
       p.productos?.articulo?.toLowerCase().includes(q) ||
@@ -257,7 +258,7 @@ export default function ControlCalidad() {
   async function loadTodo() {
     await Promise.all([
       loadEtapas(),
-      loadPedidosPT(),
+      loadPedidosQC(),
       loadHistorial()
     ]);
   }
@@ -648,30 +649,15 @@ export default function ControlCalidad() {
 
     pedirConfirmacion(
       "📦 Liberar Producto Terminado",
-      `¿Deseas agregar el resultado final del análisis como observación para este pedido?`,
+      `¿Deseas agregar el resultado final del análisis como observación para este pedido? Al liberar PT, el pedido pasará a Bodega.`,
       async (currentObs, nAnalisis, respManual) => {
         const fechaHoy = new Date().toISOString();
         
-        // Verificamos si ya tiene liberación de cuarentena
-        const { data: currentPedido } = await supabase
-          .from("pedidos_produccion")
-          .select("fecha_liberacion_cuarentena")
-          .eq("id", selected.id)
-          .single();
-
-        const yaTieneCuarentena = !!currentPedido?.fecha_liberacion_cuarentena;
-
         const update = {
-          fecha_liberacion_pt: fechaHoy
+          fecha_liberacion_pt: fechaHoy,
+          estado_id: 11, // Entrega a bodega
+          asignado_a: "bodega"
         };
-
-        // SOLO si ya tiene cuarentena (o si no se usa), pasamos a bodega
-        // Pero el requerimiento es que sean separadas, así que el pase a bodega
-        // ocurre cuando AMBAS están listas.
-        if (yaTieneCuarentena) {
-          update.estado_id = 11; // Entrega a bodega
-          update.asignado_a = "bodega";
-        }
 
         if (nAnalisis) update.numero_analisis_pt = nAnalisis;
         if (respManual) update.responsable_liberacion_pt = respManual;
@@ -694,23 +680,18 @@ export default function ControlCalidad() {
           });
         }
 
-        if (yaTieneCuarentena) {
-          await notifyRoles(
-            ["bodega"],
-            "Pedido Liberado por Calidad",
-            `El pedido #${selected.id} ha sido liberado totalmente (PT + Cuarentena) y está listo para despacho.`,
-            selected.id,
-            "proceso_completado"
-          );
-        }
-
-        alert(yaTieneCuarentena 
-          ? "✔ Producto Terminado liberado. Pedido enviado a Bodega." 
-          : "✔ Producto Terminado liberado (Esperando Cuarentena)."
+        await notifyRoles(
+          ["bodega"],
+          "Pedido Liberado por Calidad",
+          `El pedido #${selected.id} ha sido liberado como PT y está listo en Bodega.`,
+          selected.id,
+          "proceso_completado"
         );
+
+        alert("✔ Producto Terminado liberado. Pedido enviado a Bodega.");
         setSelected(null);
         setObs([]);
-        await loadPedidosPT();
+        await loadPedidosQC();
         await loadHistorial();
       },
       false,
@@ -723,28 +704,13 @@ export default function ControlCalidad() {
 
     pedirConfirmacion(
       "🛡️ Liberación de Cuarentena",
-      `¿Confirmas la liberación de Cuarentena para el pedido #${selected.id}? Esto permitirá el movimiento físico en bodega mientras se espera el PT.`,
+      `¿Confirmas la liberación de Cuarentena para el pedido #${selected.id}?`,
       async (currentObs, nAnalisis, respManual) => {
         const fechaHoy = new Date().toISOString();
-
-        // Verificamos si ya tiene liberación de PT
-        const { data: currentPedido } = await supabase
-          .from("pedidos_produccion")
-          .select("fecha_liberacion_pt")
-          .eq("id", selected.id)
-          .single();
-
-        const yaTienePT = !!currentPedido?.fecha_liberacion_pt;
 
         const update = {
           fecha_liberacion_cuarentena: fechaHoy
         };
-
-        // Si ya tiene PT, pasamos a bodega
-        if (yaTienePT) {
-          update.estado_id = 11;
-          update.asignado_a = "bodega";
-        }
 
         if (nAnalisis) update.numero_analisis_cua = nAnalisis; 
         if (respManual) update.responsable_liberacion_cua = respManual;
@@ -767,23 +733,10 @@ export default function ControlCalidad() {
           });
         }
 
-        if (yaTienePT) {
-          await notifyRoles(
-            ["bodega"],
-            "Pedido Liberado por Calidad",
-            `El pedido #${selected.id} ha sido liberado totalmente (PT + Cuarentena) y está listo para despacho.`,
-            selected.id,
-            "proceso_completado"
-          );
-        }
-
-        alert(yaTienePT 
-          ? "✔ Cuarentena liberada. Pedido enviado a Bodega." 
-          : "✔ Cuarentena liberada correctamente (Esperando PT)."
-        );
+        alert("✔ Cuarentena liberada correctamente.");
         setSelected(null);
         setObs([]);
-        await loadPedidosPT();
+        await loadPedidosQC();
         await loadHistorial();
       },
       false,
