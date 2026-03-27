@@ -601,6 +601,11 @@ export default function Produccion() {
     setSelected(data);
     cargarObservaciones(data.id);
     cargarPedidoEtapas(data.id);
+    
+    // Forzar actualización de la lista de insumos solicitados en este pedido si ya la tenía.
+    if (data.fecha_solicitud_materias_primas) {
+      await cargarItemsSolicitados(data.id);
+    }
   }
 
   /* ===========================================================
@@ -2371,6 +2376,7 @@ export default function Produccion() {
                               <th style={{ padding: '6px', textAlign: 'center' }}>⚠️</th>
                               <th style={{ padding: '6px' }}>Cant.</th>
                               <th style={{ padding: '6px' }}>Entr.</th>
+                              <th style={{ padding: '6px' }}>Dev.</th>
                               <th style={{ padding: '6px' }}>Obs.</th>
                               <th style={{ padding: '6px', textAlign: 'center' }}>Estado</th>
                             </tr>
@@ -2388,6 +2394,9 @@ export default function Produccion() {
                                 <td style={{ padding: '6px' }}>{it.cantidad}</td>
                                 <td style={{ padding: '6px', fontWeight: 'bold' }}>
                                   {it.cantidad_entregada || "-"}
+                                </td>
+                                <td style={{ padding: '6px', fontWeight: 'bold', color: it.cantidad_devuelta > 0 ? '#059669' : 'inherit' }}>
+                                  {it.cantidad_devuelta > 0 ? `-${it.cantidad_devuelta}` : "-"}
                                 </td>
                                 <td style={{ padding: '6px', fontStyle: 'italic', color: '#64748b', maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={it.observacion}>
                                   {it.observacion || "-"}
