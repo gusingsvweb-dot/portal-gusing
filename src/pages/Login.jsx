@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
-import { useTheme } from "../context/ThemeContext";
+import { useConfig } from "../context/ConfigContext";
 import { useNavigate } from "react-router-dom";
 import "./Login.css";
 
 export default function Login() {
   const { login, register, verifyEmailCode, sendResetCode, verifyResetCode, updatePassword } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { isNoOficial, setIsNoOficial } = useConfig();
   const navigate = useNavigate();
 
   // Estados UI
@@ -143,6 +144,43 @@ export default function Login() {
             />
             <h2 className="login-title">Bienvenido al Portal Corporativo</h2>
             <p className="subtitle">Acceso exclusivo para personal autorizado</p>
+            
+            {/* Selector de Ambiente */}
+            <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
+              <button 
+                type="button"
+                onClick={() => setIsNoOficial(false)}
+                style={{
+                  flex: 1, padding: '8px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', transition: 'all 0.3s',
+                  backgroundColor: !isNoOficial ? 'var(--accent)' : 'var(--bg-card)',
+                  color: !isNoOficial ? '#fff' : 'var(--text-main)',
+                  border: '1px solid var(--border)'
+                }}
+              >
+                🏢 Oficial
+              </button>
+              <button 
+                type="button"
+                onClick={() => setIsNoOficial(true)}
+                style={{
+                  flex: 1, padding: '8px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', transition: 'all 0.3s',
+                  backgroundColor: isNoOficial ? '#ef4444' : 'var(--bg-card)',
+                  color: isNoOficial ? '#fff' : 'var(--text-main)',
+                  border: isNoOficial ? '1px solid #ef4444' : '1px solid var(--border)'
+                }}
+              >
+                🧪 No Oficial
+              </button>
+            </div>
+
+            {isNoOficial && (
+              <div style={{ 
+                backgroundColor: '#fee2e2', color: '#b91c1c', padding: '10px', borderRadius: '8px', 
+                marginTop: '15px', textAlign: 'center', fontWeight: 'bold', fontSize: '14px', border: '1px solid #f87171' 
+              }}>
+                ⚠️ AMBIENTE NO OFICIAL (PRUEBAS)
+              </div>
+            )}
           </div>
 
           <form onSubmit={handleSubmit} className="login-form">

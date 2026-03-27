@@ -347,21 +347,22 @@ export default function Navbar() {
           {theme === 'light' ? '🌙' : '☀️'}
         </button>
 
+        {isNoOficial && (
+          <div style={{ 
+            backgroundColor: '#ef4444', color: '#fff', padding: '4px 12px', borderRadius: '20px', 
+            fontSize: '11px', fontWeight: 'bold', marginRight: '10px', boxShadow: '0 0 10px rgba(239, 68, 68, 0.5)',
+            border: '1px solid #fff', whiteSpace: 'nowrap'
+          }}>
+            ⚠️ NO OFICIAL
+          </div>
+        )}
+
         <button
           className="nav-theme-toggle"
-          onClick={() => setIsNoOficial(!isNoOficial)}
-          title={`Cambiar a versión ${isNoOficial ? 'Oficial' : 'No Oficial'}`}
-          style={{ 
-            backgroundColor: isNoOficial ? '#fef2f2' : 'transparent',
-            border: isNoOficial ? '1px solid #ef4444' : 'none',
-            borderRadius: '8px',
-            color: isNoOficial ? '#b91c1c' : 'inherit'
-          }}
+          onClick={toggleTheme}
+          title={`Activar modo ${theme === 'light' ? 'oscuro' : 'claro'}`}
         >
-          {isNoOficial ? '🧪' : '🏢'}
-          <span style={{ fontSize: '10px', marginLeft: '4px', fontWeight: 'bold' }}>
-            {isNoOficial ? 'NO' : 'OF'}
-          </span>
+          {theme === 'light' ? '🌙' : '☀️'}
         </button>
 
         <button className="nav-logout" onClick={cerrarSesion}>
