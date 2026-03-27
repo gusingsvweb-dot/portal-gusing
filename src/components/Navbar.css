@@ -293,6 +293,36 @@
   opacity: 0.8;
 }
 
+.notif-item-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.notif-go-btn {
+  background: rgba(var(--accent-primary-rgb), 0.08);
+  border: 1px solid rgba(var(--accent-primary-rgb), 0.1);
+  color: var(--accent-primary);
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+}
+
+.notif-go-btn:hover {
+  background: var(--accent-primary);
+  color: white;
+  transform: scale(1.1);
+  box-shadow: 0 4px 10px rgba(var(--accent-primary-rgb), 0.2);
+}
+
 .notif-mark-read-btn {
   background: var(--bg-card);
   border: 1px solid var(--border-color);

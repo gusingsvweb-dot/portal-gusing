@@ -42,6 +42,20 @@ export default function PedidosEnCurso() {
     return () => clearInterval(interval);
   }, []);
 
+  // Seleccionar automáticamente si viene un ?id= en la URL
+  useEffect(() => {
+    if (pedidosRaw.length === 0) return;
+    const params = new URLSearchParams(window.location.search);
+    const idParam = params.get("id");
+    if (!idParam) return;
+    const targetId = Number(idParam);
+    const p = pedidosRaw.find(it => it.id === targetId);
+    if (p) {
+      seleccionarPedido(p);
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, [pedidosRaw]);
+
   // Recalcular lista filtrada cuando cambien datos o filtros
   useEffect(() => {
     aplicarFiltros();

@@ -95,6 +95,20 @@ export default function Acondicionamiento() {
     loadPedidos();
   }, []);
 
+  // Seleccionar automáticamente si viene un ?id= en la URL
+  useEffect(() => {
+    if (pedidos.length === 0) return;
+    const params = new URLSearchParams(window.location.search);
+    const idParam = params.get("id");
+    if (!idParam) return;
+    const targetId = Number(idParam);
+    const p = pedidos.find(it => it.id === targetId);
+    if (p) {
+      seleccionarPedido(p);
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, [pedidos]);
+
   /* ===========================================================
       CARGAR OBSERVACIONES
   ============================================================ */

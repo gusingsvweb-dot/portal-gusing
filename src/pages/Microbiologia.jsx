@@ -180,12 +180,13 @@ export default function Microbiologia() {
      CARGAR ÁREA DE MICROBIOLOGÍA
   =========================================================== */
   useEffect(() => {
-    async function loadArea() {
-      const { data } = await supabase.from("areas").select("*");
-      const areaMB = (data || []).find(x => (x.nombre || "").toLowerCase().includes("micro"));
+    async function init() {
+      // 1. Cargar área
+      const { data: areasData } = await supabase.from("areas").select("*");
+      const areaMB = (areasData || []).find(x => (x.nombre || "").toLowerCase().includes("micro"));
       setAreaMicroId(areaMB?.id || null);
 
-      // Cargar responsables MB
+      // 2. Cargar responsables MB
       const { data: resp } = await supabase
         .from("responsables_liberacion")
         .select("*")
@@ -193,8 +194,32 @@ export default function Microbiologia() {
         .eq("activo", true);
       setResponsables(resp || []);
     }
-    loadArea();
+    init();
   }, []);
+
+  // Seleccionar automáticamente si viene un ?id= en la URL
+  useEffect(() => {
+    if (pedidos.length === 0 && solicitudesIniciales.length === 0 && etapas.length === 0) return;
+    const params = new URLSearchParams(window.location.search);
+    const idParam = params.get("id");
+    if (!idParam) return;
+    const targetId = Number(idParam);
+
+    // 1. Buscar en Etapas
+    const e = etapas.find(it => it.pedido_id === targetId);
+    if (e) {
+      seleccionarEtapa(e);
+      window.history.replaceState({}, '', window.location.pathname);
+      return;
+    }
+
+    // 2. Buscar en Solicitudes Iniciales
+    const s = solicitudesIniciales.find(it => it.id === targetId);
+    if (s) {
+      seleccionarSolicitud(s);
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, [pedidos, solicitudesIniciales, etapas]);
 
   /* ===========================================================
      FILTROS (Memo)

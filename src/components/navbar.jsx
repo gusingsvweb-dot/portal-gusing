@@ -193,6 +193,36 @@ export default function Navbar() {
     []
   );
 
+  const getNotificationRoute = (pedidoId) => {
+    if (!pedidoId) return null;
+    const routes = {
+      atencion: "/atencion",
+      produccion: "/produccion",
+      bodega: "/bodega",
+      bodega_mp: "/bodega-mp",
+      bodega_pt: "/bodega-pt",
+      microbiologia: "/microbiologia",
+      mantenimiento: "/mantenimiento",
+      compras: "/compras",
+      acondicionamiento: "/Acondicionamiento",
+      controlcalidad: "/ControlCalidad",
+      direcciontecnica: "/direccion-tecnica",
+      garantiacalidad: "/garantiacalidad",
+      usuario: "/usuario/mis-solicitudes"
+    };
+    const base = routes[rol] || "/dashboard";
+    return `${base}?id=${pedidoId}`;
+  };
+
+  const handleNotifClick = (n) => {
+    if (!n.leida) marcarLeida(n.id);
+    const route = getNotificationRoute(n.pedido_id);
+    if (route) {
+      setOpen(false);
+      navigate(route);
+    }
+  };
+
   const menu = MENUS[rol] || MENUS.general;
 
   return (
@@ -254,7 +284,8 @@ export default function Navbar() {
                       <div
                         key={n.id}
                         className={`notif-item ${n.leida ? 'read' : 'unread'}`}
-                        onClick={() => !n.leida && marcarLeida(n.id)}
+                        onClick={() => handleNotifClick(n)}
+                        style={{ cursor: n.pedido_id ? 'pointer' : 'default' }}
                       >
                         <div className="notif-content-wrapper">
                           <div className="notif-item-title">{n.titulo}</div>
@@ -264,15 +295,30 @@ export default function Navbar() {
                             {n.pedido_id ? ` · 📦 #${n.pedido_id}` : ""}
                           </div>
                         </div>
-                        {!n.leida && (
-                          <button
-                            className="notif-mark-read-btn"
-                            onClick={(e) => { e.stopPropagation(); marcarLeida(n.id); }}
-                            title="Marcar como leída"
-                          >
-                            ✔
-                          </button>
-                        )}
+
+                        <div className="notif-item-actions">
+                          {n.pedido_id && (
+                            <button
+                              className="notif-go-btn"
+                              title="Ver detalle del pedido"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleNotifClick(n);
+                              }}
+                            >
+                              🚀
+                            </button>
+                          )}
+                          {!n.leida && (
+                            <button
+                              className="notif-mark-read-btn"
+                              onClick={(e) => { e.stopPropagation(); marcarLeida(n.id); }}
+                              title="Marcar como leída"
+                            >
+                              ✔
+                            </button>
+                          )}
+                        </div>
                       </div>
                     ))
                   )}

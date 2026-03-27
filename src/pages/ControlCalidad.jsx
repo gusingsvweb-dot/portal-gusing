@@ -268,6 +268,33 @@ export default function ControlCalidad() {
     loadTodo();
   }, []);
 
+  // Seleccionar automáticamente si viene un ?id= en la URL
+  useEffect(() => {
+    if (pedidosPT.length === 0 && etapas.length === 0) return;
+    const params = new URLSearchParams(window.location.search);
+    const idParam = params.get("id");
+    if (!idParam) return;
+
+    const targetId = Number(idParam);
+    
+    // 1. Buscar en Etapas Intermedias
+    const e = etapas.find(it => it.pedido_id === targetId);
+    if (e) {
+      seleccionarEtapa(e);
+      // Limpiar URL para evitar re-selección infinita si el usuario navega
+      window.history.replaceState({}, '', window.location.pathname);
+      return;
+    }
+
+    // 2. Buscar en PT o Cuarentena
+    const p = pedidosPT.find(it => it.id === targetId);
+    if (p) {
+      const isCua = pedidosCuarentenaFiltrados.some(c => c.id === targetId);
+      seleccionarItem(p, isCua ? 'cuarentena' : 'pt');
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, [pedidosPT, etapas, pedidosCuarentenaFiltrados]);
+
   /* ===========================================================
      CHECK MICROBIOLOGÍA (Requisito para liberación de PT)
   =========================================================== */

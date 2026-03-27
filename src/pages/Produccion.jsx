@@ -491,6 +491,23 @@ export default function Produccion() {
     loadPedidos();
   }, []);
 
+  // Seleccionar automáticamente si viene un ?id= en la URL
+  useEffect(() => {
+    if (pedidos.length === 0) return;
+    const params = new URLSearchParams(window.location.search);
+    const idParam = params.get("id");
+    if (!idParam) return;
+    const targetId = Number(idParam);
+    const p = pedidos.find(it => it.id === targetId);
+    if (p) {
+      setSelected(p);
+      // Mantener ?lote=true si estaba, pero quitar el id
+      const base = window.location.pathname;
+      const isLote = params.get("lote");
+      window.history.replaceState({}, '', isLote ? `${base}?lote=true` : base);
+    }
+  }, [pedidos]);
+
   // Cargar etapas activas para pedidos en estado 8 (Etapas internas)
   useEffect(() => {
     if (pedidos.length === 0) return;
