@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "../api/supabaseClient";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
 import "../pages/Produccion.css";
 
 export default function BodegaMP() {
+    const [searchParams] = useSearchParams();
     const [pedidos, setPedidos] = useState([]);
     const [selected, setSelected] = useState(null);
     const [historial, setHistorial] = useState([]);
@@ -106,6 +108,19 @@ export default function BodegaMP() {
 
         if (!error) setHistorial(data || []);
     }
+
+    // Seleccionar automáticamente si viene un ?id= en la URL
+    useEffect(() => {
+        if (pedidos.length === 0) return;
+        const idParam = searchParams.get("id");
+        if (!idParam) return;
+        const targetId = Number(idParam);
+        const p = pedidos.find(it => it.id === targetId);
+        if (p) {
+            seleccionarPedido(p);
+            window.history.replaceState({}, '', window.location.pathname);
+        }
+    }, [pedidos, searchParams]);
 
     useEffect(() => {
         loadPedidos();
