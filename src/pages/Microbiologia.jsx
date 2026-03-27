@@ -751,7 +751,7 @@ export default function Microbiologia() {
 
         const updateData = {
           estado_id: 2,
-          accion_realizada: currentComment || "Análisis microbiológico inicial aprobado."
+          accion_realizada: currentComment || "Análisis microbiológico aprobado."
         };
 
         if (nAnalisis) updateData.numero_analisis = nAnalisis;
@@ -768,22 +768,28 @@ export default function Microbiologia() {
           return;
         }
 
-        // Guardar en historial oficial si hay comentario y consecutivo (pedido)
-        if (currentComment && currentComment.trim() && selected.consecutivo) {
+        // Guardar en historial oficial SIEMPRE para trazabilidad de fecha/hora
+        if (selected.consecutivo) {
+          const esEsterilizacion = toLowerSafe(selected.tipos_solicitud?.nombre).includes("esterilizaci") || toLowerSafe(selected.descripcion).includes("esterilizaci");
+          const accionBase = esEsterilizacion ? "✅ TIRILLA APROBADA / ESTERILIZACIÓN LIBERADA" : "✅ LIBERACIÓN INICIAL MB";
+          const obsTexto = currentComment ? `${accionBase}: ${currentComment}` : `${accionBase} (sin comentario adicional)`;
+
           await supabase.from("observaciones_pedido").insert({
             pedido_id: selected.consecutivo,
             usuario: usuarioActual?.usuario || "Microbiología",
-            observacion: `✅ LIBERACIÓN INICIAL MB: ${currentComment}`,
+            observacion: obsTexto,
           });
         }
 
         if (selected.consecutivo) {
           // ACTUALIZAR FECHA SALIDA MB EN PEDIDO (Fin Análisis)
-          // OJO: fecha_inicio_analisis_mb ya se debió marcar.
-          // fecha_salida_mb marca el fin.
+          // Si no había inicio marcado, lo igualamos a salida para que no quede nulo
           await supabase
             .from("pedidos_produccion")
-            .update({ fecha_salida_mb: ahoraISO() })
+            .update({ 
+              fecha_salida_mb: ahoraISO(),
+              ...(selected.pedidoVinculado && !selected.pedidoVinculado.fecha_inicio_analisis_mb ? { fecha_inicio_analisis_mb: ahoraISO() } : {})
+            })
             .eq("id", selected.consecutivo);
 
           await notifyRoles(
@@ -822,6 +828,13 @@ export default function Microbiologia() {
       console.error("Error iniciando análisis:", error);
       alert("Error al iniciar análisis.");
     } else {
+      // Dejar trazabilidad obligatoria en observaciones
+      await supabase.from("observaciones_pedido").insert({
+        pedido_id: pid,
+        usuario: usuarioActual?.usuario || "Microbiología",
+        observacion: `🧪 INICIO DE ANÁLISIS MICROBIOLÓGICO registrado.`,
+      });
+
       // Recargar para que cambie de lista
       await loadTodo();
       // Opcional: mantener seleccionado o limpiar
