@@ -501,7 +501,7 @@ export default function Produccion() {
     const targetId = Number(idParam);
     const p = pedidos.find(it => it.id === targetId);
     if (p) {
-      setSelected(p);
+      seleccionarPedido(p);
       // Mantener ?lote=true si estaba, pero quitar el id
       const base = window.location.pathname;
       const isLote = searchParams.get("lote");
@@ -2246,7 +2246,9 @@ export default function Produccion() {
           >
             {selected.estado_id === 6
               ? "Solicitud de liberación de área a Microbiología"
-              : selected.estados?.nombre}
+              : (selected.estado_id === 8 && !flujoCompleto)
+                ? "Gestión de Etapas Internas"
+                : selected.estados?.nombre}
           </h4>
         </div>
 
