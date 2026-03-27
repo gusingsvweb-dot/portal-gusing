@@ -180,6 +180,13 @@ export function NotificationsProvider({ children }) {
     }, [userIdInterno]);
 
 
+    const [toast, setToast] = useState(null);
+
+    const addNotification = (type, message) => {
+        setToast({ type, message });
+        setTimeout(() => setToast(null), 4000); // Desaparece tras 4s
+    };
+
     const value = {
         notifs,
         noLeidas,
@@ -188,12 +195,47 @@ export function NotificationsProvider({ children }) {
         marcarLeida,
         activarNotifsEscritorio,
         reloadCountdown,
-        cancelReload
+        cancelReload,
+        addNotification
     };
 
     return (
         <NotificationsContext.Provider value={value}>
             {children}
+
+            {/* UI TOASTER (Global) */}
+            {toast && (
+                <div style={{
+                    position: 'fixed',
+                    bottom: '30px',
+                    right: '30px',
+                    zIndex: 9999,
+                    animation: 'slideIn 0.3s ease-out'
+                }}>
+                    <div style={{
+                        background: toast.type === 'success' ? '#10b981' : '#ef4444',
+                        color: 'white',
+                        padding: '12px 24px',
+                        borderRadius: '12px',
+                        boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        fontWeight: '600',
+                        fontSize: '0.95rem'
+                    }}>
+                        <span>{toast.type === 'success' ? '✅' : '⚠️'}</span>
+                        {toast.message}
+                    </div>
+                </div>
+            )}
+
+            <style>{`
+                @keyframes slideIn {
+                    from { transform: translateY(20px); opacity: 0; }
+                    to { transform: translateY(0); opacity: 1; }
+                }
+            `}</style>
         </NotificationsContext.Provider>
     );
 }
