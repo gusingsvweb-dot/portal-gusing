@@ -143,8 +143,17 @@ export default function Microbiologia() {
       showComment: isRejection, // Reclamo si es rechazo, opcional si es elección
       errorMessage: "",
       action: accion,
-      buttonLabel: buttonLabel
     });
+  }
+
+  function formatFechaFull(f, soloHora = false) {
+    if (!f) return "—";
+    const d = (f.length === 10) ? new Date(f + "T00:00:00") : new Date(f);
+    if (soloHora) {
+      if (f.length === 10) return "—";
+      return d.toLocaleTimeString("es-CO", { hour: '2-digit', minute: '2-digit' });
+    }
+    return d.toLocaleString("es-CO");
   }
 
   function cerrarConfirmacion() {
@@ -1068,7 +1077,7 @@ export default function Microbiologia() {
                     <span className="mb-chip" style={{ background: '#dbeafe', color: '#1e40af' }}>ANALIZANDO</span>
                   </div>
                   <p className="mb-title">{s.pedidoData?.productos?.articulo || s.tipos_solicitud?.nombre}</p>
-                  <p className="mb-sub">En proceso desde: {new Date(s.pedidoData?.fecha_inicio_analisis_mb).toLocaleDateString()}</p>
+                  <p className="mb-sub">En proceso desde: {formatFechaFull(s.pedidoData?.fecha_inicio_analisis_mb)}</p>
                 </div>
               ))}
           </SidebarSection>
@@ -1354,7 +1363,7 @@ export default function Microbiologia() {
                     <td>{h.articulo}</td>
                     <td>{h.op} / {h.lote}</td>
                     <td>{h.detalle}</td>
-                    <td>{new Date(h.fecha).toLocaleDateString()}</td>
+                    <td>{formatFechaFull(h.fecha)}</td>
                   </tr>
                 ))}
             </tbody>
