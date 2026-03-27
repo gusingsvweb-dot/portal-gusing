@@ -509,6 +509,7 @@ export default function Bodega() {
               <p><strong>Cliente:</strong> {selected.clientes?.nombre}</p>
               <p><strong>Cantidad:</strong> {selected.cantidad}</p>
               <p><strong>Fecha Recepción:</strong> {selected.fecha_recepcion_cliente || "—"}</p>
+              <p><strong>Hora Solicitud MP:</strong> {selected.fecha_solicitud_materias_primas ? new Date(selected.fecha_solicitud_materias_primas).toLocaleString("es-CO") : "—"}</p>
               <p><strong>Estado:</strong> {selected.estados?.nombre}</p>
             </div>
 
@@ -525,6 +526,16 @@ export default function Bodega() {
                     </span>
                   </div>
                 ))}
+              </div>
+
+              <div style={{ marginBottom: '10px' }}>
+                <button 
+                  className="pc-btn" 
+                  onClick={() => setNewObs("Materia prima entregada")}
+                  style={{ background: 'var(--bg-app)', color: 'var(--text-sub)', fontSize: '11px', padding: '4px 10px', border: '1px solid var(--border-color)', borderRadius: '6px', width: 'auto', marginTop: 0 }}
+                >
+                  💡 Sugerir: "Materia prima entregada"
+                </button>
               </div>
 
               <div style={{ display: 'flex', gap: '8px' }}>
@@ -623,12 +634,8 @@ export default function Bodega() {
                   </div>
                 )}
 
-                <label>Fecha solicitud de MP</label>
-                <input
-                  type="date"
-                  value={selected.fecha_solicitud_materias_primas || ""}
-                  disabled
-                />
+                {/* Eliminamos el input tipo date que solo muestra fecha y estaba duplicado */}
+
 
                 <p style={{ marginTop: 10, fontStyle: "italic", color: "#444" }}>
                   Al confirmar, se registrará la fecha actual como fecha de entrega.
