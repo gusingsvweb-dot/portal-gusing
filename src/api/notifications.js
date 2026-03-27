@@ -29,24 +29,27 @@ export async function notifyUser(userId, titulo, mensaje, pedidoId = null) {
  */
 export async function notifyRoles(roles, titulo, mensaje, pedidoId = null, tipo = 'info') {
     try {
-        // 1. Generar variantes de roles
-        const rolesVariantes = roles.flatMap(r => {
-            const lower = r.toLowerCase();
-            const capitalized = lower.charAt(0).toUpperCase() + lower.slice(1);
-            const upper = lower.toUpperCase();
-            return [lower, capitalized, upper];
-        });
-
-        const uniqueRoles = [...new Set(rolesVariantes)];
+        const uniqueRoles = [...new Set(roles.map(r => r.toLowerCase().trim()))];
         console.log("🔔 Buscando usuarios con roles:", uniqueRoles);
 
-        // 2. Buscar usuarios
-        const { data: users, error: errUsers } = await supabase
+        // 2. Buscar TODOS los usuarios y filtrar en memoria por tolerancia a tildes/espacios
+        const { data: allUsers, error: errUsers } = await supabase
             .from("usuarios")
-            .select("id, rol")
-            .in("rol", uniqueRoles);
+            .select("id, rol");
 
         if (errUsers) throw errUsers;
+
+        // Limpiar strings: quitar tildes y pasar a minúscula
+        const normalizeStr = (str) =>
+            str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : "";
+
+        const rolesNormalizados = uniqueRoles.map(normalizeStr);
+
+        const users = allUsers.filter(u => {
+            const userRolNormalizado = normalizeStr(u.rol);
+            return rolesNormalizados.some(r => userRolNormalizado.includes(r));
+        });
+
         console.log(`🔔 Usuarios encontrados: ${users?.length || 0}`, users);
 
         if (!users || users.length === 0) return { sent: 0 };
