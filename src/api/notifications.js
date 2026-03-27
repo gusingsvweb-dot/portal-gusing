@@ -97,8 +97,8 @@ export async function checkAndNotifyFlowCompletion(pedidoId) {
 
         // FILTRAR: Ignoramos "Acondicionamiento" y "Revisión de partículas" para la lógica de completitud de Producción
         const relevantes = etapas.filter(e => {
-            const n = e.nombre.toLowerCase();
-            return !n.includes("acondicionamiento") && !n.includes("partículas visibles");
+            const n = (e.nombre || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+            return !n.includes("acondicionamiento") && !n.includes("particulas visibles");
         });
 
         if (relevantes.length === 0) return false;

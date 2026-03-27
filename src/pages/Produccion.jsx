@@ -507,9 +507,12 @@ export default function Produccion() {
       if (!data) return;
 
       const newDict = {};
-      // Agrupar por pedido
       const groups = {};
       data.forEach(d => {
+        // Ocultar etapa de partículas para Producción (Normalizado)
+        const nameNorm = (d.nombre || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+        if (nameNorm.includes("revision de particulas visibles")) return;
+
         if (!groups[d.pedido_id]) groups[d.pedido_id] = [];
         groups[d.pedido_id].push(d);
       });
@@ -2426,10 +2429,14 @@ export default function Produccion() {
                 <strong>Estado:</strong>{" "}
                 <span className={`pc-chip estado-${p.estado_id}`}>
                   {(() => {
-                    if (p.estado_id === 8) {
-                      const nombreEtapa = etapasDict[p.id];
-                      return nombreEtapa ? `Etapas internas - ${nombreEtapa}` : "Entrada Acondicionamiento";
-                    }
+                      return (() => {
+                        const raw = etapasDict[p.id];
+                        if (!raw) return "Entrada Acondicionamiento";
+                        // Normalización rápida
+                        const n = raw.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+                        if (n.includes("revision de particulas visibles")) return "Entrada Acondicionamiento";
+                        return `Etapas internas - ${raw}`;
+                      })();
                     return p.estados?.nombre;
                   })()}
                 </span>
