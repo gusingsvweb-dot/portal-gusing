@@ -1031,7 +1031,7 @@ export default function Microbiologia() {
                   </div>
 
                   <div className="mb-card">
-                    {selected.pedidoVinculado && !selected.pedidoVinculado.fecha_inicio_analisis_mb ? (
+                    {selected.pedidoVinculado && !selected.pedidoVinculado.fecha_inicio_analisis_mb && !isAreaRelease(selected) ? (
                       /* CASO 1: NO INICIADO -> MOSTRAR BOTÓN INICIAR */
                       <div style={{ textAlign: 'center', padding: '20px' }}>
                         <h3>🧬 Análisis Microbiológico</h3>
@@ -1048,7 +1048,7 @@ export default function Microbiologia() {
                         </button>
                       </div>
                     ) : (
-                      /* CASO 2: YA INICIADO -> MOSTRAR FORMULARIO DE LIBERACIÓN */
+                      /* CASO 2: YA INICIADO (O LIBERACIÓN RÁPIDA) -> MOSTRAR FORMULARIO DE LIBERACIÓN */
                       (function() {
                         const esEsteril_tipo = toLowerSafe(selected.tipos_solicitud?.nombre).includes("esterilizaci");
                         const esEsteril_desc = toLowerSafe(selected.descripcion).includes("esterilizaci");
