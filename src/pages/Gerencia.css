@@ -9,13 +9,13 @@
 
 .ge-header h2 {
   margin: 0;
-  color: #1d3557;
+  color: var(--text-main);
   font-weight: 700;
 }
 
 .ge-subtitle {
   font-size: 13px;
-  color: #64748b;
+  color: var(--text-sub);
 }
 
 /* RESUMEN */
@@ -28,24 +28,25 @@
 }
 
 .ge-summary-card {
-  background: #f8fafc;
+  background: var(--bg-card);
   border-radius: 12px;
   padding: 10px 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
 }
 
 .ge-summary-label {
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  color: #64748b;
+  color: var(--text-sub);
   margin-bottom: 4px;
 }
 
 .ge-summary-value {
   font-size: 18px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-main);
 }
 
 /* Colores según tipo */
@@ -80,7 +81,9 @@
   width: 100%;
   padding: 8px 10px;
   border-radius: 10px;
-  border: 1px solid #cbd5e0;
+  border: 1px solid var(--border-color);
+  background: var(--bg-input);
+  color: var(--text-main);
   font-size: 14px;
   margin-bottom: 10px;
 }
@@ -90,8 +93,8 @@
 .pc-historial {
   margin-top: 10px;
   border-radius: 12px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
   padding: 12px;
   max-height: 260px;
   overflow-y: auto;
@@ -100,27 +103,28 @@
 .pc-hist-item {
   padding: 8px 10px;
   border-radius: 10px;
-  background: #ffffff;
-  border-left: 4px solid #3b82f6;
+  background: var(--bg-card);
+  border-left: 4px solid var(--accent-primary);
   margin-bottom: 8px;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+  box-shadow: var(--shadow-main);
+  color: var(--text-main);
 }
 
 .pc-hist-fecha {
   font-size: 11px;
-  color: #64748b;
+  color: var(--text-sub);
   margin: 0 0 2px;
 }
 
 .pc-hist-titulo {
   font-size: 13px;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--text-main);
   margin: 0 0 3px;
 }
 
 .pc-hist-detalle {
   font-size: 12px;
-  color: #475569;
+  color: var(--text-sub);
   margin: 0;
 }

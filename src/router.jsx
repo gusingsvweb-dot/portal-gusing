@@ -7,6 +7,7 @@ import Atencion from "./pages/AtencionCliente";
 import Produccion from "./pages/Produccion";
 import Acondicionamiento from "./pages/Acondicionamiento";
 import PedidosEnCurso from "./pages/PedidosEnCurso.jsx";
+import Clientes from "./pages/Clientes.jsx";
 import Bodega from "./pages/Bodega";
 import Microbiologia from "./pages/Microbiologia.jsx";
 import ControlCalidad from "./pages/ControlCalidad.jsx";
@@ -25,10 +26,14 @@ import KpisCompras from "./pages/KpisCompras.jsx";
 import KpisMantenimiento from "./pages/KpisMantenimiento.jsx";
 import GerenciaMantenimiento from "./pages/GerenciaMantenimiento.jsx";
 import AutorizarDespachos from "./pages/AutorizarDespachos";
+import GarantiaCalidad from "./pages/GarantiaCalidad";
+import BodegaMP from "./pages/BodegaMP";
+import BodegaPT from "./pages/BodegaPT";
 
 
 export default function AppRouter() {
   const { usuarioActual, cargando } = useAuth();
+  console.log("🔍 Router Render | Usuario:", usuarioActual, "Rol:", usuarioActual?.rol);
 
   if (cargando) {
     return (
@@ -58,6 +63,16 @@ export default function AppRouter() {
         element={
           usuarioActual?.rol === "direcciontecnica"
             ? <DireccionTecnica />
+            : <Navigate to="/" />
+        }
+      />
+
+      {/* GARANTÍA DE CALIDAD (Administrador) */}
+      <Route
+        path="/garantiacalidad"
+        element={
+          usuarioActual?.rol === "garantiacalidad"
+            ? <GarantiaCalidad />
             : <Navigate to="/" />
         }
       />
@@ -145,6 +160,15 @@ export default function AppRouter() {
       />
 
       <Route
+        path="/clientes"
+        element={
+          usuarioActual?.rol === "atencion" || usuarioActual?.rol === "gerencia"
+            ? <Clientes />
+            : <Navigate to="/" />
+        }
+      />
+
+      <Route
         path="/autorizar-despachos"
         element={
           usuarioActual?.rol === "atencion"
@@ -157,9 +181,15 @@ export default function AppRouter() {
       <Route
         path="/pedidos-curso"
         element={
-          ["atencion", "gerencia"].includes(usuarioActual?.rol)
+          ["atencion", "gerencia", "bodega", "bodega_mp", "bodega_pt", "microbiologia", "controlcalidad", "acondicionamiento"].includes(usuarioActual?.rol)
             ? <PedidosEnCurso />
-            : <Navigate to="/" />
+            : <div style={{ padding: "50px", textAlign: "center" }}>
+              <h2>⚠️ Acceso Restringido (Modo Debug)</h2>
+              <p>Tu rol detectado es: <strong>"{usuarioActual?.rol}"</strong></p>
+              <p>Roles permitidos: atencion, gerencia, bodega, bodega_mp, bodega_pt, microbiologia, controlcalidad</p>
+              <p>Por favor, reporta esto al desarrollador si crees que es un error.</p>
+              <a href="/">Volver al Inicio</a>
+            </div>
         }
       />
 
@@ -189,6 +219,24 @@ export default function AppRouter() {
         element={
           usuarioActual?.rol === "bodega"
             ? <Bodega />
+            : <Navigate to="/" />
+        }
+      />
+
+      <Route
+        path="/bodega-mp"
+        element={
+          usuarioActual?.rol === "bodega_mp"
+            ? <BodegaMP />
+            : <Navigate to="/" />
+        }
+      />
+
+      <Route
+        path="/bodega-pt"
+        element={
+          usuarioActual?.rol === "bodega_pt"
+            ? <BodegaPT />
             : <Navigate to="/" />
         }
       />

@@ -52,14 +52,24 @@ export default function Microbiologia() {
   const [selected, setSelected] = useState(null); // { item, tipoItem: 'etapa' | 'solicitud' }
 
   // Accordion Sidebar
+  // Accordion Sidebar (Start collapsed)
   const [expanded, setExpanded] = useState({
+    liberacionArea: false, // Nueva sección
     iniciales: false,
+    enAnalisis: false,
     intermedias: false
   });
 
   const toggleSection = (sec) => {
     setExpanded(prev => ({ ...prev, [sec]: !prev[sec] }));
   };
+
+  // Helper para identificar si es "Liberación de Área" (Ampollas/Viales)
+  function isAreaRelease(req) {
+    const forma = req.pedidoData?.productos?.forma_farmaceutica || "";
+    // Regex para detectar Ampolla o Vial (case insensitive)
+    return /ampolla|vial/i.test(forma);
+  }
 
   // Historial / liberaciones
   const [historial, setHistorial] = useState([]);
@@ -77,7 +87,11 @@ export default function Microbiologia() {
   const [historialGlobal, setHistorialGlobal] = useState([]);
   const [busquedaGlobal, setBusquedaGlobal] = useState("");
 
-  // NUEVO: Ref para evitar cierres obsoletos (stale closures)
+
+  // OBSERVACIONES
+  const [obs, setObs] = useState([]);
+  const [newObs, setNewObs] = useState("");
+
   const commentRef = React.useRef("");
   useEffect(() => {
     commentRef.current = comentario;
@@ -255,8 +269,36 @@ export default function Microbiologia() {
       .eq("estado_id", 1) // Pendiente
       .order("id", { ascending: false });
 
-    if (error) console.error("❌ Error solicitudes MB:", error);
-    else setSolicitudesIniciales(data || []);
+    if (error) {
+      console.error("❌ Error solicitudes MB:", error);
+      return;
+    }
+
+    const solis = data || [];
+
+    // Enriquecer con pedidos_produccion para saber fecha_inicio_analisis_mb
+    // (Asumiendo consecutivo = pedido_id para tipo microbiologia prod)
+    if (solis.length > 0) {
+      const ids = solis.map(s => s.consecutivo).filter(Boolean);
+      if (ids.length > 0) {
+        const { data: pedidos } = await supabase
+          .from("pedidos_produccion")
+          .select("id, fecha_inicio_analisis_mb, productos(articulo, forma_farmaceutica)")
+          .in("id", ids);
+
+        const mapPedidos = {};
+        pedidos?.forEach(p => { mapPedidos[p.id] = p; });
+
+        // Adjuntar info al objeto solicitud
+        solis.forEach(s => {
+          if (s.consecutivo && mapPedidos[s.consecutivo]) {
+            s.pedidoData = mapPedidos[s.consecutivo];
+          }
+        });
+      }
+    }
+
+    setSolicitudesIniciales(solis);
   }
 
   useEffect(() => {
@@ -287,8 +329,51 @@ export default function Microbiologia() {
     }
 
     const pid = tipo === 'etapa' ? item.pedido_id : item.consecutivo;
-    if (pid) loadHistorial(pid);
+    if (pid) {
+      loadHistorial(pid);
+      cargarObservaciones(pid);
+    } else {
+      setObs([]);
+    }
     setComentario("");
+  }
+
+  // ==========================
+  // CARGAR OBSERVACIONES
+  // ==========================
+  async function cargarObservaciones(pedidoId) {
+    const { data, error } = await supabase
+      .from("observaciones_pedido")
+      .select("*")
+      .eq("pedido_id", pedidoId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("❌ Error cargarObservaciones:", error);
+      return;
+    }
+    setObs(data || []);
+  }
+
+  async function addObs() {
+    if (!newObs.trim()) return;
+    const pid = selected.tipoItem === 'etapa' ? selected.pedido_id : selected.consecutivo;
+    if (!pid) return alert("No se puede agregar observación sin pedido vinculado.");
+
+    const { error } = await supabase.from("observaciones_pedido").insert([{
+      pedido_id: pid,
+      usuario: usuarioActual?.usuario || "Microbiología",
+      observacion: newObs,
+    }]);
+
+    if (error) {
+      console.error("❌ Error addObs:", error);
+      alert("Error al guardar observación.");
+      return;
+    }
+
+    setNewObs("");
+    cargarObservaciones(pid);
   }
 
   // ==========================
@@ -637,7 +722,9 @@ export default function Microbiologia() {
         }
 
         if (selected.consecutivo) {
-          // ACTUALIZAR FECHA SALIDA MB EN PEDIDO
+          // ACTUALIZAR FECHA SALIDA MB EN PEDIDO (Fin Análisis)
+          // OJO: fecha_inicio_analisis_mb ya se debió marcar.
+          // fecha_salida_mb marca el fin.
           await supabase
             .from("pedidos_produccion")
             .update({ fecha_salida_mb: ahoraISO() })
@@ -658,8 +745,33 @@ export default function Microbiologia() {
         await loadTodo();
       },
       false, // isRejection
-      true   // isChoice
+      true,   // isChoice
+      "liberar"
     );
+  }
+
+  // NUEVA FUNCIÓN: INICIAR ANÁLISIS
+  async function iniciarAnalisis() {
+    if (!selected || selected.tipoItem !== 'solicitud') return;
+    const pid = selected.consecutivo;
+    if (!pid) return alert("Solicitud sin pedido vinculado.");
+
+    setAccionLoading(true);
+    const { error } = await supabase
+      .from("pedidos_produccion")
+      .update({ fecha_inicio_analisis_mb: ahoraISO() })
+      .eq("id", pid);
+
+    if (error) {
+      console.error("Error iniciando análisis:", error);
+      alert("Error al iniciar análisis.");
+    } else {
+      // Recargar para que cambie de lista
+      await loadTodo();
+      // Opcional: mantener seleccionado o limpiar
+      setSelected(null);
+    }
+    setAccionLoading(false);
   }
 
 
@@ -681,27 +793,85 @@ export default function Microbiologia() {
             />
           </div>
 
+          {/* 1. LIBERACIÓN DE ÁREA (Ampollas/Viales) */}
           <SidebarSection
-            title="Solicitudes de Liberación"
-            count={solicitudesFiltradas.length}
+            title="Liberación de Área"
+            count={solicitudesFiltradas.filter(s => isAreaRelease(s)).length}
+            isOpen={expanded.liberacionArea}
+            onToggle={() => toggleSection("liberacionArea")}
+          >
+            {solicitudesFiltradas
+              .filter(s => isAreaRelease(s))
+              .map((s) => {
+                const iniciado = !!s.pedidoData?.fecha_inicio_analisis_mb;
+                return (
+                  <div
+                    key={s.id}
+                    className={`mb-item ${selected?.id === s.id && selected?.tipoItem === 'solicitud' ? 'mb-item-selected' : ''}`}
+                    onClick={() => seleccionarItem(s, 'solicitud')}
+                    style={{ borderLeft: '4px solid #8b5cf6' }} // Morado para diferenciar
+                  >
+                    <div className="mb-item-top">
+                      <span className="mb-id">ID: {s.consecutivo ? `MB-${s.consecutivo}` : `#${s.id}`}</span>
+                      <span className={`mb-chip ${iniciado ? '' : 'mb-chip-warn'}`}>
+                        {iniciado ? 'EN PROCESO' : 'PENDIENTE'}
+                      </span>
+                    </div>
+                    <p className="mb-title">{s.pedidoData?.productos?.articulo || s.tipos_solicitud?.nombre}</p>
+                    <p className="mb-sub">Forma: {s.pedidoData?.productos?.forma_farmaceutica || "N/A"}</p>
+                  </div>
+                );
+              })}
+          </SidebarSection>
+
+          <SidebarSection
+            title="Pendientes de Inicio"
+            count={solicitudesFiltradas.filter(s => !isAreaRelease(s) && !s.pedidoData?.fecha_inicio_analisis_mb).length}
             isOpen={expanded.iniciales}
             onToggle={() => toggleSection("iniciales")}
           >
-            {solicitudesFiltradas.map((s) => (
-              <div
-                key={s.id}
-                className={`mb-item ${selected?.id === s.id && selected?.tipoItem === 'solicitud' ? 'mb-item-selected' : ''}`}
-                onClick={() => seleccionarItem(s, 'solicitud')}
-                style={{ borderLeft: '4px solid #f59e0b' }}
-              >
-                <div className="mb-item-top">
-                  <span className="mb-id">ID: {s.consecutivo ? `MB-${s.consecutivo}` : `#${s.id}`}</span>
-                  <span className="mb-chip mb-chip-warn">PENDIENTE MB</span>
+            {solicitudesFiltradas
+              .filter(s => !isAreaRelease(s) && !s.pedidoData?.fecha_inicio_analisis_mb)
+              .map((s) => (
+                <div
+                  key={s.id}
+                  className={`mb-item ${selected?.id === s.id && selected?.tipoItem === 'solicitud' ? 'mb-item-selected' : ''}`}
+                  onClick={() => seleccionarItem(s, 'solicitud')}
+                  style={{ borderLeft: '4px solid #f59e0b' }}
+                >
+                  <div className="mb-item-top">
+                    <span className="mb-id">ID: {s.consecutivo ? `MB-${s.consecutivo}` : `#${s.id}`}</span>
+                    <span className="mb-chip mb-chip-warn">PENDIENTE MB</span>
+                  </div>
+                  <p className="mb-title">{s.pedidoData?.productos?.articulo || s.tipos_solicitud?.nombre}</p>
+                  <p className="mb-sub">Originado por: {s.area_solicitante}</p>
                 </div>
-                <p className="mb-title">{s.tipos_solicitud?.nombre}</p>
-                <p className="mb-sub">Originado por: {s.area_solicitante}</p>
-              </div>
-            ))}
+              ))}
+          </SidebarSection>
+
+          <SidebarSection
+            title="En Análisis"
+            count={solicitudesFiltradas.filter(s => !isAreaRelease(s) && s.pedidoData?.fecha_inicio_analisis_mb).length}
+            isOpen={expanded.enAnalisis}
+            onToggle={() => toggleSection("enAnalisis")}
+          >
+            {solicitudesFiltradas
+              .filter(s => !isAreaRelease(s) && s.pedidoData?.fecha_inicio_analisis_mb)
+              .map((s) => (
+                <div
+                  key={s.id}
+                  className={`mb-item ${selected?.id === s.id && selected?.tipoItem === 'solicitud' ? 'mb-item-selected' : ''}`}
+                  onClick={() => seleccionarItem(s, 'solicitud')}
+                  style={{ borderLeft: '4px solid #3b82f6' }}
+                >
+                  <div className="mb-item-top">
+                    <span className="mb-id">ID: {s.consecutivo ? `MB-${s.consecutivo}` : `#${s.id}`}</span>
+                    <span className="mb-chip" style={{ background: '#dbeafe', color: '#1e40af' }}>ANALIZANDO</span>
+                  </div>
+                  <p className="mb-title">{s.pedidoData?.productos?.articulo || s.tipos_solicitud?.nombre}</p>
+                  <p className="mb-sub">En proceso desde: {new Date(s.pedidoData?.fecha_inicio_analisis_mb).toLocaleDateString()}</p>
+                </div>
+              ))}
           </SidebarSection>
 
           <SidebarSection
@@ -764,7 +934,7 @@ export default function Microbiologia() {
                       placeholder="Ej: Análisis microbiológico conforme..."
                     />
 
-                    <div className="mb-actions-row" style={{ marginTop: 15 }}>
+                    <div className="mb-actions-row">
                       <button className="mb-btn mb-btn-danger" onClick={rechazarEtapa} disabled={accionLoading}>
                         {accionLoading ? "Procesando…" : "Rechazar etapa"}
                       </button>
@@ -798,27 +968,48 @@ export default function Microbiologia() {
                         </>
                       )}
                     </div>
-                    <div style={{ marginTop: 15, padding: 10, background: '#fffbeb', borderRadius: 6, fontSize: 13, border: '1px solid #fef3c7' }}>
+                    <div className="mb-note-box info">
                       <strong>Descripción:</strong>
                       <p style={{ margin: '5px 0 0' }}>{selected.descripcion}</p>
                     </div>
                   </div>
 
                   <div className="mb-card">
-                    <h3>✅ Atender Solicitud</h3>
-                    <p style={{ fontSize: 13, color: '#64748b', marginBottom: 10 }}>
-                      Registra el resultado del análisis inicial para liberar el pedido a producción/acondicionamiento.
-                    </p>
-                    <label>Acción / Comentario realizado</label>
-                    <textarea
-                      rows="3"
-                      value={comentario}
-                      onChange={(e) => setComentario(e.target.value)}
-                      placeholder="Ej: Muestra analizada sin hallazgos, se autoriza liberación inicial..."
-                    />
-                    <button className="mb-btn" style={{ width: '100%', marginTop: 15, background: '#f59e0b' }} onClick={liberarSolicitud} disabled={accionLoading}>
-                      {accionLoading ? "Procesando…" : "Confirmar y Liberar Solicitud"}
-                    </button>
+                    {selected.pedidoVinculado && !selected.pedidoVinculado.fecha_inicio_analisis_mb ? (
+                      /* CASO 1: NO INICIADO -> MOSTRAR BOTÓN INICIAR */
+                      <div style={{ textAlign: 'center', padding: '20px' }}>
+                        <h3>🧬 Análisis Microbiológico</h3>
+                        <p style={{ color: '#64748b', marginBottom: '20px' }}>
+                          El pedido está pendiente de análisis. Haz clic abajo para marcar el inicio del proceso.
+                        </p>
+                        <button
+                          className="mb-btn"
+                          style={{ background: '#3b82f6', fontSize: '16px', padding: '12px 24px' }}
+                          onClick={iniciarAnalisis}
+                          disabled={accionLoading}
+                        >
+                          {accionLoading ? "Iniciando..." : "🧪 Iniciar Análisis MB"}
+                        </button>
+                      </div>
+                    ) : (
+                      /* CASO 2: YA INICIADO -> MOSTRAR FORMULARIO DE LIBERACIÓN */
+                      <>
+                        <h3>✅ Atender Solicitud</h3>
+                        <p style={{ fontSize: 13, color: '#64748b', marginBottom: 10 }}>
+                          Registra el resultado del análisis inicial para liberar el pedido a producción/acondicionamiento.
+                        </p>
+                        <label>Acción / Comentario realizado</label>
+                        <textarea
+                          rows="3"
+                          value={comentario}
+                          onChange={(e) => setComentario(e.target.value)}
+                          placeholder="Ej: Muestra analizada sin hallazgos, se autoriza liberación inicial..."
+                        />
+                        <button className="mb-btn" style={{ width: '100%' }} onClick={liberarSolicitud} disabled={accionLoading}>
+                          {accionLoading ? "Procesando…" : "Confirmar y Liberar Solicitud"}
+                        </button>
+                      </>
+                    )}
                   </div>
                 </>
               )}
@@ -861,6 +1052,33 @@ export default function Microbiologia() {
                     ))}
                   </div>
                 )}
+              </div>
+
+              {/* SECCIÓN DE OBSERVACIONES (Visible para etapa y solicitud vinculada) */}
+              <div className="mb-card">
+                <h3>📝 Observaciones</h3>
+                <div className="pc-observaciones" style={{ maxHeight: '200px', overflowY: 'auto', marginBottom: '15px' }}>
+                  {obs.length === 0 && <p className="pc-empty">No hay observaciones.</p>}
+                  {obs.map((o) => (
+                    <div key={o.id} className="pc-obs-item">
+                      <p>{o.observacion}</p>
+                      <span>
+                        {o.usuario} – {new Date(o.created_at).toLocaleString("es-CO")}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="pc-add-obs" style={{ display: 'flex', gap: '10px' }}>
+                  <textarea
+                    rows="2"
+                    placeholder="+ Añadir observación..."
+                    value={newObs}
+                    onChange={(e) => setNewObs(e.target.value)}
+                    style={{ flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+                  />
+                  <button className="mb-btn" onClick={addObs} style={{ width: 'auto' }}>➕ Agregar</button>
+                </div>
               </div>
             </>
           )}

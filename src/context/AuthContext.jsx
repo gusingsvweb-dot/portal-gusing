@@ -21,7 +21,7 @@ export const AuthProvider = ({ children }) => {
   // ========================================
   // REGISTER (Sign Up)
   // ========================================
-  const register = async (usuario, correo, contrasena) => {
+  const register = async (usuario, correo, contrasena, rol = "usuario", areadetrabajo = "Solicitante") => {
     try {
       // 1. Registro en Supabase Auth
       const { data, error } = await supabase.auth.signUp({
@@ -30,7 +30,8 @@ export const AuthProvider = ({ children }) => {
         options: {
           data: {
             display_name: usuario,
-            rol: "usuario"
+            rol: rol,
+            areadetrabajo: areadetrabajo
           }
         }
       });
@@ -48,7 +49,7 @@ export const AuthProvider = ({ children }) => {
   // ========================================
   const verifyEmailCode = async (correo, token, usuario) => {
     try {
-      const { data: { session }, error } = await supabase.auth.verifyOtp({
+      const { data: { session, user }, error } = await supabase.auth.verifyOtp({
         email: correo,
         token: token,
         type: 'signup'
@@ -56,37 +57,39 @@ export const AuthProvider = ({ children }) => {
 
       if (error) throw error;
 
+      // Recuperar el rol y área de la metadata del usuario registrado
+      const rolMetadata = user?.user_metadata?.rol || "usuario";
+      const areaMetadata = user?.user_metadata?.areadetrabajo || "Solicitante";
+
       // 2. Insertar en la tabla public.usuarios después de verificar
-      // El ID de Supabase Auth debe coincidir con el de nuestra tabla
       const { error: dbError } = await supabase
         .from("usuarios")
         .insert({
           id: session.user.id,
           usuario: usuario,
           correo: correo,
-          rol: "usuario",
-          areadetrabajo: "Solicitante",
-          contrasena: "SUPABASE_AUTH" // Marcador o dejar null si se prefiere
+          rol: rolMetadata,
+          areadetrabajo: areaMetadata,
+          contrasena: "SUPABASE_AUTH"
         });
 
       if (dbError) {
         console.error("Error guardando en public.usuarios:", dbError);
-        // A veces el usuario ya existe por errores previos, intentamos capturarlo
       }
 
       // Login automático
       const userData = {
         id: session.user.id,
         usuario: usuario,
-        rol: "usuario",
-        areadetrabajo: "Solicitante",
+        rol: rolMetadata.toLowerCase().trim(),
+        areadetrabajo: areaMetadata,
         correo: correo,
       };
 
       setUsuarioActual(userData);
       localStorage.setItem("usuarioActual", JSON.stringify(userData));
 
-      return { ok: true, rol: "usuario" };
+      return { ok: true, rol: userData.rol };
     } catch (err) {
       console.error("Error verificando código:", err);
       return { ok: false, message: err.message };
@@ -134,27 +137,34 @@ export const AuthProvider = ({ children }) => {
         .from("usuarios")
         .select("*")
         .eq("usuario", usuarioInput)
-        .single();
+        .limit(1);
 
-      if (error || !data) return { ok: false };
+      if (error) {
+        console.error("❌ Error en consulta de tabla usuarios (406?):", error);
+        return { ok: false };
+      }
+
+      const userRow = data && data[0];
+      if (!userRow) {
+        console.warn(`⚠️ No se encontró usuario '${usuarioInput}' en la tabla usuarios.`);
+        return { ok: false };
+      }
 
       // Validar contraseña plana (Legacy)
-      if (data.contrasena !== contrasena) {
+      if (userRow.contrasena !== contrasena) {
         // Podría ser que el usuario ya existe en Supabase Auth pero lo buscamos por Nickname
-        // Intentamos login con el correo y pass si el usuario tiene correo
-        if (data.id && data.correo) {
+        if (userRow.id && userRow.correo) {
           const { error: authErr } = await supabase.auth.signInWithPassword({
-            email: data.correo,
+            email: userRow.correo,
             password: contrasena
           });
           if (!authErr) {
-            // Reintento exitoso por Supabase Auth
             const userData = {
-              id: data.id,
-              usuario: data.usuario,
-              rol: data.rol?.toLowerCase().trim() || "usuario",
-              areadetrabajo: data.areadetrabajo,
-              correo: data.correo,
+              id: userRow.id,
+              usuario: userRow.usuario,
+              rol: userRow.rol?.toLowerCase().trim() || "usuario",
+              areadetrabajo: userRow.areadetrabajo,
+              correo: userRow.correo,
             };
             setUsuarioActual(userData);
             localStorage.setItem("usuarioActual", JSON.stringify(userData));
@@ -165,11 +175,11 @@ export const AuthProvider = ({ children }) => {
       }
 
       const userData = {
-        id: data.id,
-        usuario: data.usuario,
-        rol: data.rol ? data.rol.toLowerCase().trim() : null,
-        areadetrabajo: data.areadetrabajo !== "NA" ? data.areadetrabajo : null,
-        correo: data.correo ?? null,
+        id: userRow.id,
+        usuario: userRow.usuario,
+        rol: userRow.rol ? userRow.rol.toLowerCase().trim() : null,
+        areadetrabajo: userRow.areadetrabajo !== "NA" ? userRow.areadetrabajo : null,
+        correo: userRow.correo ?? null,
       };
 
       setUsuarioActual(userData);
@@ -245,9 +255,46 @@ export const AuthProvider = ({ children }) => {
 
   if (cargando) return null;
 
+  const verifyUserAdmin = async (correo, token, usuario) => {
+    try {
+      const { data: { session, user }, error } = await supabase.auth.verifyOtp({
+        email: correo,
+        token: token,
+        type: 'signup'
+      });
+
+      if (error) throw error;
+
+      // Recuperar el rol y área de la metadata del usuario registrado
+      const rolMetadata = user?.user_metadata?.rol || "usuario";
+      const areaMetadata = user?.user_metadata?.areadetrabajo || "Solicitante";
+
+      // 2. Insertar en la tabla public.usuarios después de verificar
+      const { error: dbError } = await supabase
+        .from("usuarios")
+        .insert({
+          id: session.user.id,
+          usuario: usuario,
+          correo: correo,
+          rol: rolMetadata,
+          areadetrabajo: areaMetadata,
+          contrasena: "SUPABASE_AUTH"
+        });
+
+      if (dbError) {
+        console.error("Error guardando en public.usuarios:", dbError);
+      }
+
+      return { ok: true };
+    } catch (err) {
+      console.error("Error verificando código (Admin):", err);
+      return { ok: false, message: err.message };
+    }
+  };
+
   return (
     <AuthContext.Provider value={{
-      usuarioActual, login, logout, register, verifyEmailCode,
+      usuarioActual, login, logout, register, verifyEmailCode, verifyUserAdmin,
       sendResetCode, verifyResetCode, updatePassword, cargando
     }}>
       {children}

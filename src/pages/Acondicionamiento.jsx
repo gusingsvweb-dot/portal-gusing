@@ -320,7 +320,7 @@ export default function Acondicionamiento() {
 
           <button
             className="pc-btn"
-            style={{ background: "#2563eb" }} // Azul fuerte
+            style={{ background: "var(--accent-primary)" }}
             onClick={solicitarConfirmacion}
           >
             Finalizar acondicionamiento y enviar a Liberación PT
@@ -513,18 +513,18 @@ export default function Acondicionamiento() {
         <div className="modal-backdrop">
           <div className="modal-card">
             <h3>🔒 Confirmar Envío a Calidad</h3>
-            <p style={{ marginTop: 10, color: "#334155" }}>
+            <p style={{ marginTop: 10, color: "var(--text-main)" }}>
               ¿Estás seguro de que deseas finalizar la etapa de acondicionamiento y enviar este pedido a <strong>Liberación de Producto Terminado</strong>?
             </p>
 
             <div style={{
-              background: "#eff6ff",
+              background: "var(--bg-app)",
               padding: "10px",
               borderRadius: "6px",
               marginTop: "12px",
               fontSize: "13px",
-              color: "#1e40af",
-              borderLeft: "4px solid #3b82f6"
+              color: "var(--text-main)",
+              borderLeft: "4px solid var(--accent-primary)"
             }}>
               ℹ️ Una vez enviado, el pedido pasará a responsabilidad de <strong>Control de Calidad</strong>.
             </div>
@@ -532,7 +532,7 @@ export default function Acondicionamiento() {
             <div style={{ display: "flex", gap: 10, marginTop: 20, justifyContent: "flex-end" }}>
               <button
                 className="pc-btn"
-                style={{ background: "#64748b" }}
+                style={{ background: "var(--text-sub)" }}
                 onClick={() => setShowConfirmModal(false)}
                 disabled={loadingAction}
               >
@@ -540,7 +540,7 @@ export default function Acondicionamiento() {
               </button>
               <button
                 className="pc-btn"
-                style={{ background: "#2563eb" }}
+                style={{ background: "var(--accent-primary)" }}
                 onClick={confirmarEnvioPT}
                 disabled={loadingAction}
               >

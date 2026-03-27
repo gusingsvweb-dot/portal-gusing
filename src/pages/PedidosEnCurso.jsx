@@ -52,13 +52,13 @@ export default function PedidosEnCurso() {
   const startIndex = (page - 1) * pageSize;
   const visiblePedidos = pedidos.slice(startIndex, startIndex + pageSize);
 
-    // =======================
-    // LOADER  
-    // =======================
-    function activarLoader() {
+  // =======================
+  // LOADER  
+  // =======================
+  function activarLoader() {
     setCargandoPantalla(true);
     setCargando(true);
-    }
+  }
 
   // =======================
   // Cargar pedidos de BD
@@ -74,7 +74,7 @@ export default function PedidosEnCurso() {
         clientes ( nombre ),
         estados ( nombre )
       `)
-      .lt("estado_id", 13)
+      .lt("estado_id", 12)
       .order("id", { ascending: false });
 
     if (error) {
@@ -93,129 +93,129 @@ export default function PedidosEnCurso() {
   }
 
   function renderHistorial() {
-  if (!selected) return null;
+    if (!selected) return null;
 
-  const eventos = [];
+    const eventos = [];
 
-  // Estado 1: recepción
-  if (selected.fecha_recepcion_cliente) {
-    eventos.push({
-      fecha: selected.fecha_recepcion_cliente,
-      titulo: "Recepción del pedido",
-      detalle: "Pedido ingresado por Atención al Cliente",
-    });
-  }
-
-  // Estado 2: registro de lote
-  if (selected.op || selected.lote || selected.fecha_vencimiento) {
-    eventos.push({
-      fecha: selected.fecha_ingreso_produccion,
-      titulo: "Registro de lote",
-      detalle: `OP: ${selected.op || "-"}, Lote: ${selected.lote || "-"}, Vence: ${selected.fecha_vencimiento || "-"}`,
-    });
-  }
-
-  // Estado 3: fechas
-  if (selected.fecha_maxima_entrega || selected.fecha_propuesta_entrega) {
-    eventos.push({
-      fecha: selected.fecha_propuesta_entrega,
-      titulo: "Asignación de fechas",
-      detalle: `Máxima: ${selected.fecha_maxima_entrega}, Propuesta: ${selected.fecha_propuesta_entrega}`,
-    });
-  }
-
-  // Estado 4: materias primas
-  if (selected.fecha_solicitud_materias_primas) {
-    eventos.push({
-      fecha: selected.fecha_solicitud_materias_primas,
-      titulo: "Solicitud de materias primas",
-      detalle: "Solicitud enviada a Bodega",
-    });
-  }
-
-  if (selected.fecha_entrega_de_materias_primas_e_insumos) {
-    eventos.push({
-      fecha: selected.fecha_entrega_de_materias_primas_e_insumos,
-      titulo: "Entrega de materias primas",
-      detalle: "Insumos entregados por Bodega",
-    });
-  }
-
-  // Estados automáticos
-  const autoFechas = [
-    ["fecha_inicio_produccion", "Inicio de producción"],
-    ["fecha_entrada_mb", "Entrada MB"],
-    ["fecha_salida_mb", "Salida MB"],
-    ["fecha_inicio_acondicionamiento", "Inicio de acondicionamiento"],
-    ["fecha_fin_acondicionamiento", "Fin de acondicionamiento"],
-    ["fecha_liberacion_pt", "Liberación PT"],
-    ["fecha_entrega_bodega", "Entrega a bodega"],
-  ];
-
-  autoFechas.forEach(([campo, titulo]) => {
-    if (selected[campo]) {
+    // Estado 1: recepción
+    if (selected.fecha_recepcion_cliente) {
       eventos.push({
-        fecha: selected[campo],
-        titulo,
-        detalle: "",
+        fecha: selected.fecha_recepcion_cliente,
+        titulo: "Recepción del pedido",
+        detalle: "Pedido ingresado por Atención al Cliente",
       });
     }
-  });
 
-  // Ordenar por fecha
-  eventos.sort((a, b) => (a.fecha > b.fecha ? -1 : 1));
+    // Estado 2: registro de lote
+    if (selected.op || selected.lote || selected.fecha_vencimiento) {
+      eventos.push({
+        fecha: selected.fecha_ingreso_produccion,
+        titulo: "Registro de lote",
+        detalle: `OP: ${selected.op || "-"}, Lote: ${selected.lote || "-"}, Vence: ${selected.fecha_vencimiento || "-"}`,
+      });
+    }
 
-  if (eventos.length === 0)
-    return <p className="pc-empty">Aún no hay historial disponible.</p>;
+    // Estado 3: fechas
+    if (selected.fecha_maxima_entrega || selected.fecha_propuesta_entrega) {
+      eventos.push({
+        fecha: selected.fecha_propuesta_entrega,
+        titulo: "Asignación de fechas",
+        detalle: `Máxima: ${selected.fecha_maxima_entrega}, Propuesta: ${selected.fecha_propuesta_entrega}`,
+      });
+    }
 
-  return eventos.map((ev, i) => (
-    <div key={i} className="pc-hist-item">
-      <p className="pc-hist-fecha">{ev.fecha}</p>
-      <p className="pc-hist-titulo">{ev.titulo}</p>
-      {ev.detalle && <p className="pc-hist-detalle">{ev.detalle}</p>}
-    </div>
-  ));
-}
+    // Estado 4: materias primas
+    if (selected.fecha_solicitud_materias_primas) {
+      eventos.push({
+        fecha: selected.fecha_solicitud_materias_primas,
+        titulo: "Solicitud de materias primas",
+        detalle: "Solicitud enviada a Bodega",
+      });
+    }
+
+    if (selected.fecha_entrega_de_materias_primas_e_insumos) {
+      eventos.push({
+        fecha: selected.fecha_entrega_de_materias_primas_e_insumos,
+        titulo: "Entrega de materias primas",
+        detalle: "Insumos entregados por Bodega",
+      });
+    }
+
+    // Estados automáticos
+    const autoFechas = [
+      ["fecha_inicio_produccion", "Inicio de producción"],
+      ["fecha_entrada_mb", "Entrada MB"],
+      ["fecha_salida_mb", "Salida MB"],
+      ["fecha_inicio_acondicionamiento", "Inicio de acondicionamiento"],
+      ["fecha_fin_acondicionamiento", "Fin de acondicionamiento"],
+      ["fecha_liberacion_pt", "Liberación PT"],
+      ["fecha_entrega_bodega", "Entrega a bodega"],
+    ];
+
+    autoFechas.forEach(([campo, titulo]) => {
+      if (selected[campo]) {
+        eventos.push({
+          fecha: selected[campo],
+          titulo,
+          detalle: "",
+        });
+      }
+    });
+
+    // Ordenar por fecha
+    eventos.sort((a, b) => (a.fecha > b.fecha ? -1 : 1));
+
+    if (eventos.length === 0)
+      return <p className="pc-empty">Aún no hay historial disponible.</p>;
+
+    return eventos.map((ev, i) => (
+      <div key={i} className="pc-hist-item">
+        <p className="pc-hist-fecha">{ev.fecha}</p>
+        <p className="pc-hist-titulo">{ev.titulo}</p>
+        {ev.detalle && <p className="pc-hist-detalle">{ev.detalle}</p>}
+      </div>
+    ));
+  }
 
 
   // =======================
   // Filtros en memoria
   // =======================
-        function aplicarFiltros() {
-        let data = [...pedidosRaw];
+  function aplicarFiltros() {
+    let data = [...pedidosRaw];
 
-        // 🔍 Buscar por cliente
-        if (searchCliente.trim()) {
-            const term = searchCliente.toLowerCase();
-            data = data.filter((p) =>
-            p.clientes?.nombre?.toLowerCase().includes(term)
-            );
-        }
+    // 🔍 Buscar por cliente
+    if (searchCliente.trim()) {
+      const term = searchCliente.toLowerCase();
+      data = data.filter((p) =>
+        p.clientes?.nombre?.toLowerCase().includes(term)
+      );
+    }
 
-        // 📅 Filtro por fecha desde
-        if (fechaDesde) {
-            data = data.filter(
-            (p) => p.fecha_recepcion_cliente >= fechaDesde
-            );
-        }
+    // 📅 Filtro por fecha desde
+    if (fechaDesde) {
+      data = data.filter(
+        (p) => p.fecha_recepcion_cliente >= fechaDesde
+      );
+    }
 
-        // 📅 Filtro por fecha hasta
-        if (fechaHasta) {
-            data = data.filter(
-            (p) => p.fecha_recepcion_cliente <= fechaHasta
-            );
-        }
+    // 📅 Filtro por fecha hasta
+    if (fechaHasta) {
+      data = data.filter(
+        (p) => p.fecha_recepcion_cliente <= fechaHasta
+      );
+    }
 
-        // 🎛 FILTRO POR ESTADO
-        if (estadoFiltro !== "") {
-            data = data.filter(
-            (p) => String(p.estado_id) === String(estadoFiltro)
-            );
-        }
+    // 🎛 FILTRO POR ESTADO
+    if (estadoFiltro !== "") {
+      data = data.filter(
+        (p) => String(p.estado_id) === String(estadoFiltro)
+      );
+    }
 
-        setPedidos(data);
-        setPage(1);
-        }
+    setPedidos(data);
+    setPage(1);
+  }
 
 
   function limpiarFiltros() {
@@ -232,7 +232,7 @@ export default function PedidosEnCurso() {
       .from("observaciones_pedido")
       .select("*")
       .eq("pedido_id", idPedido)
-      .order("created_at", { ascending: true });
+      .order("created_at", { ascending: false });
 
     if (error) {
       console.error("❌ Error cargando observaciones:", error);
@@ -274,7 +274,7 @@ export default function PedidosEnCurso() {
   // =======================
   return (
     <>
-    {cargandoPantalla && <LoaderOverlay />}
+      {cargandoPantalla && <LoaderOverlay />}
       <Navbar />
 
       <div className="pc-wrapper">
@@ -284,23 +284,23 @@ export default function PedidosEnCurso() {
           <h2>📦 Pedidos en Curso</h2>
 
           <div className="pc-filters">
-  <input
-    type="text"
-    placeholder="🔍 Buscar por cliente…"
-    value={searchCliente}
-    onChange={(e) => setSearchCliente(e.target.value)}
-  />
+            <input
+              type="text"
+              placeholder="🔍 Buscar por cliente…"
+              value={searchCliente}
+              onChange={(e) => setSearchCliente(e.target.value)}
+            />
 
-  {/* FILTRO DE ESTADO */}
-        <select
-            value={estadoFiltro}
-            onChange={(e) => {
-            setEstadoFiltro(e.target.value);
-            activarLoader();
-            }}
+            {/* FILTRO DE ESTADO */}
+            <select
+              value={estadoFiltro}
+              onChange={(e) => {
+                setEstadoFiltro(e.target.value);
+                activarLoader();
+              }}
 
-            className="pc-select"
-        >
+              className="pc-select"
+            >
               <option value="">Todos los estados</option>
               <option value="1">Pendiente</option>
               <option value="2">Registro de lote</option>
@@ -314,67 +314,67 @@ export default function PedidosEnCurso() {
               <option value="10">Liberación PT</option>
               <option value="11">Entrega bodega</option>
               <option value="12">Producción finalizada</option>
-            {/* Agrega más opciones según tu catálogo de estados */}
-        </select>
+              {/* Agrega más opciones según tu catálogo de estados */}
+            </select>
 
-        <div className="pc-filter-dates">
-            <div>
-            <label>Desde</label>
-            <input
-                type="date"
-                value={fechaDesde}
-                onChange={(e) => setFechaDesde(e.target.value)}
-            />
+            <div className="pc-filter-dates">
+              <div>
+                <label>Desde</label>
+                <input
+                  type="date"
+                  value={fechaDesde}
+                  onChange={(e) => setFechaDesde(e.target.value)}
+                />
+              </div>
+              <div>
+                <label>Hasta</label>
+                <input
+                  type="date"
+                  value={fechaHasta}
+                  onChange={(e) => setFechaHasta(e.target.value)}
+                />
+              </div>
             </div>
-            <div>
-            <label>Hasta</label>
-            <input
-                type="date"
-                value={fechaHasta}
-                onChange={(e) => setFechaHasta(e.target.value)}
-            />
-            </div>
-        </div>
 
-        <button className="pc-btn-secondary" onClick={limpiarFiltros}>
-            Limpiar filtros
-        </button>
-        </div>
+            <button className="pc-btn-secondary" onClick={limpiarFiltros}>
+              Limpiar filtros
+            </button>
+          </div>
 
-        {/* Lista con estados */}
-        <div className="pc-list-content">
+          {/* Lista con estados */}
+          <div className="pc-list-content">
 
-        {cargando ? (
-            <>
-            <SkeletonPedido />
-            <SkeletonPedido />
-            <SkeletonPedido />
-            </>
-        ) : visiblePedidos.length === 0 ? (
-            <p className="pc-empty">No hay pedidos que coincidan con el filtro.</p>
-        ) : (
-            visiblePedidos.map((p) => (
-            <div
-                key={p.id}
-                className={`pc-item ${selected?.id === p.id ? "pc-item-selected" : ""}`}
-                onClick={() => seleccionarPedido(p)}
-            >
-              <span className="pc-id-tag">#{p.id}</span>
-                <div className="pc-item-header">
-                <h4>{p.productos?.articulo}</h4>
-                <span className={`pc-estado estado-${p.estado_id}`}>
-                    {p.estados?.nombre || "En curso"}
-                </span>
+            {cargando ? (
+              <>
+                <SkeletonPedido />
+                <SkeletonPedido />
+                <SkeletonPedido />
+              </>
+            ) : visiblePedidos.length === 0 ? (
+              <p className="pc-empty">No hay pedidos que coincidan con el filtro.</p>
+            ) : (
+              visiblePedidos.map((p) => (
+                <div
+                  key={p.id}
+                  className={`pc-item ${selected?.id === p.id ? "pc-item-selected" : ""}`}
+                  onClick={() => seleccionarPedido(p)}
+                >
+                  <span className="pc-id-tag">#{p.id}</span>
+                  <div className="pc-item-header">
+                    <h4>{p.productos?.articulo}</h4>
+                    <span className={`pc-estado estado-${p.estado_id}`}>
+                      {p.estados?.nombre || "En curso"}
+                    </span>
+                  </div>
+
+                  <p><strong>Cliente:</strong> {p.clientes?.nombre}</p>
+                  <p><strong>Cantidad:</strong> {p.cantidad}</p>
+                  <p><strong>Fecha:</strong> {p.fecha_recepcion_cliente}</p>
                 </div>
+              ))
+            )}
 
-                <p><strong>Cliente:</strong> {p.clientes?.nombre}</p>
-                <p><strong>Cantidad:</strong> {p.cantidad}</p>
-                <p><strong>Fecha:</strong> {p.fecha_recepcion_cliente}</p>
-            </div>
-            ))
-        )}
-
-        </div>
+          </div>
 
 
           {/* Paginación */}
@@ -454,10 +454,10 @@ export default function PedidosEnCurso() {
             </div>
 
           </div>
-          
+
         )}
 
-        
+
 
       </div>
 

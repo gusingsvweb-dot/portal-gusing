@@ -86,13 +86,18 @@ export async function checkAndNotifyFlowCompletion(pedidoId) {
     try {
         const { data: etapas, error } = await supabase
             .from("pedido_etapas")
-            .select("estado")
+            .select("estado, nombre")
             .eq("pedido_id", pedidoId);
 
         if (error) throw error;
         if (!etapas || etapas.length === 0) return false;
 
-        const todasCompletas = etapas.every((e) => e.estado === "completada");
+        // FILTRAR: Ignoramos "Acondicionamiento" para la lógica de completitud
+        const relevantes = etapas.filter(e => !e.nombre.toLowerCase().includes("acondicionamiento"));
+
+        if (relevantes.length === 0) return false;
+
+        const todasCompletas = relevantes.every((e) => e.estado === "completada");
 
         if (todasCompletas) {
             await notifyRoles(

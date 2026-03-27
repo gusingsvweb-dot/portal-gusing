@@ -50,7 +50,7 @@ export default function AutorizarDespachos() {
             // Notificar a Bodega de vuelta
             try {
                 await notifyRoles(
-                    ["bodega"],
+                    ["bodega", "bodega_pt"],
                     "Despacho Autorizado",
                     `Atención al Cliente ha autorizado el despacho del Pedido #${pedidoId}.`,
                     pedidoId,
@@ -68,15 +68,15 @@ export default function AutorizarDespachos() {
         <>
             <Navbar />
             <div className="ac-wrapper">
-                <div className="ac-card fadeIn wide" style={{ border: "2px solid #10b981", background: "#f0fdf4" }}>
+                <div className="ac-card fadeIn wide ac-status-success">
                     <h2 className="ac-title">🚀 Autorización de Despacho (PT)</h2>
                     <p className="ac-subtitle">Pedidos liberados por Calidad que requieren confirmación final para entrega al cliente.</p>
 
                     {loading && pendientes.length === 0 ? (
-                        <p style={{ textAlign: "center", padding: "20px" }}>Cargando pendientes...</p>
+                        <p className="ac-loading-text">Cargando pendientes...</p>
                     ) : pendientes.length === 0 ? (
-                        <div style={{ marginTop: "20px", color: "#059669", fontWeight: "600", textAlign: "center", padding: "40px", background: "#d1fae5", borderRadius: "12px" }}>
-                            <span style={{ fontSize: "40px", display: "block", marginBottom: "15px" }}>✅</span>
+                        <div className="ac-empty-state-success">
+                            <span className="ac-empty-icon">✅</span>
                             No hay despachos pendientes por autorizar en este momento.
                         </div>
                     ) : (
@@ -108,8 +108,7 @@ export default function AutorizarDespachos() {
                                             </td>
                                             <td>
                                                 <button
-                                                    className="ac-btn"
-                                                    style={{ padding: "8px 15px", background: "#10b981", fontSize: "13px" }}
+                                                    className="ac-btn small success"
                                                     onClick={() => autorizarDespacho(p.id)}
                                                     disabled={loading}
                                                 >

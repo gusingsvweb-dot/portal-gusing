@@ -1,18 +1,18 @@
-import { Link, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import "./Navbar.css";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationsContext";
-import { useMemo, useState } from "react";
+import { useTheme } from "../context/ThemeContext";
+import { useMemo, useState, useEffect, useRef } from "react";
 
 export default function Navbar() {
   const { usuarioActual, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   const rol = usuarioActual?.rol || "general";
   const userIdInterno = usuarioActual?.id || null;
 
-  // Extraer lógica de notificaciones del Context
-  // (Solo si existe usuario, aunque el hook lo maneja internamente)
   const {
     notifs,
     noLeidas,
@@ -22,6 +22,21 @@ export default function Navbar() {
   } = useNotifications();
 
   const [open, setOpen] = useState(false);
+  const notifRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (notifRef.current && !notifRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    }
+    if (open) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [open]);
 
   function cerrarSesion() {
     logout();
@@ -33,116 +48,146 @@ export default function Navbar() {
     activarNotifsEscritorio();
   }
 
-  // ============================
-  // MENÚ LIMPIO POR CADA ROL
-  // ============================
   const MENUS = useMemo(
     () => ({
       atencion: {
-        title: "Portal Interno – Atención al Cliente",
+        title: "Atención al Cliente",
         items: [
-          { to: "/atencion", label: "Registrar Pedido" },
-          { to: "/pedidos-curso", label: "Pedidos en Curso" },
-          { to: "/autorizar-despachos", label: "Autorizar Despachos" },
-          { to: "/calendario", label: "Calendario" },
-          { to: "/pedidos-finalizados", label: "Pedidos Finalizados" },
-          { to: "/consolidado", label: "Consolidado" },
-          { to: "/dashboard", label: "Dashboard" },
+          { to: "/atencion", label: "Registro", icon: "📝" },
+          { to: "/pedidos-curso", label: "En Curso", icon: "⚡" },
+          { to: "/clientes", label: "Clientes", icon: "👥" },
+          { to: "/autorizar-despachos", label: "Autorizar", icon: "✅" },
+          { to: "/calendario", label: "Agenda", icon: "📅" },
+          { to: "/pedidos-finalizados", label: "Cerrados", icon: "📂" },
+          { to: "/consolidado", label: "Consolidado", icon: "📊" },
+          { to: "/dashboard", label: "Métricas", icon: "📈" },
         ],
       },
 
       produccion: {
-        title: "Portal Interno – Producción",
+        title: "Producción",
         items: [
-          { to: "/produccion", label: "Pedidos Asignados" },
-          { to: "/calendario", label: "Calendario" },
-          { to: "/pedidos-finalizados", label: "Finalizados" },
-          { to: "/consolidado", label: "Consolidado" },
-          { to: "/dashboard", label: "Dashboard" },
+          { to: "/produccion", label: "Asignados", icon: "⚙️" },
+          { to: "/calendario", label: "Agenda", icon: "📅" },
+          { to: "/pedidos-finalizados", label: "Cerrados", icon: "📂" },
+          { to: "/consolidado", label: "Consolidado", icon: "📊" },
+          { to: "/dashboard", label: "Métricas", icon: "📈" },
         ],
       },
 
       gerencia: {
-        title: "Portal Interno – Gerencia",
+        title: "Gerencia",
         items: [
-          { to: "/gerencia", label: "Pedidos en Curso" },
-          { to: "/calendario", label: "Calendario" },
-          { to: "/pedidos-finalizados", label: "Finalizados" },
-          { to: "/gerenciacompras", label: "Compras" },
-          { to: "/gerenciamantenimiento", label: "Mantenimiento" },
-          { to: "/consolidado", label: "Consolidado" },
-          { to: "/dashboard", label: "Dashboard" },
+          { to: "/gerencia", label: "Operaciones", icon: "🏢" },
+          { to: "/calendario", label: "Agenda", icon: "📅" },
+          { to: "/pedidos-finalizados", label: "Cerrados", icon: "📂" },
+          { to: "/gerenciacompras", label: "Compras", icon: "🛒" },
+          { to: "/gerenciamantenimiento", label: "Mantenimiento", icon: "🛠️" },
+          { to: "/consolidado", label: "Consolidado", icon: "📊" },
+          { to: "/dashboard", label: "Métricas", icon: "📈" },
         ],
       },
 
       compras: {
-        title: "Portal Interno – Compras",
+        title: "Compras",
         items: [
-          { to: "/compras", label: "Gestión Compras" },
-          { to: "/kpis-compras", label: "KPIs" },
+          { to: "/compras", label: "Gestión", icon: "🛒" },
+          { to: "/kpis-compras", label: "KPIs", icon: "📈" },
         ],
       },
 
       bodega: {
-        title: "Portal Interno – Bodega",
-        items: [{ to: "/bodega", label: "Pedidos Pendientes" }],
+        title: "Bodega General",
+        items: [
+          { to: "/bodega", label: "Pendientes", icon: "📦" },
+          { to: "/pedidos-curso", label: "En Curso", icon: "⚡" },
+        ],
+      },
+
+      bodega_mp: {
+        title: "Bodega MP",
+        items: [
+          { to: "/bodega-mp", label: "Insumos", icon: "🧪" },
+          { to: "/pedidos-curso", label: "En Curso", icon: "⚡" },
+        ],
+      },
+
+      bodega_pt: {
+        title: "Bodega PT",
+        items: [
+          { to: "/bodega-pt", label: "Despachos", icon: "🚚" },
+          { to: "/pedidos-curso", label: "En Curso", icon: "⚡" },
+        ],
       },
 
       microbiologia: {
-        title: "Portal Interno – Microbiología",
+        title: "Laboratorio Micro",
         items: [
-          { to: "/microbiologia", label: "Análisis Pendientes" },
-          { to: "/calendario", label: "Calendario" },
+          { to: "/microbiologia", label: "Análisis", icon: "🔬" },
+          { to: "/pedidos-curso", label: "En Curso", icon: "⚡" },
+          { to: "/calendario", label: "Agenda", icon: "📅" },
         ],
       },
 
       mantenimiento: {
-        title: "Portal Interno – Mantenimiento",
+        title: "Mantenimiento",
         items: [
-          { to: "/mantenimiento", label: "Mantenimiento" },
-          { to: "/kpis-mantenimiento", label: "KPIs" },
+          { to: "/mantenimiento", label: "Órdenes", icon: "🛠️" },
+          { to: "/kpis-mantenimiento", label: "KPIs", icon: "📈" },
         ],
       },
 
       acondicionamiento: {
-        title: "Portal Interno – Acondicionamiento",
-        items: [{ to: "/Acondicionamiento", label: "Pedidos Asignados" }],
+        title: "Acondicionamiento",
+        items: [
+          { to: "/Acondicionamiento", label: "Procesos", icon: "📦" },
+          { to: "/pedidos-curso", label: "En Curso", icon: "⚡" },
+        ],
       },
 
       controlcalidad: {
-        title: "Portal Interno – Control de Calidad",
+        title: "Control Calidad",
         items: [
-          { to: "/ControlCalidad", label: "Pendientes" },
-          { to: "/calendario", label: "Calendario" },
+          { to: "/ControlCalidad", label: "Inspección", icon: "🔍" },
+          { to: "/pedidos-curso", label: "En Curso", icon: "⚡" },
+          { to: "/calendario", label: "Agenda", icon: "📅" },
         ],
       },
 
       direcciontecnica: {
-        title: "Portal Interno – Dirección Técnica",
+        title: "Dirección Técnica",
         items: [
-          { to: "/direccion-tecnica", label: "Gestión de Productos" },
-          { to: "/consolidado", label: "Consolidado" }
+          { to: "/direccion-tecnica", label: "Productos", icon: "📝" },
+          { to: "/consolidado", label: "Consolidado", icon: "📊" }
+        ],
+      },
+
+      garantiacalidad: {
+        title: "Garantía Calidad",
+        items: [
+          { to: "/garantiacalidad", label: "Admin", icon: "🛡️" },
+          { to: "/consolidado", label: "Consolidado", icon: "📊" }
         ],
       },
 
       usuario: {
-        title: "Portal Interno – Usuario",
+        title: "Portal Usuario",
         items: [
-          { to: "/usuario/mis-solicitudes", label: "Mis Solicitudes" },
-          { to: "/usuario/crear-solicitud", label: "Hacer Solicitud" },
+          { to: "/usuario/mis-solicitudes", label: "Mis Pedidos", icon: "📋" },
+          { to: "/usuario/crear-solicitud", label: "Nuevo", icon: "➕" },
         ],
       },
 
       planeacion: {
-        title: "Portal Interno – Planeación",
+        title: "Planeación",
         items: [
-          { to: "/calendario", label: "Calendario" },
-          { to: "/consolidado", label: "Consolidado" },
-          { to: "/dashboard", label: "Dashboard" },
+          { to: "/calendario", label: "Agenda", icon: "📅" },
+          { to: "/consolidado", label: "Consolidado", icon: "📊" },
+          { to: "/dashboard", label: "Métricas", icon: "📈" },
         ],
       },
 
-      general: { title: "Portal Interno", items: [] },
+      general: { title: "Portal Gusing", items: [] },
     }),
     []
   );
@@ -162,85 +207,92 @@ export default function Navbar() {
 
       <div className="nav-links">
         {menu.items.map((item) => (
-          <Link key={item.to} to={item.to}>
+          <NavLink key={item.to} to={item.to} end={item.to === "/"}>
+            <span>{item.icon}</span>
             {item.label}
-          </Link>
+          </NavLink>
         ))}
       </div>
 
-      {/* Campana */}
-      {userIdInterno && (
-        <div className="nav-notifs-container">
-          <button
-            onClick={toggleCampana}
-            className="nav-notif-btn"
-            title="Notificaciones"
-          >
-            🔔
-            {noLeidas > 0 && (
-              <span className="nav-badge">
-                {noLeidas}
-              </span>
-            )}
-          </button>
+      <div className="nav-right-actions">
+        {userIdInterno && (
+          <div className="nav-notifs-container" ref={notifRef}>
+            <button
+              onClick={toggleCampana}
+              className="nav-notif-btn"
+              title="Notificaciones"
+            >
+              🔔
+              {noLeidas > 0 && (
+                <span className="nav-badge">
+                  {noLeidas}
+                </span>
+              )}
+            </button>
 
-          {open && (
-            <div className="notif-dropdown">
-              <div className="notif-header">
-                <strong>Notificaciones</strong>
-                <button
-                  onClick={marcarTodasLeidas}
-                  className="notif-read-btn"
-                >
-                  Marcar leídas
-                </button>
+            {open && (
+              <div className="notif-dropdown">
+                <div className="notif-header">
+                  <strong>Notificaciones</strong>
+                  <button
+                    onClick={marcarTodasLeidas}
+                    className="notif-read-btn"
+                  >
+                    Marcar todas leídas
+                  </button>
+                </div>
 
-              </div>
-
-              <div className="notif-list">
-                {notifs.length === 0 ? (
-                  <div className="notif-empty">
-                    Sin notificaciones.
-                  </div>
-                ) : (
-                  notifs.map((n) => (
-                    <div
-                      key={n.id}
-                      className={`notif-item ${n.leida ? 'read' : 'unread'}`}
-                    >
-                      <div className="notif-content-wrapper">
-                        <div className="notif-item-title">
-                          {n.titulo}
-                        </div>
-                        <div className="notif-item-msg">
-                          {n.mensaje}
-                        </div>
-                        <div className="notif-item-date">
-                          {new Date(n.created_at).toLocaleString("es-CO")}
-                          {n.pedido_id ? ` · Pedido #${n.pedido_id}` : ""}
-                        </div>
-                      </div>
-                      {!n.leida && (
-                        <button
-                          className="notif-mark-read-btn"
-                          onClick={(e) => { e.stopPropagation(); marcarLeida(n.id); }}
-                          title="Marcar como leída"
-                        >
-                          ✔
-                        </button>
-                      )}
+                <div className="notif-list">
+                  {notifs.length === 0 ? (
+                    <div className="notif-empty" style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-sub)' }}>
+                      <div style={{ fontSize: '2rem', marginBottom: '10px' }}>🎐</div>
+                      Sin notificaciones.
                     </div>
-                  ))
-                )}
+                  ) : (
+                    notifs.map((n) => (
+                      <div
+                        key={n.id}
+                        className={`notif-item ${n.leida ? 'read' : 'unread'}`}
+                        onClick={() => !n.leida && marcarLeida(n.id)}
+                      >
+                        <div className="notif-content-wrapper">
+                          <div className="notif-item-title">{n.titulo}</div>
+                          <div className="notif-item-msg">{n.mensaje}</div>
+                          <div className="notif-item-date">
+                            🕒 {new Date(n.created_at).toLocaleString("es-CO")}
+                            {n.pedido_id ? ` · 📦 #${n.pedido_id}` : ""}
+                          </div>
+                        </div>
+                        {!n.leida && (
+                          <button
+                            className="notif-mark-read-btn"
+                            onClick={(e) => { e.stopPropagation(); marcarLeida(n.id); }}
+                            title="Marcar como leída"
+                          >
+                            ✔
+                          </button>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
-            </div>
-          )}
-        </div>
-      )}
+            )}
+          </div>
+        )}
 
-      <button className="nav-logout" onClick={cerrarSesion}>
-        Cerrar sesión
-      </button>
+        <button
+          className="nav-theme-toggle"
+          onClick={toggleTheme}
+          title={`Activar modo ${theme === 'light' ? 'oscuro' : 'claro'}`}
+        >
+          {theme === 'light' ? '🌙' : '☀️'}
+        </button>
+
+        <button className="nav-logout" onClick={cerrarSesion}>
+          🚪 Salir
+        </button>
+      </div>
     </nav>
   );
 }

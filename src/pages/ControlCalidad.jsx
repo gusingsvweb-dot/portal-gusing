@@ -746,7 +746,7 @@ export default function ControlCalidad() {
         </div>
 
         {/* DETALLE DERECHA */}
-        <div className="pc-detail fadeIn" style={{ flex: 1, minWidth: 0 }}>
+        <div className="pc-detail fadeIn">
           {!selected ? (
             <div className="mb-card">
               <p>Selecciona un elemento para ver detalles y liberar.</p>
@@ -809,13 +809,9 @@ export default function ControlCalidad() {
                     {microLoading ? (
                       <p>Verificando estado de Microbiología...</p>
                     ) : (
-                      <div style={{
-                        background: microLiberado ? "#f0fdf4" : "#fef2f2",
-                        border: microLiberado ? "1px solid #bbf7d0" : "1px solid #fecaca",
+                      <div className={`mb-status-box ${microLiberado ? "success" : "warning"}`} style={{
                         padding: "15px",
                         borderRadius: "10px",
-                        color: microLiberado ? "#166534" : "#991b1b",
-                        fontSize: "14px",
                         marginBottom: "15px",
                         display: "flex",
                         alignItems: "center",
@@ -828,7 +824,7 @@ export default function ControlCalidad() {
                       </div>
                     )}
 
-                    <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '15px' }}>
+                    <p className="mb-sub" style={{ marginBottom: '15px' }}>
                       Revisión final tras Acondicionamiento. Si apruebas, el pedido pasará a <strong>Entrega a Bodega</strong>.
                     </p>
 
@@ -836,7 +832,6 @@ export default function ControlCalidad() {
                       className="pc-btn"
                       style={{
                         width: '100%',
-                        background: microLiberado ? "#2563eb" : "#94a3b8",
                         cursor: microLiberado ? "pointer" : "not-allowed"
                       }}
                       onClick={liberarPT}
@@ -869,7 +864,7 @@ export default function ControlCalidad() {
                     placeholder="+ Añadir observación…"
                     value={newObs}
                     onChange={(e) => setNewObs(e.target.value)}
-                    style={{ flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid #e2e8f0' }}
+                    style={{ flex: 1, padding: '8px', borderRadius: '8px' }}
                   />
                   <button className="mb-btn" onClick={addObs}>➕</button>
                 </div>
@@ -941,7 +936,7 @@ export default function ControlCalidad() {
         <div className="modal-backdrop">
           <div className="modal-card">
             <h3>{confirmData.title}</h3>
-            <p style={{ marginTop: 10, color: "#475569", fontSize: 14 }}>
+            <p style={{ marginTop: 10, color: "var(--text-sub)", fontSize: 14 }}>
               {confirmData.msg}
             </p>
 
@@ -950,7 +945,7 @@ export default function ControlCalidad() {
                 {/* CAMPOS ADICIONALES PARA LIBERACIÓN (SOLO SI ES LIBERACIÓN) */}
                 {!confirmData.isRejection && (
                   <div style={{ marginBottom: 10 }}>
-                    <label style={{ display: 'block', marginBottom: 5, fontWeight: 500 }}>Número de Análisis</label>
+                    <label style={{ display: 'block', marginBottom: 5, fontWeight: 500, color: 'var(--text-main)' }}>Número de Análisis</label>
                     <input
                       type="text"
                       className="mb-input"
@@ -959,7 +954,7 @@ export default function ControlCalidad() {
                       onChange={(e) => setConfirmData(prev => ({ ...prev, numeroAnalisis: e.target.value }))}
                     />
 
-                    <label style={{ display: 'block', marginTop: 10, marginBottom: 5, fontWeight: 500 }}>Responsable Liberación</label>
+                    <label style={{ display: 'block', marginTop: 10, marginBottom: 5, fontWeight: 500, color: 'var(--text-main)' }}>Responsable Liberación</label>
                     <select
                       className="mb-input"
                       value={confirmData.responsableManual || ""}
@@ -971,7 +966,7 @@ export default function ControlCalidad() {
                       ))}
                     </select>
 
-                    <label style={{ display: 'block', marginTop: 10, marginBottom: 5, fontWeight: 500 }}>Clave Personal</label>
+                    <label style={{ display: 'block', marginTop: 10, marginBottom: 5, fontWeight: 500, color: 'var(--text-main)' }}>Clave Personal</label>
                     <input
                       type="password"
                       className="mb-input"
@@ -984,7 +979,7 @@ export default function ControlCalidad() {
 
                 <button
                   className="mb-btn"
-                  style={{ background: "#2563eb" }}
+                  style={{ background: "var(--accent-primary)" }}
                   onClick={() => setConfirmData(prev => ({ ...prev, showComment: true }))}
                 >
                   Sí, añadir observación ✍️
@@ -1053,7 +1048,7 @@ export default function ControlCalidad() {
             <div className="modal-footer">
               <button
                 className="mb-btn"
-                style={{ background: "#e2e8f0", color: "#475569" }}
+                style={{ background: "var(--bg-input)", color: "var(--text-main)" }}
                 onClick={cerrarConfirmacion}
               >
                 Cancelar
@@ -1061,7 +1056,7 @@ export default function ControlCalidad() {
               {(!confirmData.isChoice || confirmData.showComment) && (
                 <button
                   className="mb-btn"
-                  style={{ background: confirmData.type === 'danger' ? "#ef4444" : "#2563eb" }}
+                  style={{ background: confirmData.type === 'danger' ? "#ef4444" : "var(--accent-primary)" }}
                   onClick={ejecutarConfirmacion}
                   disabled={false} // Se podría deshabilitar si faltan campos obligatorios
                 >

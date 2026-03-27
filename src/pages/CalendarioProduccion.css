@@ -17,7 +17,7 @@
 
 .calendar-header h2 {
     font-size: 24px;
-    color: #1e293b;
+    color: var(--text-main);
     margin: 0;
     text-transform: capitalize;
 }
@@ -28,19 +28,19 @@
 }
 
 .calendar-nav button {
-    background: white;
-    border: 1px solid #cbd5e1;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
     padding: 8px 16px;
     border-radius: 8px;
     cursor: pointer;
     font-weight: 600;
-    color: #475569;
+    color: var(--text-main);
     transition: all 0.2s;
 }
 
 .calendar-nav button:hover {
-    background: #f1f5f9;
-    color: #1e293b;
+    background: var(--bg-input);
+    color: var(--text-main);
 }
 
 /* =========================================
@@ -49,26 +49,26 @@
 .calendar-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    background: #e2e8f0;
+    background: var(--border-color);
     gap: 1px;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--border-color);
     border-radius: 12px;
     overflow: hidden;
 }
 
 /* Header de días (Lun, Mar...) */
 .calendar-day-header {
-    background: #f8fafc;
+    background: var(--bg-input);
     padding: 12px;
     text-align: center;
     font-weight: 600;
-    color: #64748b;
+    color: var(--text-sub);
     font-size: 14px;
 }
 
 /* Celdas de días */
 .calendar-day-cell {
-    background: white;
+    background: var(--bg-card);
     min-height: 120px;
     padding: 10px;
     position: relative;
@@ -77,30 +77,30 @@
 }
 
 .calendar-day-cell:hover {
-    background: #f8fafc;
+    background: var(--bg-input);
 }
 
 .calendar-day-cell.empty {
-    background: #fcfcfc;
+    background: var(--bg-app);
     cursor: default;
+    opacity: 0.5;
 }
 
 /* 🌙 Estilos para días pasados y fines de semana */
 .calendar-day-cell.weekend {
-    background: #f1f5f9;
+    background: var(--bg-app);
     /* Tono más oscuro para fin de semana */
 }
 
 .calendar-day-cell.past-day {
-    background: #e2e8f0;
-    /* Tono más oscuro para días pasados */
+    background: var(--bg-app);
+    filter: grayscale(0.2) opacity(0.8);
     cursor: default;
-    /* Opcional: indicar que no se puede interactuar igual */
 }
 
 .calendar-day-cell.past-day.weekend {
-    background: #cbd5e1;
-    /* Combinación aún más oscura */
+    background: var(--bg-app);
+    opacity: 0.6;
 }
 
 .calendar-day-cell.past-day .day-number {
@@ -109,13 +109,12 @@
 }
 
 .calendar-day-cell.holiday {
-    background: #e0f2fe;
-    /* Azul claro para festivos */
-    border: 1px solid #7dd3fc;
+    background: rgba(var(--accent-primary-rgb), 0.1);
+    border: 1px solid rgba(var(--accent-primary-rgb), 0.3);
 }
 
 .calendar-day-cell.holiday:hover {
-    background: #bae6fd;
+    background: rgba(var(--accent-primary-rgb), 0.2);
 }
 
 .day-cell-header {
@@ -127,7 +126,7 @@
 
 .holiday-label {
     font-size: 10px;
-    background: #3b82f6;
+    background: var(--accent-primary);
     color: white;
     padding: 2px 5px;
     border-radius: 4px;
@@ -137,19 +136,20 @@
 
 .holiday-name {
     font-size: 11px;
-    color: #1d4ed8;
+    color: var(--text-main);
     font-weight: 600;
     margin-top: 5px;
     line-height: 1.2;
     white-space: normal;
-    background: rgba(255, 255, 255, 0.4);
-    padding: 3px;
-    border-radius: 4px;
+    background: rgba(var(--accent-primary-rgb), 0.15);
+    padding: 4px;
+    border-radius: 6px;
+    border-left: 3px solid var(--accent-primary);
 }
 
 .day-number {
     font-weight: 600;
-    color: #334155;
+    color: var(--text-main);
     font-size: 14px;
     margin-bottom: 8px;
     display: block;
@@ -170,17 +170,20 @@
    TASK CHIPS (Etiquetas de tareas)
 ========================================= */
 .task-chip {
-    background: #eff6ff;
-    border-left: 3px solid #3b82f6;
-    color: #1e40af;
+    background: var(--bg-app);
+    border-left: 3px solid var(--accent-primary);
+    color: var(--text-main);
     font-size: 11px;
-    padding: 4px 6px;
-    border-radius: 4px;
-    margin-bottom: 4px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    margin-bottom: 6px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    font-weight: 500;
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--border-color);
+    border-left-width: 4px;
 }
 
 .task-more {
@@ -207,24 +210,25 @@
 }
 
 .cal-modal {
-    background: white;
+    background: var(--bg-card);
     padding: 25px;
     border-radius: 12px;
     width: 400px;
     max-width: 90%;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    box-shadow: var(--shadow-main);
+    border: 1px solid var(--border-color);
 }
 
 .cal-modal h3 {
     margin-top: 0;
-    color: #1e293b;
+    color: var(--text-main);
 }
 
 .cal-form label {
     display: block;
     font-size: 13px;
     font-weight: 600;
-    color: #475569;
+    color: var(--text-sub);
     margin-bottom: 5px;
     margin-top: 15px;
 }
@@ -233,9 +237,11 @@
 .cal-form textarea {
     width: 100%;
     padding: 10px;
-    border: 1px solid #cbd5e1;
+    border: 1px solid var(--border-color);
     border-radius: 8px;
     font-size: 14px;
+    background: var(--bg-input);
+    color: var(--text-main);
 }
 
 .cal-form textarea {
@@ -258,8 +264,9 @@
 }
 
 .cal-btn.cancel {
-    background: #f1f5f9;
-    color: #475569;
+    background: var(--bg-input);
+    color: var(--text-sub);
+    border: 1px solid var(--border-color);
 }
 
 .cal-btn.save {
@@ -274,21 +281,21 @@
 }
 
 .cal-task-item {
-    background: #f8fafc;
-    padding: 10px;
-    border-radius: 8px;
-    margin-bottom: 8px;
-    border: 1px solid #e2e8f0;
+    background: var(--bg-input);
+    padding: 12px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    border: 1px solid var(--border-color);
 }
 
 .cal-task-item h4 {
     margin: 0 0 5px;
     font-size: 14px;
-    color: #334155;
+    color: var(--text-main);
 }
 
 .cal-task-item p {
     margin: 0;
     font-size: 13px;
-    color: #64748b;
+    color: var(--text-sub);
 }

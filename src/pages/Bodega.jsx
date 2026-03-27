@@ -2,14 +2,23 @@ import React, { useEffect, useState } from "react";
 import { supabase } from "../api/supabaseClient";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
+import { useAuth } from "../context/AuthContext";
+import "../pages/Produccion.css";
 
 export default function Bodega() {
+  const { usuarioActual } = useAuth();
+  const rol = usuarioActual?.rol || "bodega";
+
   const [pedidos, setPedidos] = useState([]);
   const [selected, setSelected] = useState(null);
   const [historial, setHistorial] = useState([]);
   const [itemsDetallados, setItemsDetallados] = useState([]);
   const [itemsLoading, setItemsLoading] = useState(false);
   const [showHiddenList, setShowHiddenList] = useState(false);
+
+  // OBSERVACIONES
+  const [obs, setObs] = useState([]);
+  const [newObs, setNewObs] = useState("");
 
   /* ===========================================================
      CARGAR PEDIDOS ASIGNADOS A BODEGA
@@ -53,11 +62,20 @@ export default function Bodega() {
     let total = [];
     if (dataBodega) total = [...total, ...dataBodega];
     if (dataPendientes) {
-      // Eliminar posibles duplicados si la query inner trae multiples filas por items
       const map = new Map();
       total.forEach(p => map.set(p.id, p));
       dataPendientes.forEach(p => map.set(p.id, p));
       total = Array.from(map.values());
+    }
+
+    // --- FILTRADO POR ROL ---
+    if (rol === "bodega_mp") {
+      total = total.filter(p => p.estado_id < 11);
+    } else if (rol === "bodega_pt") {
+      total = total.filter(p => [11, 13].includes(p.estado_id));
+    } else {
+      // Para rol 'bodega' general, excluimos los ya finalizados (12)
+      total = total.filter(p => p.estado_id !== 12);
     }
 
     // Ordenar por ID descendente
@@ -162,6 +180,42 @@ export default function Bodega() {
     if (!error) setHistorial(data || []);
   }
 
+  // ==========================
+  // CARGAR OBSERVACIONES
+  // ==========================
+  async function cargarObservaciones(pedidoId) {
+    const { data, error } = await supabase
+      .from("observaciones_pedido")
+      .select("*")
+      .eq("pedido_id", pedidoId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("❌ Error cargarObservaciones:", error);
+      return;
+    }
+    setObs(data || []);
+  }
+
+  async function addObs() {
+    if (!newObs.trim() || !selected) return;
+
+    const { error } = await supabase.from("observaciones_pedido").insert([{
+      pedido_id: selected.id,
+      usuario: usuarioActual?.usuario || "Bodega",
+      observacion: newObs,
+    }]);
+
+    if (error) {
+      console.error("❌ Error addObs:", error);
+      alert("Error al guardar observación.");
+      return;
+    }
+
+    setNewObs("");
+    cargarObservaciones(selected.id);
+  }
+
   useEffect(() => {
     loadPedidos();
     loadHistorial();
@@ -173,7 +227,10 @@ export default function Bodega() {
   async function seleccionarPedido(p) {
     setSelected(p);
     setItemsDetallados([]);
-    setShowHiddenList(false); // Resetear visibilidad al cambiar de pedido
+    setShowHiddenList(false); // Reset to hidden
+
+    // Cargar Observaciones
+    cargarObservaciones(p.id);
 
     setItemsLoading(true);
     try {
@@ -370,52 +427,60 @@ export default function Bodega() {
         <div className="pc-list">
           <h2>📦 Bodega</h2>
 
-          <h4 style={{ margin: '15px 0 10px', color: '#64748b', fontSize: '13px', textTransform: 'uppercase' }}>Pendientes por Insumos</h4>
-          {pedidos.filter(p => p.estado_id < 11).length === 0 && (
-            <p className="pc-empty" style={{ fontSize: '13px' }}>No hay pedidos por insumos.</p>
+          {rol !== "bodega_pt" && (
+            <>
+              <h4 className="pc-section-title">Pendientes por Insumos</h4>
+              {pedidos.filter(p => p.estado_id < 11).length === 0 && (
+                <p className="pc-empty" style={{ fontSize: '13px' }}>No hay pedidos por insumos.</p>
+              )}
+              {pedidos.filter(p => p.estado_id < 11).map((p) => (
+                <div
+                  key={p.id}
+                  className={`pc-item ${selected?.id === p.id ? "pc-item-selected" : ""}`}
+                  onClick={() => seleccionarPedido(p)}
+                >
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#0f172a' }}>
+                      Or. Producción: {p.op || p.id}
+                    </span>
+                    <span style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                      {p.productos?.articulo}
+                    </span>
+                  </div>
+                  <p style={{ marginTop: 8 }}><strong>Cliente:</strong> {p.clientes?.nombre}</p>
+                  <p><strong>Estado:</strong> {p.estados?.nombre}</p>
+                </div>
+              ))}
+            </>
           )}
-          {pedidos.filter(p => p.estado_id < 11).map((p) => (
-            <div
-              key={p.id}
-              className={`pc-item ${selected?.id === p.id ? "pc-item-selected" : ""}`}
-              onClick={() => seleccionarPedido(p)}
-            >
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#0f172a' }}>
-                  Or. Producción: {p.op || p.id}
-                </span>
-                <span style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
-                  {p.productos?.articulo}
-                </span>
-              </div>
-              <p style={{ marginTop: 8 }}><strong>Cliente:</strong> {p.clientes?.nombre}</p>
-              <p><strong>Estado:</strong> {p.estados?.nombre}</p>
-            </div>
-          ))}
 
-          <h4 style={{ margin: '25px 0 10px', color: '#64748b', fontSize: '13px', textTransform: 'uppercase' }}>Despachos PT</h4>
-          {pedidos.filter(p => p.estado_id >= 11).length === 0 && (
-            <p className="pc-empty" style={{ fontSize: '13px' }}>No hay despachos pendientes.</p>
+          {rol !== "bodega_mp" && (
+            <>
+              <h4 className="pc-section-title">Despachos PT</h4>
+              {pedidos.filter(p => p.estado_id >= 11).length === 0 && (
+                <p className="pc-empty" style={{ fontSize: '13px' }}>No hay despachos pendientes.</p>
+              )}
+              {pedidos.filter(p => p.estado_id >= 11).map((p) => (
+                <div
+                  key={p.id}
+                  className={`pc-item ${selected?.id === p.id ? "pc-item-selected" : ""}`}
+                  onClick={() => seleccionarPedido(p)}
+                  style={{ borderLeft: '4px solid #10b981' }}
+                >
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#0f172a' }}>
+                      Or. Producción: {p.op || p.id}
+                    </span>
+                    <span style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                      {p.productos?.articulo}
+                    </span>
+                  </div>
+                  <p style={{ marginTop: 8 }}><strong>Cliente:</strong> {p.clientes?.nombre}</p>
+                  <p><strong>Estado:</strong> <span style={{ color: '#059669', fontWeight: 'bold' }}>{p.estados?.nombre}</span></p>
+                </div>
+              ))}
+            </>
           )}
-          {pedidos.filter(p => p.estado_id >= 11).map((p) => (
-            <div
-              key={p.id}
-              className={`pc-item ${selected?.id === p.id ? "pc-item-selected" : ""}`}
-              onClick={() => seleccionarPedido(p)}
-              style={{ borderLeft: '4px solid #10b981' }}
-            >
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#0f172a' }}>
-                  Or. Producción: {p.op || p.id}
-                </span>
-                <span style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
-                  {p.productos?.articulo}
-                </span>
-              </div>
-              <p style={{ marginTop: 8 }}><strong>Cliente:</strong> {p.clientes?.nombre}</p>
-              <p><strong>Estado:</strong> <span style={{ color: '#059669', fontWeight: 'bold' }}>{p.estados?.nombre}</span></p>
-            </div>
-          ))}
         </div>
 
         {selected && (
@@ -425,17 +490,56 @@ export default function Bodega() {
                 if (e.shiftKey) setShowHiddenList(!showHiddenList);
               }}
               style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
-              title="Shift + Click para ver información oculta"
+              title="Shift + Click para ver lista de insumos"
             >
               📄 Detalle del Pedido
+              <span style={{ fontSize: '12px', background: 'var(--bg-input)', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--border-color)', color: 'var(--text-sub)' }}>
+                #{selected.id}
+              </span>
               {itemsDetallados.length > 0 && <span style={{ fontSize: '10px', verticalAlign: 'middle' }}>●</span>}
             </h3>
 
             <div className="pc-detail-grid">
+              <p><strong>OP:</strong> {selected.op || "N/A"}</p>
+              <p><strong>Lote:</strong> {selected.lote || "N/A"}</p>
               <p><strong>Producto:</strong> {selected.productos?.articulo}</p>
               <p><strong>Cliente:</strong> {selected.clientes?.nombre}</p>
               <p><strong>Cantidad:</strong> {selected.cantidad}</p>
+              <p><strong>Fecha Recepción:</strong> {selected.fecha_recepcion_cliente || "—"}</p>
               <p><strong>Estado:</strong> {selected.estados?.nombre}</p>
+            </div>
+
+            {/* SECCIÓN DE OBSERVACIONES */}
+            <div style={{ marginTop: '20px', padding: '15px', backgroundColor: 'var(--bg-app)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+              <h4 style={{ marginBottom: '10px', fontSize: '14px', color: 'var(--text-main)' }}>📝 Observaciones</h4>
+              <div className="pc-observaciones" style={{ maxHeight: '150px', overflowY: 'auto', marginBottom: '10px' }}>
+                {obs.length === 0 && <p className="pc-empty" style={{ fontSize: '13px' }}>No hay observaciones.</p>}
+                {obs.map((o) => (
+                  <div key={o.id} className="pc-obs-item" style={{ fontSize: '13px', padding: '8px', borderBottom: '1px solid #f1f5f9' }}>
+                    <p style={{ margin: 0 }}>{o.observacion}</p>
+                    <span style={{ fontSize: '11px', color: '#64748b', display: 'block', marginTop: '4px' }}>
+                      {o.usuario} – {new Date(o.created_at).toLocaleString("es-CO")}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <textarea
+                  rows="2"
+                  placeholder="+ Añadir nota..."
+                  value={newObs}
+                  onChange={(e) => setNewObs(e.target.value)}
+                  style={{ flex: 1, padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
+                />
+                <button
+                  className="pc-btn"
+                  onClick={addObs}
+                  style={{ width: 'auto', padding: '0 15px', fontSize: '13px' }}
+                >
+                  ➕
+                </button>
+              </div>
             </div>
 
             {selected.estado_id < 11 ? (
@@ -446,8 +550,8 @@ export default function Bodega() {
                 </p>
 
                 {itemsDetallados.length > 0 && showHiddenList && (
-                  <div style={{ marginBottom: '20px', background: '#f8fafc', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                    <h4 style={{ marginBottom: '10px', fontSize: '14px', color: '#1e293b' }}>Lista de insumos solicitados:</h4>
+                  <div style={{ marginBottom: '20px', backgroundColor: 'var(--bg-app)', padding: '15px', borderRadius: '8px', border: '1px solid var(--border-color)', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
+                    <h4 style={{ marginBottom: '10px', fontSize: '14px', color: 'var(--text-main)' }}>📋 Lista de Insumos</h4>
                     {itemsLoading ? (
                       <p>Cargando insumos...</p>
                     ) : (
@@ -485,7 +589,7 @@ export default function Bodega() {
                                       value={it.cantidad_entregada || ""}
                                       onChange={(e) => updateItemField(it.id, 'cantidad_entregada', e.target.value)}
                                       onBlur={() => saveItem(it)}
-                                      style={{ width: '60px', padding: '4px', border: esBajo ? '1px solid #e11d48' : '1px solid #cbd5e1' }}
+                                      style={{ width: '60px', padding: '4px', border: esBajo ? '1px solid #e11d48' : '1px solid #cbd5e1', borderRadius: '4px' }}
                                     />
                                   </td>
                                   <td>
@@ -495,7 +599,7 @@ export default function Bodega() {
                                       onChange={(e) => updateItemField(it.id, 'observacion', e.target.value)}
                                       onBlur={() => saveItem(it)}
                                       placeholder="..."
-                                      style={{ width: '100%', padding: '4px' }}
+                                      style={{ width: '100%', padding: '4px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
                                     />
                                   </td>
                                   <td style={{ textAlign: 'center' }}>
@@ -531,7 +635,7 @@ export default function Bodega() {
                   className="pc-btn"
                   onClick={confirmarEntrega}
                   disabled={itemsDetallados.length > 0 && itemsDetallados.some(i => i.es_critico && (!i.completado || (i.cantidad_entregada && Number(i.cantidad_entregada) < Number(i.cantidad))))}
-                  style={itemsDetallados.length > 0 && itemsDetallados.some(i => i.es_critico && (!i.completado || (i.cantidad_entregada && Number(i.cantidad_entregada) < Number(i.cantidad)))) ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
+                  style={itemsDetallados.length > 0 && itemsDetallados.some(i => i.es_critico && (!i.completado || (i.cantidad_entregada && Number(i.cantidad_entregada) < Number(i.cantidad)))) ? { opacity: 0.5, cursor: 'not-allowed', marginTop: '20px', width: '100%' } : { marginTop: '20px', width: '100%' }}
                 >
                   ✔️ Confirmar entrega y avanzar etapa
                 </button>
@@ -539,14 +643,14 @@ export default function Bodega() {
             ) : (
               <>
                 <h3 style={{ marginTop: 20 }}>🚀 Despacho de Producto Terminado</h3>
-                <div style={{ background: '#ecfdf5', padding: '20px', borderRadius: '12px', border: '1px solid #10b981', marginTop: '10px' }}>
-                  <p style={{ color: '#065f46', fontSize: '15px', lineHeight: '1.5' }}>
+                <div style={{ backgroundColor: 'rgba(52, 211, 153, 0.1)', padding: '20px', borderRadius: '12px', border: '1px solid #10b981', marginTop: '10px' }}>
+                  <p style={{ color: '#10b981', fontSize: '15px', lineHeight: '1.5', fontWeight: '600' }}>
                     Este pedido ha sido liberado por <strong>Control de Calidad</strong> y está listo para ser entregado al cliente.
                   </p>
 
                   {selected.estado_id === 11 ? (
                     <div style={{ marginTop: '20px' }}>
-                      <p style={{ fontWeight: '600', color: '#047857', marginBottom: '10px' }}>
+                      <p style={{ fontWeight: '600', color: 'var(--text-main)', marginBottom: '10px' }}>
                         Paso siguiente: Solicitar autorización de despacho a Atención al Cliente.
                       </p>
                       <button
@@ -559,10 +663,10 @@ export default function Bodega() {
                     </div>
                   ) : selected.asignado_a === 'bodega' ? (
                     <div style={{ marginTop: '20px' }}>
-                      <p style={{ fontWeight: '600', color: '#047857', marginBottom: '10px' }}>
+                      <p style={{ fontWeight: '600', color: '#10b981', marginBottom: '10px' }}>
                         ✅ ¡DESPACHO AUTORIZADO!
                       </p>
-                      <p style={{ fontSize: '14px', color: '#065f46', marginBottom: '15px' }}>
+                      <p style={{ fontSize: '14px', color: 'var(--text-main)', marginBottom: '15px' }}>
                         Atención al Cliente ha aprobado la entrega. Proceda al despacho físico.
                       </p>
                       <button
@@ -574,8 +678,8 @@ export default function Bodega() {
                       </button>
                     </div>
                   ) : (
-                    <div style={{ marginTop: '20px', padding: '10px', background: '#d1fae5', borderRadius: '8px' }}>
-                      <p style={{ color: '#065f46', fontWeight: 'bold' }}>
+                    <div style={{ marginTop: '20px', padding: '10px', backgroundColor: 'rgba(52, 211, 153, 0.2)', borderRadius: '8px' }}>
+                      <p style={{ color: 'var(--text-main)', fontWeight: 'bold' }}>
                         ⏳ Esperando autorización de Atención al Cliente...
                       </p>
                     </div>
@@ -587,34 +691,36 @@ export default function Bodega() {
         )}
       </div>
 
-      <div className="pc-wrapper" style={{ marginTop: 40 }}>
-        <h2>📜 Historial de Entregas de Materias Primas</h2>
-        {historial.length === 0 && (
-          <p className="pc-empty">Aún no hay entregas registradas.</p>
-        )}
-        {historial.length > 0 && (
-          <table className="gc-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Producto</th>
-                <th>Cliente</th>
-                <th>Fecha de entrega MP</th>
-              </tr>
-            </thead>
-            <tbody>
-              {historial.map((h) => (
-                <tr key={h.id}>
-                  <td>#{h.id}</td>
-                  <td>{h.productos?.articulo}</td>
-                  <td>{h.clientes?.nombre}</td>
-                  <td>{new Date(h.fecha_entrega_de_materias_primas_e_insumos).toLocaleDateString()}</td>
+      {rol !== "bodega_pt" && (
+        <div className="pc-wrapper" style={{ marginTop: 40 }}>
+          <h2>📜 Historial de Entregas de Materias Primas</h2>
+          {historial.length === 0 && (
+            <p className="pc-empty">Aún no hay entregas registradas.</p>
+          )}
+          {historial.length > 0 && (
+            <table className="gc-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Producto</th>
+                  <th>Cliente</th>
+                  <th>Fecha de entrega MP</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+              </thead>
+              <tbody>
+                {historial.map((h) => (
+                  <tr key={h.id}>
+                    <td>#{h.id}</td>
+                    <td>{h.productos?.articulo}</td>
+                    <td>{h.clientes?.nombre}</td>
+                    <td>{new Date(h.fecha_entrega_de_materias_primas_e_insumos).toLocaleDateString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
 
       <Footer />
     </>

@@ -1,7 +1,7 @@
-/* Fondo corporativo igual al login */
+/* Fondo corporativo dinámico */
 .ac-wrapper {
   min-height: 100vh;
-  background: linear-gradient(135deg, #dce6f2, #cdd8e2);
+  background-color: var(--bg-app);
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
@@ -10,16 +10,17 @@
   gap: 30px;
 }
 
-/* Tarjeta blanca elegante */
+/* Tarjeta dinámica elegante */
 .ac-card {
-  background: #ffffff;
+  background-color: var(--bg-card);
   padding: 40px 50px;
   border-radius: 18px;
   width: 100%;
   max-width: 600px;
-  box-shadow: 0px 15px 30px rgba(0, 0, 0, 0.15);
-  transition: max-width 0.4s ease;
+  box-shadow: var(--shadow-main);
+  transition: all 0.4s ease;
   animation: fadeIn 0.7s ease;
+  border: 1px solid var(--border-color);
 }
 
 /* Variante ancha para tabla masiva */
@@ -31,13 +32,13 @@
 .ac-title {
   font-size: 32px;
   font-weight: 700;
-  color: #1b2a41;
+  color: var(--text-main);
   text-align: center;
 }
 
 .ac-subtitle {
   text-align: center;
-  color: #5f6c7a;
+  color: var(--text-sub);
   margin-bottom: 30px;
 }
 
@@ -56,15 +57,16 @@
 
 .ac-form label {
   font-weight: 600;
-  color: #1b2a41;
+  color: var(--text-main);
 }
 
 /* Inputs */
 .ac-form input,
 .ac-form select,
 .ac-form textarea {
-  border: 1.6px solid #c5d0db;
-  background: #f7faff;
+  border: 1.6px solid var(--border-color);
+  background: var(--bg-input);
+  color: var(--text-main);
   padding: 12px 14px;
   border-radius: 10px;
   font-size: 15px;
@@ -74,14 +76,14 @@
 .ac-form input:focus,
 .ac-form select:focus,
 .ac-form textarea:focus {
-  border-color: #1b2a41;
-  background: white;
-  box-shadow: 0 0 8px rgba(27, 42, 65, 0.25);
+  border-color: var(--accent-primary);
+  background: var(--bg-card);
+  box-shadow: 0 0 8px rgba(30, 53, 80, 0.25);
 }
 
 /* Botón */
 .ac-btn {
-  background: linear-gradient(135deg, #1e3550, #0f1e32);
+  background: var(--accent-primary);
   border: none;
   color: white;
   padding: 14px;
@@ -93,88 +95,79 @@
 }
 
 .ac-btn:hover {
-  background: linear-gradient(135deg, #162536, #0a1522);
+  background: var(--accent-secondary);
   transform: translateY(-2px);
 }
 
-/* Mensaje */
-.ac-msg {
-  text-align: center;
-  color: green;
-  font-weight: 600;
-  margin-top: -5px;
-}
-
-/* Animación */
 /* TABLA MASIVA */
-.ac-bulk-container {
-  margin-top: 20px;
-  overflow-x: auto;
+.ac-bulk-table th {
+  background: var(--bg-app);
+  font-weight: 700;
+  color: var(--text-main);
+  border-bottom: 2px solid var(--border-color);
 }
 
-.ac-bulk-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-bottom: 20px;
-  font-size: 14px;
-}
-
-.ac-bulk-table th,
 .ac-bulk-table td {
   padding: 12px;
   text-align: left;
-  border-bottom: 1px solid #eee;
-}
-
-.ac-bulk-table th {
-  background: #f8f9fa;
-  font-weight: 700;
-  color: #1b2a41;
-}
-
-.ac-bulk-table select,
-.ac-bulk-table input {
-  padding: 8px;
-  border-radius: 6px;
-}
-
-.ac-bulk-actions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 15px;
-  margin-top: 20px;
-  padding-top: 20px;
-  border-top: 2px dashed #eee;
-}
-
-.ac-bulk-btn-cancel {
-  background: #6c757d;
-  color: white;
-  padding: 10px 20px;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-main);
 }
 
 .ac-bulk-upload-zone {
-  border: 2px dashed #c5d0db;
+  border: 2px dashed var(--border-color);
   padding: 20px;
   text-align: center;
   border-radius: 12px;
   cursor: pointer;
   margin-bottom: 20px;
-  transition: border-color 0.2s;
+  transition: all 0.2s;
 }
 
 .ac-bulk-upload-zone:hover {
-  border-color: #1b2a41;
+  border-color: var(--accent-primary);
+  background-color: var(--bg-app);
 }
 
-.ac-bulk-upload-zone p {
-  margin: 0;
-  color: #5f6c7a;
+.ac-status-success {
+  border: 2px solid #10b981 !important;
+  background-color: rgba(16, 185, 129, 0.1) !important;
+}
+
+.ac-loading-text {
+  text-align: center;
+  padding: 20px;
+  color: var(--text-main);
+}
+
+.ac-empty-state-success {
+  margin-top: 20px;
+  color: #10b981;
   font-weight: 600;
+  text-align: center;
+  padding: 40px;
+  background: var(--bg-input);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+}
+
+.ac-empty-icon {
+  font-size: 40px;
+  display: block;
+  margin-bottom: 15px;
+}
+
+.ac-btn.small {
+  padding: 8px 15px;
+  font-size: 13px;
+}
+
+.ac-btn.success {
+  background: #10b981;
+}
+
+.ac-btn.success:hover {
+  background: #059669;
 }
 
 @keyframes fadeIn {

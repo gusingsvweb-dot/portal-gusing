@@ -2,13 +2,14 @@
    WRAPPER GENERAL
 =========================================================== */
 .pc-wrapper {
-  width: 90%;
-  margin: auto;
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
   display: grid;
-  grid-template-columns: 28% 72%;
-  gap: 24px;
-  padding: 30px 0;
-  min-height: 80vh;
+  grid-template-columns: 360px 1fr;
+  gap: 32px;
+  padding: 30px;
+  min-height: 10vh;
   font-family: "Inter", sans-serif;
 }
 
@@ -17,10 +18,11 @@
 =========================================================== */
 .pf-filters {
   grid-column: span 2;
-  background: #ffffff;
+  background: var(--bg-card);
   padding: 18px 20px;
   border-radius: 14px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+  box-shadow: var(--shadow-main);
+  border: 1px solid var(--border-color);
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
@@ -32,7 +34,9 @@
   flex: 2;
   padding: 10px 14px;
   border-radius: 10px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--border-color);
+  background: var(--bg-input);
+  color: var(--text-main);
   font-size: 14px;
 }
 
@@ -41,8 +45,9 @@
   flex: 1;
   padding: 10px 14px;
   border-radius: 10px;
-  border: 1px solid #cbd5e1;
-  background: #f8fafc;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-main);
   font-size: 14px;
   cursor: pointer;
 }
@@ -61,8 +66,9 @@
 .pf-date-range input {
   padding: 10px;
   border-radius: 10px;
-  border: 1px solid #cbd5e1;
-  background: #fff;
+  border: 1px solid var(--border-color);
+  background: var(--bg-input);
+  color: var(--text-main);
   font-size: 14px;
 }
 
@@ -70,39 +76,42 @@
    LISTA IZQUIERDA
 =========================================================== */
 .pc-list {
-  background: #ffffff;
+  background: var(--bg-card);
   padding: 22px;
   border-radius: 16px;
-  box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+  box-shadow: var(--shadow-main);
+  border: 1px solid var(--border-color);
   height: calc(100vh - 220px);
   overflow-y: auto;
+  box-sizing: border-box;
 }
 
 .pc-list h2 {
   margin-bottom: 18px;
-  color: #1d3557;
+  color: var(--text-main);
   font-weight: 700;
 }
 
 .pc-item {
   padding: 16px;
-  background: #f8faff;
+  background: var(--bg-input);
   border-radius: 12px;
   margin-bottom: 12px;
-  border: 1px solid #d9e2f0;
+  border: 1px solid var(--border-color);
   cursor: pointer;
   transition: 0.2s;
   position: relative;
+  color: var(--text-main);
 }
 
 .pc-item:hover {
-  background: #eef4ff;
-  border-color: #bcd0f3;
+  background: var(--bg-app);
+  border-color: var(--accent-primary);
 }
 
 .pc-item-selected {
-  border-color: #1b4bc5;
-  background: #dce6ff;
+  border-color: var(--accent-primary);
+  background: var(--bg-app);
 }
 
 /* ID Tag */
@@ -110,13 +119,13 @@
   position: absolute;
   right: 12px;
   bottom: 8px;
-  background: #e0e7ff;
-  color: #1e3a8a;
+  background: var(--bg-input);
+  color: var(--text-main);
   font-size: 11px;
   font-weight: 600;
   padding: 3px 9px;
   border-radius: 999px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
 }
 
 /* When hover */
@@ -127,13 +136,13 @@
 /* Texto */
 .pc-item h4 {
   margin: 0 0 6px;
-  color: #1e293b;
+  color: var(--text-main);
 }
 
 .pc-item p {
   margin: 2px 0;
   font-size: 13px;
-  color: #475569;
+  color: var(--text-sub);
 }
 
 /* Vacío */
@@ -148,16 +157,20 @@
    DETALLE DERECHA
 =========================================================== */
 .pc-detail {
-  background: #ffffff;
+  background: var(--bg-card);
   padding: 26px 28px;
   border-radius: 16px;
-  box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+  box-shadow: var(--shadow-main);
+  border: 1px solid var(--border-color);
   animation: fadeIn 0.25s ease;
+  color: var(--text-main);
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .pc-detail h3 {
   font-weight: 700;
-  color: #1d3557;
+  color: var(--text-main);
   margin-bottom: 18px;
 }
 
@@ -179,8 +192,8 @@
 =========================================================== */
 .pc-historial {
   margin-top: 12px;
-  background: #f3f7fe;
-  border: 1px solid #dbe4f3;
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
   padding: 15px;
   border-radius: 12px;
   max-height: 260px;
@@ -189,23 +202,24 @@
 
 .pc-hist-item {
   padding: 12px;
-  background: white;
-  border-left: 4px solid #2b6ded;
+  background: var(--bg-card);
+  border-left: 4px solid var(--accent-primary);
   border-radius: 8px;
   margin-bottom: 10px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  box-shadow: var(--shadow-main);
+  color: var(--text-main);
 }
 
 .pc-hist-fecha {
   font-size: 13px;
   font-weight: 700;
   margin: 0;
-  color: #1e293b;
+  color: var(--text-main);
 }
 
 .pc-hist-titulo {
   margin: 2px 0 0;
-  color: #374151;
+  color: var(--text-sub);
   font-size: 13px;
 }
 
@@ -232,6 +246,13 @@
    ANIMATION
 =========================================================== */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

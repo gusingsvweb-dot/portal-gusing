@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { supabase } from "../api/supabaseClient";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
+import { useTheme } from "../context/ThemeContext";
 import "./Dashboard.css";
 
 // Charts
@@ -68,50 +69,23 @@ export default function Dashboard() {
 
   async function syncMetricas(lista) {
     const updates = [];
-
     lista.forEach((p) => {
       const up = {};
+      const vals = getCalculatedValues(p);
+
+      if (vals.plan !== null) up.produccion_planificada = vals.plan;
+      if (vals.real !== null) up.produccion_real = vals.real;
+      if (vals.entrega !== null) up.tiempo_entrega_cliente = vals.entrega;
+      if (vals.mb !== null) up.dias_analisis_mb = vals.mb;
+      if (vals.acond !== null) up.dias_acondicionamiento = vals.acond;
+      if (vals.tMuertos !== null) up.tiempos_muertos = vals.tMuertos;
+
+      // Verificar si hubo cambios reales
       let changed = false;
-
-      // 1. Producción Planificada
-      if (p.produccion_planificada == null && p.fecha_maxima_entrega && p.fecha_ingreso_produccion) {
-        const dias = Math.round(diffDias(p.fecha_ingreso_produccion, p.fecha_maxima_entrega));
-        if (!isNaN(dias)) {
-          up.produccion_planificada = dias;
+      for (const key in up) {
+        if (up[key] !== p[key]) {
           changed = true;
-        }
-      }
-
-      // 2. Producción Real / Tiempo Entrega Cliente
-      if (p.fecha_entrega_bodega && p.fecha_ingreso_produccion) {
-        const dias = Math.round(diffDias(p.fecha_ingreso_produccion, p.fecha_entrega_bodega));
-        if (!isNaN(dias)) {
-          if (p.produccion_real == null) {
-            up.produccion_real = dias;
-            changed = true;
-          }
-          if (p.tiempo_entrega_cliente == null) {
-            up.tiempo_entrega_cliente = dias;
-            changed = true;
-          }
-        }
-      }
-
-      // 3. Días Análisis MB
-      if (p.dias_analisis_mb == null && p.fecha_salida_mb && p.fecha_entrada_mb) {
-        const dias = Math.round(diffDias(p.fecha_entrada_mb, p.fecha_salida_mb));
-        if (!isNaN(dias)) {
-          up.dias_analisis_mb = dias;
-          changed = true;
-        }
-      }
-
-      // 4. Días Acondicionamiento
-      if (p.dias_acondicionamiento == null && p.fecha_fin_acondicionamiento && p.fecha_inicio_acondicionamiento) {
-        const dias = Math.round(diffDias(p.fecha_inicio_acondicionamiento, p.fecha_fin_acondicionamiento));
-        if (!isNaN(dias)) {
-          up.dias_acondicionamiento = dias;
-          changed = true;
+          break;
         }
       }
 
@@ -125,6 +99,31 @@ export default function Dashboard() {
       await Promise.all(updates);
       // No recargamos aquí para evitar loop infinito, el usuario verá los calculados por JS en la tabla
     }
+  }
+
+  function getCalculatedValues(p) {
+    const diff = (start, end) => {
+      if (!start || !end) return null;
+      const s = new Date(start);
+      const e = new Date(end);
+      const d = Math.round((e - s) / (1000 * 60 * 60 * 24));
+      return isNaN(d) ? null : d;
+    };
+
+    const plan = diff(p.fecha_ingreso_produccion, p.fecha_maxima_entrega);
+    const real = diff(p.fecha_ingreso_produccion, p.fecha_entrega_bodega);
+    // T. Entrega: Priorizar entrega_cliente, sino entrega_bodega (tiempo proceso)
+    const entrega = diff(p.fecha_recepcion_cliente, p.fecha_entrega_cliente || p.fecha_entrega_bodega);
+    const mb = diff(p.fecha_entrada_mb, p.fecha_salida_mb);
+    const acond = diff(p.fecha_inicio_acondicionamiento, p.fecha_fin_acondicionamiento);
+
+    let tMuertos = null;
+    if (real !== null && plan !== null) {
+      const val = real - plan;
+      tMuertos = val > 0 ? val : 0;
+    }
+
+    return { plan, real, entrega, mb, acond, tMuertos };
   }
 
   useEffect(() => {
@@ -355,6 +354,79 @@ export default function Dashboard() {
   // =============================
   const tablaPedidos = pedidosFiltrados.slice(0, 100);
 
+  // =============================
+  // Chart Configs (Theme-aware-ish)
+  // =============================
+  // =============================
+  // Chart Configs (Theme-aware-ish)
+  // =============================
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+
+  const chartTextColor = isDark ? "rgba(226, 232, 240, 0.8)" : "rgba(71, 85, 105, 0.9)";
+  const chartGridColor = isDark ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.05)";
+
+  const commonOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false,
+        labels: {
+          color: chartTextColor,
+          font: { weight: '600', size: 11 }
+        }
+      },
+      tooltip: {
+        backgroundColor: "rgba(15, 23, 42, 0.9)",
+        titleColor: "#fff",
+        bodyColor: "#fff",
+        padding: 10,
+        borderRadius: 8,
+      }
+    },
+    scales: {
+      x: {
+        grid: { color: chartGridColor, drawBorder: false },
+        ticks: { color: chartTextColor, font: { size: 11, weight: '500' } }
+      },
+      y: {
+        grid: { color: chartGridColor, drawBorder: false },
+        ticks: { color: chartTextColor, font: { size: 11, weight: '500' } }
+      }
+    }
+  };
+
+  const pieOptions = {
+    ...commonOptions,
+    plugins: {
+      ...commonOptions.plugins,
+      legend: { display: true, position: "bottom", labels: { color: chartTextColor, padding: 15 } }
+    },
+    scales: undefined
+  };
+
+  // =============================
+  // UI Helpers
+  // =============================
+  const getMetricBadge = (valor, missingType) => {
+    if (valor != null) return <span className="metric-badge badge-value">{valor} d</span>;
+    if (missingType === "process") return <span className="metric-badge badge-process">En proceso</span>;
+    return <span className="metric-badge badge-missing">{missingType}</span>;
+  };
+
+  const getStateClass = (nombre) => {
+    if (!nombre) return "st-gray";
+    const n = nombre.toLowerCase();
+    if (n.includes("pendiente")) return "st-pend";
+    if (n.includes("producción") || n.includes("lote") || n.includes("materias") || n.includes("inicio")) return "st-prod";
+    if (n.includes("mb") || n.includes("microbiología")) return "st-mb";
+    if (n.includes("acondicionamiento")) return "st-acond";
+    if (n.includes("pt") || n.includes("calidad") || n.includes("qc")) return "st-qc";
+    if (n.includes("finalizada") || n.includes("bodega")) return "st-final";
+    return "st-gray";
+  };
+
   return (
     <>
       <Navbar />
@@ -371,47 +443,56 @@ export default function Dashboard() {
 
         {/* ================= Filtros ================= */}
         <div className="dash-filters">
-          <input
-            type="text"
-            placeholder="Buscar por producto o cliente…"
-            value={filtroTexto}
-            onChange={(e) => setFiltroTexto(e.target.value)}
-          />
+          <div className="dash-filter-group">
+            <label>Búsqueda</label>
+            <input
+              type="text"
+              placeholder="🔍 Producto o cliente…"
+              value={filtroTexto}
+              onChange={(e) => setFiltroTexto(e.target.value)}
+            />
+          </div>
 
-          <select
-            value={filtroEstado}
-            onChange={(e) => setFiltroEstado(e.target.value)}
-          >
-            <option value="todos">Todos los estados</option>
-            <option value="1">Pendiente</option>
-            <option value="2">Registro de lote</option>
-            <option value="3">Asignación de fechas</option>
-            <option value="4">Materias primas / insumos</option>
-            <option value="5">Inicio producción</option>
-            <option value="6">Entrada MB</option>
-            <option value="7">Salida MB</option>
-            <option value="8">Inicio acond.</option>
-            <option value="9">Fin acond.</option>
-            <option value="10">Liberación PT</option>
-            <option value="11">Entrega bodega</option>
-            <option value="12">Producción finalizada</option>
-          </select>
+          <div className="dash-filter-group">
+            <label>Estado</label>
+            <select
+              value={filtroEstado}
+              onChange={(e) => setFiltroEstado(e.target.value)}
+            >
+              <option value="todos">Todos los estados</option>
+              <option value="1">Pendiente</option>
+              <option value="2">Registro de lote</option>
+              <option value="3">Asignación de fechas</option>
+              <option value="4">Materias primas / insumos</option>
+              <option value="5">Inicio producción</option>
+              <option value="6">Entrada MB</option>
+              <option value="7">Salida MB</option>
+              <option value="8">Inicio acond.</option>
+              <option value="9">Fin acond.</option>
+              <option value="10">Liberación PT</option>
+              <option value="11">Entrega bodega</option>
+              <option value="12">Producción finalizada</option>
+            </select>
+          </div>
 
-          <select
-            value={filtroAsignado}
-            onChange={(e) => setFiltroAsignado(e.target.value)}
-          >
-            <option value="todos">Asignación: todos</option>
-            <option value="produccion">Producción</option>
-            <option value="bodega">Bodega</option>
-            <option value="microbiologia">Microbiología</option>
-            <option value="acondicionamiento">Acondicionamiento</option>
-            <option value="control_calidad">Control de calidad</option>
-            <option value="sin">Sin asignar</option>
-          </select>
+          <div className="dash-filter-group">
+            <label>Asignación</label>
+            <select
+              value={filtroAsignado}
+              onChange={(e) => setFiltroAsignado(e.target.value)}
+            >
+              <option value="todos">Cualquier área</option>
+              <option value="produccion">Producción</option>
+              <option value="bodega">Bodega</option>
+              <option value="microbiologia">Microbiología</option>
+              <option value="acondicionamiento">Acondicionamiento</option>
+              <option value="control_calidad">Control de calidad</option>
+              <option value="sin">Sin asignar</option>
+            </select>
+          </div>
 
           <div className="dash-filter-dates">
-            <div>
+            <div className="dash-filter-group">
               <label>Desde</label>
               <input
                 type="date"
@@ -419,7 +500,7 @@ export default function Dashboard() {
                 onChange={(e) => setFechaDesde(e.target.value)}
               />
             </div>
-            <div>
+            <div className="dash-filter-group">
               <label>Hasta</label>
               <input
                 type="date"
@@ -439,7 +520,7 @@ export default function Dashboard() {
               setFechaHasta("");
             }}
           >
-            Limpiar filtros
+            Limpiar
           </button>
         </div>
 
@@ -513,126 +594,69 @@ export default function Dashboard() {
 
         {/* ================= GRÁFICAS ================= */}
         <div className="dash-charts">
-          {/* Pedidos por mes */}
           <div className="dash-chart-card">
             <h3>📅 Pedidos recibidos por mes</h3>
             <Bar
               data={{
                 labels: meses,
-                datasets: [
-                  {
-                    label: "Pedidos recibidos",
-                    data: porMes,
-                    backgroundColor: "#2563eb",
-                  },
-                ],
+                datasets: [{ label: "Pedidos", data: porMes, backgroundColor: "#38bdf8" }],
               }}
-              options={{
-                plugins: { legend: { display: false } },
-                responsive: true,
-                maintainAspectRatio: false,
-              }}
+              options={commonOptions}
             />
           </div>
 
-          {/* Finalizados por mes */}
           <div className="dash-chart-card">
             <h3>📦 Finalizados por mes</h3>
             <Line
               data={{
                 labels: meses,
-                datasets: [
-                  {
-                    label: "Pedidos finalizados",
-                    data: finalizadosMes,
-                    borderColor: "#16a34a",
-                    backgroundColor: "rgba(22,163,74,0.2)",
-                    tension: 0.3,
-                  },
-                ],
+                datasets: [{
+                  label: "Finalizados",
+                  data: finalizadosMes,
+                  borderColor: "#10b981",
+                  backgroundColor: "rgba(16, 185, 129, 0.1)",
+                  tension: 0.4,
+                  fill: true
+                }],
               }}
-              options={{
-                plugins: { legend: { display: false } },
-                responsive: true,
-                maintainAspectRatio: false,
-              }}
+              options={commonOptions}
             />
           </div>
 
-          {/* Pedidos por estado */}
           <div className="dash-chart-card">
             <h3>🏭 Distribución por estado</h3>
             <Pie
               data={{
                 labels: Object.keys(estadosConteo),
-                datasets: [
-                  {
-                    data: Object.values(estadosConteo),
-                    backgroundColor: [
-                      "#2563eb",
-                      "#16a34a",
-                      "#f59e0b",
-                      "#ef4444",
-                      "#6366f1",
-                      "#0ea5e9",
-                      "#f97316",
-                      "#22c55e",
-                      "#a855f7",
-                      "#e11d48",
-                    ],
-                  },
-                ],
+                datasets: [{
+                  data: Object.values(estadosConteo),
+                  backgroundColor: ["#38bdf8", "#10b981", "#f59e0b", "#ef4444", "#6366f1", "#0ea5e9", "#f97316", "#22c55e", "#a855f7", "#e11d48"],
+                  borderWidth: 0
+                }],
               }}
-              options={{
-                plugins: { legend: { position: "bottom" } },
-                responsive: true,
-                maintainAspectRatio: false,
-              }}
+              options={pieOptions}
             />
           </div>
 
-          {/* Pedidos por área */}
           <div className="dash-chart-card">
             <h3>👥 Pedidos por área asignada</h3>
             <Bar
               data={{
                 labels: Object.keys(asignacionConteo),
-                datasets: [
-                  {
-                    label: "Pedidos",
-                    data: Object.values(asignacionConteo),
-                    backgroundColor: "#4b5563",
-                  },
-                ],
+                datasets: [{ label: "Pedidos", data: Object.values(asignacionConteo), backgroundColor: "#64748b" }],
               }}
-              options={{
-                indexAxis: "y",
-                plugins: { legend: { display: false } },
-                responsive: true,
-                maintainAspectRatio: false,
-              }}
+              options={{ ...commonOptions, indexAxis: "y" }}
             />
           </div>
 
-          {/* Tiempo promedio por etapa */}
           <div className="dash-chart-card">
             <h3>⏱️ Tiempo promedio por etapa (días)</h3>
             <Bar
               data={{
                 labels: labelsEtapas,
-                datasets: [
-                  {
-                    label: "Días promedio",
-                    data: valoresEtapas,
-                    backgroundColor: "#7c3aed",
-                  },
-                ],
+                datasets: [{ label: "Días promedio", data: valoresEtapas, backgroundColor: "#a855f7" }],
               }}
-              options={{
-                plugins: { legend: { display: false } },
-                responsive: true,
-                maintainAspectRatio: false,
-              }}
+              options={commonOptions}
             />
           </div>
         </div>
@@ -702,112 +726,61 @@ export default function Dashboard() {
                   <th>Entrega bodega</th>
                   <th>Prod. Planificada</th>
                   <th>Prod. Real</th>
+                  <th>T. Entrega</th>
                   <th>Días MB</th>
                   <th>Días Acond.</th>
+                  <th>T. Muertos</th>
                   <th>¿A tiempo?</th>
                 </tr>
               </thead>
               <tbody>
-                {tablaPedidos.map((p) => {
-                  const esFinalizadoTarde =
-                    p.estado_id === 12 &&
-                    p.fecha_entrega_bodega &&
-                    p.fecha_maxima_entrega &&
-                    p.fecha_entrega_bodega > p.fecha_maxima_entrega;
-
-                  const cumplio =
-                    p.estado_id === 12 && p.fecha_entrega_bodega
-                      ? esFinalizadoTarde
-                        ? "Tarde"
-                        : "A tiempo"
-                      : "-";
-
-                  // Lógica para textos de métricas con estilos
-                  const getMetricBadge = (valor, missingType) => {
-                    if (valor != null) return <span className="metric-badge badge-value">{valor} d</span>;
-                    if (missingType === "process") return <span className="metric-badge badge-process">En proceso</span>;
-                    return <span className="metric-badge badge-missing">{missingType}</span>;
-                  };
-
-                  const txtPlan = (() => {
-                    if (p.produccion_planificada != null) return getMetricBadge(p.produccion_planificada);
-                    if (!p.fecha_maxima_entrega && !p.fecha_ingreso_produccion) return getMetricBadge(null, "process");
-                    if (!p.fecha_maxima_entrega) return getMetricBadge(null, "Falta F. Máxima");
-                    if (!p.fecha_ingreso_produccion) return getMetricBadge(null, "Falta F. Ingreso");
-                    return getMetricBadge(null, "process");
-                  })();
-
-                  const txtReal = (() => {
-                    if (p.produccion_real != null) return getMetricBadge(p.produccion_real);
-                    if (!p.fecha_entrega_bodega && !p.fecha_ingreso_produccion) return getMetricBadge(null, "process");
-                    if (!p.fecha_entrega_bodega) return getMetricBadge(null, "Falta F. Entrega");
-                    if (!p.fecha_ingreso_produccion) return getMetricBadge(null, "Falta F. Ingreso");
-                    return getMetricBadge(null, "process");
-                  })();
-
-                  const txtMB = (() => {
-                    if (p.dias_analisis_mb != null) return getMetricBadge(p.dias_analisis_mb);
-                    if (!p.fecha_salida_mb && !p.fecha_entrada_mb) return getMetricBadge(null, "process");
-                    if (!p.fecha_salida_mb) return getMetricBadge(null, "Falta F. Salida MB");
-                    if (!p.fecha_entrada_mb) return getMetricBadge(null, "Falta F. Entrada MB");
-                    return getMetricBadge(null, "process");
-                  })();
-
-                  const txtAcond = (() => {
-                    if (p.dias_acondicionamiento != null) return getMetricBadge(p.dias_acondicionamiento);
-                    if (!p.fecha_fin_acondicionamiento && !p.fecha_inicio_acondicionamiento) return getMetricBadge(null, "process");
-                    if (!p.fecha_fin_acondicionamiento) return getMetricBadge(null, "Falta F. Fin Acond.");
-                    if (!p.fecha_inicio_acondicionamiento) return getMetricBadge(null, "Falta F. Inicio Acond.");
-                    return getMetricBadge(null, "process");
-                  })();
-
-                  const getStateBadge = (estadoId, nombre) => {
-                    let cls = "st-gray";
-                    if (estadoId === 1) cls = "st-pend";
-                    if (estadoId >= 2 && estadoId <= 5) cls = "st-prod";
-                    if (estadoId >= 6 && estadoId <= 7) cls = "st-mb";
-                    if (estadoId >= 8 && estadoId <= 9) cls = "st-acond";
-                    if (estadoId === 10) cls = "st-qc";
-                    if (estadoId === 12) cls = "st-final";
-
-                    return <span className={`state-badge ${cls}`}>{nombre || `Estado ${estadoId}`}</span>;
-                  };
-
-                  return (
-                    <tr key={p.id}>
-                      <td>#{p.id}</td>
-                      <td>{p.productos?.articulo}</td>
-                      <td>{p.clientes?.nombre}</td>
-                      <td>{getStateBadge(p.estado_id, p.estados?.nombre)}</td>
-                      <td>{p.asignado_a || "Sin asignar"}</td>
-                      <td>{p.fecha_recepcion_cliente || "-"}</td>
-                      <td>{p.fecha_maxima_entrega || "-"}</td>
-                      <td>{p.fecha_entrega_bodega || "-"}</td>
-                      <td style={{ textAlign: "center" }}>{txtPlan}</td>
-                      <td style={{ textAlign: "center" }}>{txtReal}</td>
-                      <td style={{ textAlign: "center" }}>{txtMB}</td>
-                      <td style={{ textAlign: "center" }}>{txtAcond}</td>
-                      <td
-                        className={
-                          cumplio === "A tiempo"
-                            ? "badge-ok"
-                            : cumplio === "Tarde"
-                              ? "badge-late"
-                              : ""
-                        }
-                      >
-                        {cumplio}
-                      </td>
-                    </tr>
-                  );
-                })}
-
-                {tablaPedidos.length === 0 && (
+                {tablaPedidos.length === 0 ? (
                   <tr>
-                    <td colSpan="9" className="dash-empty">
+                    <td colSpan="15" className="dash-empty">
                       No hay pedidos para los filtros seleccionados.
                     </td>
                   </tr>
+                ) : (
+                  tablaPedidos.map((p) => {
+                    const c = getCalculatedValues(p);
+                    const cumplio = p.fecha_entrega_bodega && p.fecha_maxima_entrega
+                      ? (p.fecha_entrega_bodega <= p.fecha_maxima_entrega ? "A tiempo" : "Tarde")
+                      : "-";
+
+                    return (
+                      <tr key={p.id}>
+                        <td style={{ fontWeight: "600", color: "var(--text-main)" }}>#{p.id}</td>
+                        <td style={{ fontWeight: "500", color: "var(--text-main)" }}>{p.productos?.articulo || "-"}</td>
+                        <td>{p.clientes?.nombre || "-"}</td>
+                        <td>
+                          <span className={`state-badge ${getStateClass(p.estados?.nombre)}`}>
+                            {p.estados?.nombre || "Pendiente"}
+                          </span>
+                        </td>
+                        <td>{p.asignado_a || "Sin asignar"}</td>
+                        <td>{p.fecha_recepcion_cliente || "-"}</td>
+                        <td>{p.fecha_maxima_entrega || "-"}</td>
+                        <td>{p.fecha_entrega_bodega || "-"}</td>
+                        <td style={{ textAlign: "center" }}>{getMetricBadge(c.plan, "process")}</td>
+                        <td style={{ textAlign: "center" }}>{getMetricBadge(c.real, "process")}</td>
+                        <td style={{ textAlign: "center" }}>{getMetricBadge(c.entrega, "process")}</td>
+                        <td style={{ textAlign: "center" }}>{getMetricBadge(c.mb, "process")}</td>
+                        <td style={{ textAlign: "center" }}>{getMetricBadge(c.acond, "process")}</td>
+                        <td style={{ textAlign: "center" }}>{getMetricBadge(c.tMuertos, "-")}</td>
+                        <td
+                          className={
+                            cumplio === "A tiempo"
+                              ? "badge-ok"
+                              : cumplio === "Tarde"
+                                ? "badge-late"
+                                : ""
+                          }
+                        >
+                          {cumplio}
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -819,3 +792,4 @@ export default function Dashboard() {
     </>
   );
 }
+

@@ -159,6 +159,7 @@ export default function Produccion() {
   const [materialesCatalogo, setMaterialesCatalogo] = useState([]);
   const [materialesSeleccionados, setMaterialesSeleccionados] = useState([{ referencia: "", cantidad: 1 }]);
   const [materialesLoading, setMaterialesLoading] = useState(false);
+  const [isAdditionalRequestMode, setIsAdditionalRequestMode] = useState(false); // NUEVO: flag para solicitud adicional
 
   // NUEVO: Ver estado de solicitud (readonly para Produccion)
   const [itemsSolicitados, setItemsSolicitados] = useState([]);
@@ -450,7 +451,10 @@ export default function Produccion() {
       return;
     }
 
-    setPedidoEtapas(data || []);
+    // FILTRAR: No mostrar "Acondicionamiento" en etapas internas
+    const filtradas = (data || []).filter(e => !e.nombre.toLowerCase().includes("acondicionamiento"));
+    setPedidoEtapas(filtradas);
+
     checkExistenciaSolicitudMicro(pedidoId);
   }
 
@@ -523,10 +527,62 @@ export default function Produccion() {
 
   /* ===========================================================
      SOLICITAR MATERIAS PRIMAS (Producción → Bodega)
+     Maneja tanto la solicitud inicial como la adicional
   ============================================================ */
   async function solicitarMateriasPrimas(confirmado = false, conItems = false) {
     if (!selected) return;
 
+    // MODO ADICIONAL: Solo insertar items y notificar, NO cambiar estado ni asignado
+    if (isAdditionalRequestMode) {
+      if (!conItems) return; // Debe venir con items
+
+      setMaterialesLoading(true);
+
+      const rawInserts = materialesSeleccionados
+        .filter(m => m.referencia && m.cantidad > 0)
+        .map(m => ({
+          pedido_id: selected.id,
+          referencia_materia_prima: m.referencia,
+          cantidad: m.cantidad,
+          es_critico: m.es_critico !== false, // Default true
+          observacion: "SOLICITUD ADICIONAL"
+        }));
+
+      if (rawInserts.length === 0) {
+        alert("Debes agregar al menos un insumo.");
+        setMaterialesLoading(false);
+        return;
+      }
+
+      const { error: errItems } = await supabase.from("pedidos_bodega_items").insert(rawInserts);
+      if (errItems) {
+        console.error("Error guardando items adicionales:", errItems);
+        alert("Error al guardar items adicionales.");
+        setMaterialesLoading(false);
+        return;
+      }
+
+      // Notificar a Bodega (sin cambiar asignación)
+      try {
+        await notifyRoles(
+          ["bodega"],
+          "Solicitud Adicional de Insumos",
+          `Producción ha solicitado insumos ADICIONALES para el Pedido #${selected.id}`,
+          selected.id,
+          "accion_requerida"
+        );
+      } catch (e) { console.error(e); }
+
+      setMaterialesLoading(false);
+      setShowMaterialModal(false);
+      setIsAdditionalRequestMode(false); // Reset
+      setMaterialesSeleccionados([{ referencia: "", cantidad: 1 }]);
+      await reloadSelected();
+      alert("Solicitud adicional enviada a Bodega.");
+      return;
+    }
+
+    // MODO NORMAL (Inicial) ...
     // Si es con items y ya tenemos la lista, guardamos
     if (conItems) {
       setMaterialesLoading(true);
@@ -589,6 +645,7 @@ export default function Produccion() {
 
     setMaterialesLoading(false);
     setShowMaterialModal(false);
+    setIsAdditionalRequestMode(false); // Ensure reset
     await reloadSelected();
   }
 
@@ -753,32 +810,34 @@ export default function Produccion() {
       throw new Error(`El flujo ${flujo.id} no tiene etapas en flujos_forma_etapas.`);
     }
 
-    // 3) Insertar pedido_etapas
+    // 3) Insertar pedido_etapas (FILTRANDO Acondicionamiento)
     const ahora = ahoraISO();
 
-    const inserts = cat.map((e, index) => {
-      const requiere = !!e.requiere_liberacion;
-      const esPrimera = index === 0;
+    const inserts = cat
+      .filter(e => !e.nombre.toLowerCase().includes("acondicionamiento"))
+      .map((e, index) => {
+        const requiere = !!e.requiere_liberacion;
+        const esPrimera = index === 0;
 
-      return {
-        pedido_id: pedido.id,
-        flujo_id: flujo.id,
-        orden: e.orden,
-        nombre: e.nombre,
-        requiere_liberacion: requiere,
-        rol_liberador: requiere ? e.rol_liberador : null,
+        return {
+          pedido_id: pedido.id,
+          flujo_id: flujo.id,
+          orden: e.orden,
+          nombre: e.nombre,
+          requiere_liberacion: requiere,
+          rol_liberador: requiere ? e.rol_liberador : null,
 
-        // ✅ estados válidos SIEMPRE
-        estado: esPrimera
-          ? (requiere ? ESTADO_ETAPA.PENDIENTE_LIBERACION : ESTADO_ETAPA.PENDIENTE)
-          : ESTADO_ETAPA.PENDIENTE,
+          // ✅ estados válidos SIEMPRE
+          estado: esPrimera
+            ? (requiere ? ESTADO_ETAPA.PENDIENTE_LIBERACION : ESTADO_ETAPA.PENDIENTE)
+            : ESTADO_ETAPA.PENDIENTE,
 
 
-        // ✅ fecha_inicio solo para la primera (opcional)
-        fecha_inicio: esPrimera ? ahora : null,
-        fecha_fin: null,
-      };
-    });
+          // ✅ fecha_inicio solo para la primera (opcional)
+          fecha_inicio: esPrimera ? ahora : null,
+          fecha_fin: null,
+        };
+      });
 
 
 
@@ -873,6 +932,17 @@ export default function Produccion() {
 
     setSolLoading(true);
     setSolMsg("");
+
+    // NUEVO: Guardar forma manual en el producto si se usó
+    // Usamos REFERENCIA para enlazar, ya que no tenemos el ID directo visible a veces
+    if (!formaEsValida && solForm.formaManual && selected.referencia) {
+      const { error: errProd } = await supabase
+        .from("productos")
+        .update({ forma_farmaceutica: solForm.formaManual })
+        .eq("referencia", selected.referencia);
+
+      if (errProd) console.error("Error guardando forma en producto:", errProd);
+    }
 
     // 1) Crear solicitud
     const { error: errSol } = await supabase.from("solicitudes").insert([
@@ -970,6 +1040,16 @@ export default function Produccion() {
     setSolLoading(true); // Reusamos loading state
 
     try {
+      // NUEVO: Guardar forma manual en el producto si se usó (y era diferente/inválida original)
+      if (formaManual && formaManual !== formaProd && selected.producto_id) {
+        const { error: errProd } = await supabase
+          .from("productos")
+          .update({ forma_farmaceutica: formaManual })
+          .eq("id", selected.producto_id);
+
+        if (errProd) console.error("Error guardando forma en producto (sin MB):", errProd);
+      }
+
       // 2. Crear etapas
       // Usando solForm.formaManual si aplica
       await crearEtapasParaPedidoSiNoExisten(selected);
@@ -1159,7 +1239,7 @@ export default function Produccion() {
    GUARDAR ETAPA (flujo viejo por estados)
    + BLOQUEO: si intentas iniciar acondicionamiento (estado 8)
      pero el flujo no está completo => no deja
-============================================================ */
+  ============================================================ */
   async function guardarEtapa(estadoId, confirmado = false) {
     if (!selected) {
       alert("No hay pedido seleccionado.");
@@ -2238,6 +2318,23 @@ export default function Produccion() {
                       </div>
                     </div>
                   )}
+
+                  {/* BOTÓN PARA SOLICITAR ADICIONALES (Solo visible en el menú oculto y si pedido no finalizado) */}
+                  {showItemsSolicitados && selected.estado_id < 12 && (
+                    <div style={{ marginTop: '10px', textAlign: 'right' }}>
+                      <button
+                        className="pc-btn"
+                        style={{ background: '#f59e0b', fontSize: '12px', padding: '5px 10px' }}
+                        onClick={() => {
+                          setIsAdditionalRequestMode(true);
+                          setMaterialesSeleccionados([{ referencia: "", cantidad: 1 }]);
+                          setShowMaterialModal(true);
+                        }}
+                      >
+                        ➕ Solicitar Insumos Adicionales
+                      </button>
+                    </div>
+                  )}
                   {/* BOTÓN SOLICITAR (Solo si no se ha solicitado y se puede editar) */}
                   {puedeEditar && !selected.fecha_solicitud_materias_primas && (
                     <div style={{ marginTop: '15px' }}>
@@ -2527,9 +2624,14 @@ export default function Produccion() {
       {showMaterialModal && (
         <div className="cal-modal-backdrop" onClick={() => setShowMaterialModal(false)}>
           <div className="cal-modal" style={{ width: '600px' }} onClick={e => e.stopPropagation()}>
-            <h3 style={{ marginBottom: '15px' }}>📦 Detalle de Solicitud de Materiales</h3>
+            <h3 style={{ marginBottom: '15px' }}>
+              {isAdditionalRequestMode ? "➕ Solicitud Adicional de Insumos" : "📦 Detalle de Solicitud de Materiales"}
+            </h3>
             <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '20px' }}>
-              Selecciona los insumos y las cantidades que necesitas para el Pedido #{selected?.id}.
+              {isAdditionalRequestMode
+                ? `Agrega insumos extra para el Pedido #${selected?.id}. Esta acción notificará a Bodega pero mantendrá el pedido en Producción.`
+                : `Selecciona los insumos y las cantidades que necesitas para el Pedido #${selected?.id}.`
+              }
             </p>
 
             <div style={{ maxHeight: '350px', overflowY: 'auto', marginBottom: '20px' }}>

@@ -1,9 +1,24 @@
 .footer-wrapper {
-  margin-top: 50px;
-  padding: 20px;
   text-align: center;
-  color: #445260;
-  font-size: 14px;
-  background: rgba(255,255,255,0.6);
-  border-top: 1px solid #d3dce5;
+  padding: 20px;
+  background-color: transparent;
+  color: var(--text-sub);
+  font-size: 0.9rem;
+  margin-top: auto;
+  border-top: 1px solid transparent;
+  transition: color 0.3s ease;
+}
+
+/* En modo oscuro, aseguramos que el texto sea legible y no "feo" */
+@media (prefers-color-scheme: dark) {
+  .footer-wrapper {
+    color: var(--text-sub);
+    /* Usa la variable de texto secundario definida en index.css */
+  }
+}
+
+/* Opcional: si quieres un borde sutil en modo oscuro */
+.dark-theme .footer-wrapper {
+  color: var(--text-sub);
+  border-top: 1px solid var(--border-color);
 }

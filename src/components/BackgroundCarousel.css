@@ -1,0 +1,160 @@
+/* Global Carousel Container */
+.bg-carousel-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -50;
+    transition: width 0.5s ease-in-out, height 0.5s ease-in-out;
+}
+
+/* Individual Image Slide */
+.bg-carousel-slide {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    transition: opacity 1.5s ease-in-out;
+}
+
+/* Overlay */
+.bg-carousel-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    transition: background-color 0.5s ease;
+    pointer-events: none;
+}
+
+/* =========================================
+   LOGIN MODE SPECIFIC STYLES
+   ========================================= */
+.bg-carousel-container.login-mode {
+    /* Desktop: Occupy strictly the left 60% to match split layout */
+    width: 60%;
+    height: 100%;
+    /* Ensure controls are clickable */
+    pointer-events: auto;
+}
+
+.bg-carousel-container.login-mode .bg-carousel-slide {
+    /* Ensure the product (center of image) is centered in the 60% panel */
+    background-position: center center !important;
+}
+
+/* NAVIGATION ARROWS */
+.carousel-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1.2rem;
+    backdrop-filter: blur(4px);
+    transition: all 0.3s ease;
+    z-index: 20;
+    opacity: 0;
+    /* Hidden by default, show on hover of container */
+}
+
+.bg-carousel-container:hover .carousel-arrow {
+    opacity: 1;
+}
+
+.carousel-arrow:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-50%) scale(1.1);
+}
+
+.carousel-arrow.left {
+    left: 20px;
+}
+
+.carousel-arrow.right {
+    right: 20px;
+}
+
+/* PAGINATION DOTS */
+.carousel-dots {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 10px;
+    z-index: 20;
+}
+
+.dot {
+    width: 10px;
+    height: 10px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dot:hover {
+    background: rgba(255, 255, 255, 0.6);
+}
+
+.dot.active {
+    background: white;
+    transform: scale(1.2);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
+}
+
+/* Dark/Light Mode Overlay (Matches index.css variables if needed) */
+.overlay-light {
+    background-color: rgba(245, 247, 250, 0.20);
+}
+
+.overlay-dark {
+    background-color: rgba(15, 23, 42, 0.60);
+}
+
+/* =========================================
+   MOBILE RESPONSIVENESS
+   ========================================= */
+@media (max-width: 900px) {
+    .bg-carousel-container.login-mode {
+        width: 100%;
+        height: 35vh;
+        /* Cover the header area + some bleed */
+        z-index: -10;
+        /* Ensure it stays behind content */
+    }
+
+    .bg-carousel-container.login-mode .bg-carousel-slide {
+        background-position: center top !important;
+    }
+
+    /* Hide arrows on mobile to keep it clean, or make them smaller */
+    .carousel-arrow {
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
+        opacity: 1;
+        /* Always show on mobile */
+    }
+
+    .carousel-dots {
+        bottom: 15px;
+    }
+}

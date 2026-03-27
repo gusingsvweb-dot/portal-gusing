@@ -2,16 +2,19 @@
    GENERAL
 =========================================================== */
 body {
-  background: #f3f6fb;
+  background-color: var(--bg-app);
   font-family: "Inter", sans-serif;
-  color: #2d3748;
+  color: var(--text-main);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .pc-wrapper {
-  width: 90%;
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
   display: grid;
-  grid-template-columns: 28% 72%;
-  gap: 24px;
+  grid-template-columns: 360px 1fr;
+  gap: 32px;
   padding: 30px;
   min-height: 10vh;
 }
@@ -20,33 +23,37 @@ body {
    LISTA IZQUIERDA
 =========================================================== */
 .pc-list {
-  background: #ffffff;
+  background-color: var(--bg-card);
   padding: 22px;
   border-radius: 16px;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-main);
+  border: 1px solid var(--border-color);
   height: calc(100vh - 180px);
   overflow-y: auto;
+  box-sizing: border-box;
 }
 
 .pc-list h2 {
   margin-bottom: 18px;
-  color: #1d3557;
+  color: var(--text-main);
   font-weight: 700;
 }
 
 .pc-item {
   padding: 16px;
-  background: #f8faff;
+  background-color: var(--bg-input);
   border-radius: 12px;
   margin-bottom: 12px;
-  border: 1px solid #d9e2f0;
+  border: 1px solid var(--border-color);
   cursor: pointer;
   transition: 0.2s;
+  color: var(--text-main);
+  position: relative;
 }
 
 .pc-item-selected {
-  border-color: #1b4bc5;
-  background: #dce6ff;
+  border-color: var(--accent-primary);
+  background-color: var(--bg-app);
 }
 
 /* Texto interno */
@@ -59,16 +66,20 @@ body {
    DETALLE DERECHA
 =========================================================== */
 .pc-detail {
-  background: #ffffff;
+  background-color: var(--bg-card);
   padding: 28px;
   border-radius: 16px;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-main);
+  border: 1px solid var(--border-color);
   animation: fadeIn ease 0.25s;
+  color: var(--text-main);
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .pc-detail h3 {
   font-weight: 700;
-  color: #1d3557;
+  color: var(--text-main);
   margin-bottom: 20px;
 }
 
@@ -78,11 +89,16 @@ body {
   grid-template-columns: repeat(2, 1fr);
   gap: 14px;
   margin-bottom: 25px;
+  background-color: var(--bg-app);
+  padding: 15px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
 }
 
 .pc-detail-grid p {
   margin: 0;
   font-size: 14px;
+  color: var(--text-main);
 }
 
 /* ===========================================================
@@ -158,17 +174,18 @@ body {
 .pc-box {
   padding: 20px;
   border-radius: 14px;
-  background: #f7faff;
-  border: 1px solid #dce6f6;
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-color);
   box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.03);
   margin-bottom: 25px;
+  color: var(--text-main);
 }
 
 .pc-box h4 {
   font-size: 17px;
   font-weight: 600;
   margin-bottom: 15px;
-  color: #2a4365;
+  color: var(--text-main);
 }
 
 /* INPUTS */
@@ -176,20 +193,20 @@ body {
 .pc-add-obs textarea {
   width: 100%;
   box-sizing: border-box;
-  /* Fix overflow */
   margin-top: 6px;
   padding: 12px;
   border-radius: 10px;
-  border: 1px solid #cbd5e0;
+  border: 1px solid var(--border-color);
   font-size: 14px;
-  background: #ffffff;
+  background-color: var(--bg-card);
+  color: var(--text-main);
   transition: 0.2s;
 }
 
 .pc-box input:focus,
 .pc-add-obs textarea:focus {
-  border-color: #3182ce;
-  box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.2);
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(30, 53, 80, 0.2);
   outline: none;
 }
 
@@ -198,7 +215,7 @@ body {
   margin-top: 18px;
   padding: 12px;
   width: 100%;
-  background: #2b6ded;
+  background-color: var(--accent-primary);
   border: none;
   border-radius: 10px;
   color: #fff;
@@ -208,7 +225,7 @@ body {
 }
 
 .pc-btn:hover {
-  background: #1f55bd;
+  background-color: var(--accent-secondary);
 }
 
 /* ===========================================================
@@ -217,8 +234,8 @@ body {
 .pc-observaciones {
   padding: 14px;
   border-radius: 12px;
-  background: #f3f7fe;
-  border: 1px solid #dbe4f3;
+  background-color: var(--bg-app);
+  border: 1px solid var(--border-color);
   max-height: 250px;
   overflow-y: auto;
   margin-bottom: 18px;
@@ -227,10 +244,11 @@ body {
 .pc-obs-item {
   padding: 12px;
   border-radius: 10px;
-  background: #ffffff;
-  border-left: 4px solid #2b6ded;
+  background-color: var(--bg-card);
+  border-left: 4px solid var(--accent-primary);
   margin-bottom: 10px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  color: var(--text-main);
 }
 
 .pc-obs-item p {
@@ -336,15 +354,15 @@ body {
   padding: 3px 9px;
   border-radius: 999px;
 
-  background: #eef2ff;
-  color: #1e3a8a;
+  background: var(--bg-input);
+  color: var(--text-main);
 
   font-size: 11px;
   font-weight: 600;
   line-height: 1.1;
   white-space: nowrap;
 
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.25);
+  box-shadow: var(--shadow-main);
   z-index: 20;
 }
 
@@ -375,9 +393,9 @@ body {
 .pc-historial {
   margin-top: 10px;
   padding: 14px;
-  background: #f8faff;
+  background: var(--bg-app);
   border-radius: 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   max-height: 260px;
   overflow-y: auto;
 }
@@ -400,12 +418,12 @@ body {
 .pc-hist-titulo {
   font-size: 14px;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--text-main);
 }
 
 .pc-hist-detalle {
   font-size: 13px;
-  color: #475569;
+  color: var(--text-sub);
   margin-top: 2px;
 }
 
@@ -425,10 +443,10 @@ body {
   width: min(600px, 90vw);
   max-height: 90vh;
   overflow: auto;
-  background: white;
+  background: var(--bg-card);
   border-radius: 16px;
   padding: 24px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--shadow-main);
   display: flex;
   flex-direction: column;
 }
@@ -437,7 +455,7 @@ body {
   margin-top: 0;
   margin-bottom: 8px;
   font-size: 1.25rem;
-  color: #1e293b;
+  color: var(--text-main);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -471,18 +489,20 @@ body {
    SIDEBAR SECTIONS (Shared with CC)
 =========================================================== */
 .mb-list {
-  background: #ffffff;
+  width: 100%;
+  background: var(--bg-card);
   padding: 22px;
   border-radius: 16px;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-main);
+  border: 1px solid var(--border-color);
   height: calc(100vh - 180px);
   overflow-y: auto;
 }
 
 .mb-sidebar-section {
-  background: #fff;
+  background-color: var(--bg-card);
   border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   margin-bottom: 12px;
   overflow: hidden;
   transition: all 0.2s ease;
@@ -493,44 +513,27 @@ body {
   display: flex;
   align-items: center;
   cursor: pointer;
-  background: #f8fafc;
+  background-color: var(--bg-app);
   user-select: none;
   border-bottom: 1px solid transparent;
   transition: background 0.2s;
+  color: var(--text-main);
 }
 
 .mb-sidebar-header:hover {
-  background: #f1f5f9;
-}
-
-.mb-sidebar-header .arrow {
-  font-size: 10px;
-  color: #64748b;
-  margin-right: 10px;
-  transition: transform 0.3s ease;
-  display: inline-block;
-}
-
-.mb-sidebar-header .arrow.open {
-  transform: rotate(90deg);
+  background-color: var(--bg-input);
 }
 
 .mb-sidebar-title {
   font-weight: 700;
   font-size: 14px;
-  color: #1e293b;
+  color: var(--text-main);
   flex: 1;
-}
-
-.mb-sidebar-count {
-  font-weight: 600;
-  color: #3b82f6;
-  margin-left: 5px;
 }
 
 .mb-sidebar-content {
   padding: 10px;
-  background: #fff;
+  background-color: var(--bg-card);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -553,17 +556,17 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 15px 30px;
-  background: #f8fafc;
+  background: var(--bg-app);
   padding: 15px;
   border-radius: 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   margin-bottom: 20px;
 }
 
 .pc-detail-grid p {
   margin: 0;
   font-size: 14px;
-  color: #475569;
+  color: var(--text-main);
   line-height: 1.5;
 }
 
@@ -572,7 +575,7 @@ body {
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: #64748b;
+  color: var(--text-sub);
   margin-bottom: 2px;
 }
 
@@ -580,12 +583,12 @@ body {
    COLLAPSIBLE (ACORDEÓN)
 =========================================================== */
 .pc-collapsible {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   margin-bottom: 15px;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-main);
 }
 
 .pc-collapsible-header {
@@ -593,33 +596,25 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 15px 20px;
-  background: #f8fafc;
+  background-color: var(--bg-app);
   cursor: pointer;
   transition: background 0.2s;
 }
 
 .pc-collapsible-header:hover {
-  background: #f1f5f9;
+  background-color: var(--bg-input);
 }
 
 .pc-collapsible-header h4 {
   margin: 0;
   font-size: 15px;
   font-weight: 600;
-  color: #1e293b;
-}
-
-.pc-collapsible-header .arrow {
-  font-size: 12px;
-  color: #64748b;
-  transition: transform 0.3s ease;
-}
-
-.pc-collapsible-header .arrow.open {
-  transform: rotate(180deg);
+  color: var(--text-main);
 }
 
 .pc-collapsible-content {
   padding: 20px;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--border-color);
+  background-color: var(--bg-card);
+  color: var(--text-main);
 }

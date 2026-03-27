@@ -7,44 +7,53 @@
 /* LISTA IZQUIERDA */
 .gc-list {
   width: 320px;
-  background: #f8fafc;
+  background: var(--bg-app);
   padding: 20px;
   border-radius: 12px;
   height: calc(100vh - 160px);
   overflow-y: auto;
+  border: 1px solid var(--border-color);
 }
 
 .gc-item {
-  background: white;
+  background: var(--bg-card);
   padding: 14px;
   border-radius: 10px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   margin-bottom: 12px;
   cursor: pointer;
   transition: 0.2s;
+  color: var(--text-main);
 }
 
 .gc-item:hover {
-  background: #f1f5f9;
+  background: var(--bg-app);
 }
 
 .gc-selected {
-  background: #e0f2fe;
-  border-color: #0284c7;
+  background: var(--accent-primary);
+  border-color: var(--accent-secondary);
+  color: white;
+}
+
+.gc-selected .gc-id {
+  color: #fff;
+  opacity: 0.8;
 }
 
 .gc-id {
   font-size: 12px;
-  color: #64748b;
+  color: var(--text-sub);
 }
 
 /* DETALLE */
 .gc-detail {
   flex: 1;
-  background: white;
+  background: var(--bg-card);
   padding: 25px;
   border-radius: 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
 }
 
 .gc-grid {
@@ -55,22 +64,25 @@
 
 .gc-box {
   padding: 10px;
-  background: #f8fafc;
+  background: var(--bg-app);
   border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
 }
 
 .gc-input {
   width: 100%;
   padding: 10px;
   border-radius: 8px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--border-color);
   margin-top: 5px;
+  background: var(--bg-input);
+  color: var(--text-main);
 }
 
 .gc-btn {
   margin-top: 15px;
-  background: #0284c7;
+  background: var(--accent-primary);
   color: white;
   border: none;
   padding: 12px 20px;
@@ -79,23 +91,30 @@
   font-size: 15px;
 }
 
+.gc-btn:hover {
+  background: var(--accent-secondary);
+}
+
 .gc-error {
   color: #dc2626;
   margin-top: 5px;
 }
+
 .gc-history {
-  background: white;
+  background: var(--bg-card);
   margin: 40px auto;
   padding: 25px;
   width: 90%;
   border-radius: 15px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.07);
+  box-shadow: var(--shadow-main);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
 }
 
 .gc-history h2 {
   margin-bottom: 15px;
   font-size: 22px;
-  color: #1f3a93;
+  color: var(--text-main);
 }
 
 .gc-table {
@@ -106,22 +125,25 @@
 
 .gc-table th {
   text-align: left;
-  background: #f5f6fa;
+  background: var(--bg-app);
   padding: 10px;
   font-size: 14px;
   font-weight: 600;
-  border-bottom: 2px solid #e1e1e1;
+  border-bottom: 2px solid var(--border-color);
+  color: var(--text-main);
 }
 
 .gc-table td {
   padding: 10px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--border-color);
   font-size: 14px;
+  color: var(--text-main);
 }
 
 .gc-table tr:hover {
-  background: #f0f8ff;
+  background: var(--bg-app);
 }
+
 .gc-filtros {
   display: flex;
   gap: 10px;
@@ -146,9 +168,10 @@
 .gc-paginacion button {
   padding: 8px 15px;
   border-radius: 8px;
-  background: #1f3a93;
+  background: var(--accent-primary);
   color: white;
   border: none;
+  cursor: pointer;
 }
 
 .gc-paginacion button:disabled {
@@ -157,5 +180,5 @@
 
 .gc-paginacion span {
   font-weight: bold;
-  color: #333;
+  color: var(--text-main);
 }
