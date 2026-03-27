@@ -214,8 +214,8 @@ export default function Microbiologia() {
       return;
     }
 
-    // 2. Buscar en Solicitudes Iniciales
-    const s = solicitudesIniciales.find(it => it.id === targetId);
+    // 2. Buscar en Solicitudes Iniciales (por consecutivo/pedido o id directo)
+    const s = solicitudesIniciales.find(it => it.consecutivo === targetId || it.id === targetId);
     if (s) {
       seleccionarItem(s, 'solicitud');
       window.history.replaceState({}, '', window.location.pathname);
@@ -279,7 +279,7 @@ export default function Microbiologia() {
       .eq("requiere_liberacion", true)
       .eq("requiere_liberacion", true)
       .ilike("rol_liberador", "%microbiologia%")
-      .eq("estado", "en_revision") // SOLO EN REVISIÓN
+      .in("estado", ["en_revision", "pendiente_liberacion"]) // REVISIÓN O PENDIENTE LIBERACIÓN
       .order("pedido_id", { ascending: false });
 
     if (error) console.error("❌ Error etapas MB:", error);
@@ -606,9 +606,15 @@ export default function Microbiologia() {
         const todasListas = todasLibs && todasLibs.length > 0 && todasLibs.every(l => l.liberada);
 
         if (todasListas) {
+          // Si estaba en pendiente_liberacion (inicial), pasa a pendiente para que Producción trabaje.
+          // Si estaba en en_revision (final), pasa a completada.
+          const nuevoEstado = selected.estado === "pendiente_liberacion" ? "pendiente" : "completada";
+          const updateObj = { estado: nuevoEstado };
+          if (nuevoEstado === "completada") updateObj.fecha_fin = ahoraISO();
+
           const { error: errEt } = await supabase
             .from("pedido_etapas")
-            .update({ estado: "completada", fecha_fin: ahoraISO() })
+            .update(updateObj)
             .eq("id", selected.id);
 
           if (errEt) {

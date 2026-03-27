@@ -1812,6 +1812,16 @@ export default function Produccion() {
                       ? nombreBajo.includes("esterilización")
                       : nombreBajo.includes("envasado");
 
+                    if (est === "pendiente_liberacion") {
+                      return (
+                        <div style={{ background: "#fff7ed", padding: "10px", borderRadius: "6px", border: "1px solid #fdba74" }}>
+                          <p style={{ color: "#9a3412" }}>
+                            🕒 <strong>Etapa bloqueda:</strong> Esperando a que el área de <strong>{etapaActual.rol_liberador}</strong> libere el inicio de esta labor.
+                          </p>
+                        </div>
+                      );
+                    }
+
                     if (est === "en_revision") {
                       return (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
