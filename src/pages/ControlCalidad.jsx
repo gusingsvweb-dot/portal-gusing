@@ -172,7 +172,7 @@ export default function ControlCalidad() {
       `)
       .eq("requiere_liberacion", true)
       .ilike("rol_liberador", "%control_calidad%")
-      .eq("estado", "en_revision")
+      .in("estado", ["en_revision", "pendiente_liberacion"])
       .order("fecha_inicio", { ascending: false });
 
     if (error) {
@@ -194,7 +194,7 @@ export default function ControlCalidad() {
         clientes ( nombre ),
         estados ( nombre )
       `)
-      .in("estado_id", [10, 11]) 
+      .in("estado_id", [10, 11, 13]) 
       .order("id", { ascending: false });
 
     if (error) console.error("Error cargando pedidos QC:", error);
@@ -247,8 +247,8 @@ export default function ControlCalidad() {
 
   const pedidosCuarentenaFiltrados = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
-    // Cuarentena: En estado 10 o 11, pero sin fecha de liberación de cuarentena
-    const cua = pedidosPT.filter(p => (p.estado_id === 10 || p.estado_id === 11) && !p.fecha_liberacion_cuarentena);
+    // Cuarentena: En estado 10, 11 o 13, pero sin fecha de liberación de cuarentena
+    const cua = pedidosPT.filter(p => (p.estado_id === 10 || p.estado_id === 11 || p.estado_id === 13) && !p.fecha_liberacion_cuarentena);
     if (!q) return cua;
     return cua.filter(p =>
       p.productos?.articulo?.toLowerCase().includes(q) ||
