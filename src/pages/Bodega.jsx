@@ -286,22 +286,6 @@ export default function Bodega() {
 
     // Refrescar lista local
     setItemsDetallados(prev => prev.map(i => i.id === item.id ? { ...i, completado: !i.completado } : i));
-
-    // Si se marcó como "Completado" (entregado), notificar a Producción inmediatamente.
-    if (!item.completado) {
-      try {
-        const { notifyRoles } = await import("../api/notifications");
-        await notifyRoles(
-          ["produccion"],
-          "Insumos Bodega",
-          `Bodega entrego insumos para el pedido #${selected.id}`,
-          selected.id,
-          "informacion"
-        );
-      } catch (err) {
-        console.error("Error notificando entrega parcial:", err);
-      }
-    }
   }
 
   /* ===========================================================
