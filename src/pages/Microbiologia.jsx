@@ -67,7 +67,9 @@ export default function Microbiologia() {
   // Helper para identificar si es "Liberación de Área" (Ampollas/Viales)
   function isAreaRelease(req) {
     const tipo = toLowerSafe(req.tipos_solicitud?.nombre);
-    if (tipo.includes("esterilizaci")) return false; // Las de esterilización van a Pendientes de Inicio
+    const desc = toLowerSafe(req.descripcion);
+    
+    if (tipo.includes("esterilizaci") || desc.includes("esterilizaci")) return false; // Las de esterilización van a Pendientes de Inicio
 
     const forma = req.pedidoData?.productos?.forma_farmaceutica || "";
     // Regex para detectar Ampolla o Vial (case insensitive)
@@ -1048,7 +1050,10 @@ export default function Microbiologia() {
                     ) : (
                       /* CASO 2: YA INICIADO -> MOSTRAR FORMULARIO DE LIBERACIÓN */
                       (function() {
-                        const esEsterilizacion = toLowerSafe(selected.tipos_solicitud?.nombre).includes("esterilizaci");
+                        const esEsteril_tipo = toLowerSafe(selected.tipos_solicitud?.nombre).includes("esterilizaci");
+                        const esEsteril_desc = toLowerSafe(selected.descripcion).includes("esterilizaci");
+                        const esEsterilizacion = esEsteril_tipo || esEsteril_desc;
+                        
                         return (
                           <>
                             <h3>✅ Atender Solicitud</h3>
