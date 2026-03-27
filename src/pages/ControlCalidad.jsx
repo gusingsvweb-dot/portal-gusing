@@ -681,8 +681,8 @@ export default function ControlCalidad() {
         }
 
         await notifyRoles(
-          ["bodega"],
-          "Pedido Liberado por Calidad",
+          ["bodega", "bodega_pt"],
+          "Pedido Liberado por Calidad (PT)",
           `El pedido #${selected.id} ha sido liberado como PT y está listo en Bodega.`,
           selected.id,
           "proceso_completado"
@@ -732,6 +732,14 @@ export default function ControlCalidad() {
             observacion: `🛡️ LIBERACIÓN CUARENTENA: ${currentObs}`,
           });
         }
+
+        await notifyRoles(
+          ["bodega", "bodega_pt"],
+          "Liberación de Cuarentena Firmada",
+          `El pedido #${selected.id} ha sido liberado de Cuarentena. Ya puede ser despachado físicamente.`,
+          selected.id,
+          "proceso_completado"
+        );
 
         alert("✔ Cuarentena liberada correctamente.");
         setSelected(null);
