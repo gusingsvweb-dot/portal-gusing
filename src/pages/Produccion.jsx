@@ -1321,7 +1321,7 @@ export default function Produccion() {
         ...prev,
         tipo_solicitud_id: "",
         prioridad_id: "",
-        descripcion: `Muestreo MB para etapa: ${etapaActual.nombre}`,
+        descripcion: `Solicitado desde la etapa: ${etapaActual.nombre}`,
         justificacion: "",
       }));
       setShowSolicitudMB(true);
@@ -1693,7 +1693,7 @@ export default function Produccion() {
                                 ...prev,
                                 tipo_solicitud_id: "",
                                 prioridad_id: "",
-                                descripcion: `Muestreo MB para ${etapaActual.nombre} (En revisión)`,
+                                descripcion: `Solicitado desde la etapa: ${etapaActual.nombre}`,
                                 justificacion: "",
                               }));
                               setShowSolicitudMB(true);
@@ -2010,7 +2010,7 @@ export default function Produccion() {
                         ...prev,
                         tipo_solicitud_id: "",
                         prioridad_id: "",
-                        descripcion: "",
+                        descripcion: `Solicitado desde la etapa: Inicio de Producción (Liberación de área)`,
                         justificacion: "",
                       }));
                       setShowSolicitudMB(true);
