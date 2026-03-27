@@ -209,7 +209,7 @@ export default function Microbiologia() {
     // 1. Buscar en Etapas
     const e = etapas.find(it => it.pedido_id === targetId);
     if (e) {
-      seleccionarEtapa(e);
+      seleccionarItem(e, 'etapa');
       window.history.replaceState({}, '', window.location.pathname);
       return;
     }
@@ -217,7 +217,7 @@ export default function Microbiologia() {
     // 2. Buscar en Solicitudes Iniciales
     const s = solicitudesIniciales.find(it => it.id === targetId);
     if (s) {
-      seleccionarSolicitud(s);
+      seleccionarItem(s, 'solicitud');
       window.history.replaceState({}, '', window.location.pathname);
     }
   }, [solicitudesIniciales, etapas, searchParams]);
