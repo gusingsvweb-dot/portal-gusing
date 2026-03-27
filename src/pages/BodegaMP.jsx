@@ -141,6 +141,13 @@ export default function BodegaMP() {
     async function toggleItemCompletado(item) {
         await supabase.from("pedidos_bodega_items").update({ completado: !item.completado }).eq("id", item.id);
         setItemsDetallados(prev => prev.map(i => i.id === item.id ? { ...i, completado: !i.completado } : i));
+
+        if (!item.completado) {
+            try {
+                const { notifyRoles } = await import("../api/notifications");
+                await notifyRoles(["produccion"], "Insumos Bodega", `Bodega entrego insumos para el pedido #${selected.id}`, selected.id, "informacion");
+            } catch (err) { console.error(err); }
+        }
     }
 
     async function saveItem(item) {
@@ -159,6 +166,11 @@ export default function BodegaMP() {
         }).eq("id", selected.id);
 
         if (!error) {
+            try {
+                const { notifyRoles } = await import("../api/notifications");
+                await notifyRoles(["produccion"], "Insumos Bodega", `Bodega entrego insumos para el pedido #${selected.id}`, selected.id, "accion_requerida");
+            } catch (err) { console.error(err); }
+
             setSelected(null);
             loadPedidos();
             loadHistorial();
