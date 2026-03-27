@@ -164,6 +164,22 @@ export default function Produccion() {
   const [materialesSeleccionados, setMaterialesSeleccionados] = useState([{ referencia: "", cantidad: 1 }]);
   const [materialesLoading, setMaterialesLoading] = useState(false);
   const [isAdditionalRequestMode, setIsAdditionalRequestMode] = useState(false); // NUEVO: flag para solicitud adicional
+  const [busquedaMP, setBusquedaMP] = useState("");
+
+  const materialesFiltrados = useMemo(() => {
+    const search = busquedaMP.toLowerCase().trim();
+    if (!search) return materialesCatalogo;
+    
+    return materialesCatalogo.filter(m => {
+      // 1. Coincide con la búsqueda
+      const matches = m.ARTICULO.toLowerCase().includes(search) || String(m.REFERENCIA).toLowerCase().includes(search);
+      if (matches) return true;
+      
+      // 2. O está seleccionado en alguna fila (para no perder visibilidad)
+      const isSelected = materialesSeleccionados.some(sel => String(sel.referencia) === String(m.REFERENCIA));
+      return isSelected;
+    });
+  }, [materialesCatalogo, busquedaMP, materialesSeleccionados]);
 
   // NUEVO: Ver estado de solicitud (readonly para Produccion)
   const [itemsSolicitados, setItemsSolicitados] = useState([]);
@@ -702,7 +718,7 @@ export default function Produccion() {
       setMaterialesSeleccionados([{ referencia: "", cantidad: 1 }]);
       await reloadSelected();
       alert("Solicitud adicional enviada a Bodega.");
-      return;
+      return true;
     }
 
     // MODO NORMAL (Inicial) ...
@@ -736,7 +752,7 @@ export default function Produccion() {
         "¿Confirmas que deseas solicitar materias primas a Bodega?",
         () => solicitarMateriasPrimas(true)
       );
-      return;
+      return true;
     }
 
     const { error } = await supabase
@@ -770,6 +786,7 @@ export default function Produccion() {
     setShowMaterialModal(false);
     setIsAdditionalRequestMode(false); // Ensure reset
     await reloadSelected();
+    return true;
   }
 
   /* ===========================================================
@@ -2932,6 +2949,31 @@ export default function Produccion() {
               }
             </p>
 
+            <div style={{ marginBottom: '15px', position: 'relative' }}>
+              <input
+                type="text"
+                placeholder="🔍 Buscar materia prima (nombre o referencia)..."
+                value={busquedaMP}
+                onChange={(e) => setBusquedaMP(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  borderRadius: '8px',
+                  border: '1px solid #cbd5e1',
+                  fontSize: '14px',
+                  background: '#f8fafc'
+                }}
+              />
+              {busquedaMP && (
+                <button 
+                  onClick={() => setBusquedaMP("")}
+                  style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'none', cursor: 'pointer', color: '#64748b' }}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
             <div style={{ maxHeight: '350px', overflowY: 'auto', marginBottom: '20px' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
@@ -2952,7 +2994,7 @@ export default function Produccion() {
                           style={{ width: '100%', padding: '5px' }}
                         >
                           <option value="">Seleccione...</option>
-                          {materialesCatalogo.map(m => (
+                          {materialesFiltrados.map(m => (
                             <option key={m.REFERENCIA} value={m.REFERENCIA}>
                               {m.ARTICULO} ({m.UNIDAD})
                             </option>
@@ -3006,14 +3048,17 @@ export default function Produccion() {
             <div className="cal-actions">
               <button
                 className="cal-btn cancel"
-                onClick={() => setShowMaterialModal(false)}
+                onClick={() => { setShowMaterialModal(false); setBusquedaMP(""); }}
                 disabled={materialesLoading}
               >
                 Cancelar
               </button>
               <button
                 className="cal-btn save"
-                onClick={() => solicitarMateriasPrimas(true, true)}
+                onClick={async () => {
+                  const success = await solicitarMateriasPrimas(true, true);
+                  if (success !== false) setBusquedaMP(""); 
+                }}
                 disabled={materialesLoading || materialesSeleccionados.every(m => !m.referencia)}
               >
                 {materialesLoading ? "Enviando..." : "✔ Enviar solicitud"}
