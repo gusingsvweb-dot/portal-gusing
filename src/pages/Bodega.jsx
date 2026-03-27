@@ -28,6 +28,18 @@ export default function Bodega() {
   /* ===========================================================
      CARGAR PEDIDOS ASIGNADOS A BODEGA (Y PENDIENTES)
   =========================================================== */
+  function formatFechaFull(f, soloHora = false) {
+    if (!f) return "—";
+    // Si es solo fecha (10 caracteres), forzar medianoche local para evitar desfase UTC
+    const d = f.length === 10 ? new Date(f + "T00:00:00") : new Date(f);
+    if (soloHora) {
+      if (f.length === 10) return "—";
+      return d.toLocaleTimeString("es-CO", { hour: '2-digit', minute: '2-digit' });
+    }
+    return d.toLocaleString("es-CO");
+  }
+
+
   async function loadPedidos() {
     // 1. Pedidos asignados explicitamente a bodega
     const { data: dataBodega, error: errBodega } = await supabase
@@ -475,7 +487,7 @@ export default function Bodega() {
                   <p style={{ marginTop: 8 }}><strong>Cliente:</strong> {p.clientes?.nombre}</p>
                   <p><strong>Estado:</strong> {p.estados?.nombre}</p>
                   <p style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>
-                    🕒 Pedido: {p.fecha_solicitud_materias_primas ? new Date(p.fecha_solicitud_materias_primas).toLocaleTimeString("es-CO", { hour: '2-digit', minute: '2-digit' }) : "—"}
+                    🕒 Pedido: {formatFechaFull(p.fecha_solicitud_materias_primas, true)}
                   </p>
                 </div>
               ))}
@@ -537,7 +549,10 @@ export default function Bodega() {
               <p><strong>Cliente:</strong> {selected.clientes?.nombre}</p>
               <p><strong>Cantidad:</strong> {selected.cantidad}</p>
               <p><strong>Fecha Recepción:</strong> {selected.fecha_recepcion_cliente || "—"}</p>
-              <p><strong>Hora Solicitud MP:</strong> {selected.fecha_solicitud_materias_primas ? new Date(selected.fecha_solicitud_materias_primas).toLocaleString("es-CO") : "—"}</p>
+              <p><strong>Hora Solicitud MP:</strong> {formatFechaFull(selected.fecha_solicitud_materias_primas)}</p>
+              {selected.fecha_entrega_de_materias_primas_e_insumos && (
+                <p><strong>Hora Entrega MP:</strong> {formatFechaFull(selected.fecha_entrega_de_materias_primas_e_insumos)}</p>
+              )}
               <p><strong>Estado:</strong> {selected.estados?.nombre}</p>
               <p><strong>Liberación Cuarentena:</strong> {selected.fecha_liberacion_cuarentena 
                   ? <span style={{color: '#10b981', fontWeight: 'bold'}}>✔ Liberada</span> 
@@ -780,7 +795,7 @@ export default function Bodega() {
                     <td>#{h.id}</td>
                     <td>{h.productos?.articulo}</td>
                     <td>{h.clientes?.nombre}</td>
-                    <td>{h.fecha_entrega_de_materias_primas_e_insumos ? new Date(h.fecha_entrega_de_materias_primas_e_insumos).toLocaleString("es-CO", { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : "—"}</td>
+                    <td>{formatFechaFull(h.fecha_entrega_de_materias_primas_e_insumos)}</td>
                   </tr>
                 ))}
               </tbody>

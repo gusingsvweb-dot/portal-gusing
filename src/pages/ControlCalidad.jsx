@@ -152,6 +152,16 @@ export default function ControlCalidad() {
   const [pagina, setPagina] = useState(1);
   const ITEMS = 8;
 
+  function formatFechaFull(f, soloHora = false) {
+    if (!f) return "—";
+    const d = (f.length === 10) ? new Date(f + "T00:00:00") : new Date(f);
+    if (soloHora) {
+      if (f.length === 10) return "—";
+      return d.toLocaleTimeString("es-CO", { hour: '2-digit', minute: '2-digit' });
+    }
+    return d.toLocaleString("es-CO");
+  }
+
   /* ===========================================================
      CARGAR ETAPAS PENDIENTES DE LIBERACIÓN (CC)
   =========================================================== */
@@ -1098,7 +1108,7 @@ export default function ControlCalidad() {
                     <td>{h.articulo}</td>
                     <td>{h.op} / {h.lote}</td>
                     <td>{h.detalle}</td>
-                    <td>{new Date(h.fecha).toLocaleDateString()}</td>
+                    <td>{formatFechaFull(h.fecha)}</td>
                   </tr>
                 ))}
               </tbody>

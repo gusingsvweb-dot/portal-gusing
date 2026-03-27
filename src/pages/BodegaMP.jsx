@@ -63,6 +63,17 @@ export default function BodegaMP() {
         cargarObservaciones(selected.id);
     }
 
+    function formatFechaFull(f, soloHora = false) {
+        if (!f) return "—";
+        // Si es solo fecha (10 caracteres), forzar medianoche local para evitar desfase UTC
+        const d = f.length === 10 ? new Date(f + "T00:00:00") : new Date(f);
+        if (soloHora) {
+            if (f.length === 10) return "—";
+            return d.toLocaleTimeString("es-CO", { hour: '2-digit', minute: '2-digit' });
+        }
+        return d.toLocaleString("es-CO");
+    }
+
     async function loadPedidos() {
         // Solo pedidos con items pendientes (estado_id < 11)
         const { data, error } = await supabase
@@ -246,7 +257,7 @@ export default function BodegaMP() {
                             <p><strong>Producto:</strong> {p.productos?.articulo}</p>
                             <p><strong>Cliente:</strong> {p.clientes?.nombre}</p>
                             <p style={{ fontSize: '11px', color: 'var(--text-sub)', marginTop: '4px' }}>
-                                🕒 Pedido: {p.fecha_solicitud_materias_primas ? new Date(p.fecha_solicitud_materias_primas).toLocaleTimeString("es-CO", { hour: '2-digit', minute: '2-digit' }) : "—"}
+                                🕒 Pedido: {formatFechaFull(p.fecha_solicitud_materias_primas, true)}
                             </p>
                         </div>
                     ))}
@@ -275,7 +286,7 @@ export default function BodegaMP() {
                             <p><strong>Cliente:</strong> {selected.clientes?.nombre}</p>
                             <p><strong>Cantidad:</strong> {selected.cantidad}</p>
                             <p><strong>Fecha Recepción:</strong> {selected.fecha_recepcion_cliente || "—"}</p>
-                            <p><strong>Hora Solicitud MP:</strong> {selected.fecha_solicitud_materias_primas ? new Date(selected.fecha_solicitud_materias_primas).toLocaleString("es-CO") : "—"}</p>
+                            <p><strong>Hora Solicitud MP:</strong> {formatFechaFull(selected.fecha_solicitud_materias_primas)}</p>
                         </div>
 
                         {/* SECCIÓN DE OBSERVACIONES */}

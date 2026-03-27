@@ -21,6 +21,16 @@ export default function BodegaPT() {
         loadPedidos();
     }, []);
 
+    function formatFechaFull(f, soloHora = false) {
+        if (!f) return "—";
+        const d = (f.length === 10) ? new Date(f + "T00:00:00") : new Date(f);
+        if (soloHora) {
+            if (f.length === 10) return "—";
+            return d.toLocaleTimeString("es-CO", { hour: '2-digit', minute: '2-digit' });
+        }
+        return d.toLocaleString("es-CO");
+    }
+
     // Cargar Observaciones
     async function cargarObservaciones(pedidoId) {
         const { data, error } = await supabase
@@ -155,6 +165,8 @@ export default function BodegaPT() {
                             <p><strong>Cliente:</strong> {selected.clientes?.nombre}</p>
                             <p><strong>Estado:</strong> {selected.estados?.nombre}</p>
                             <p><strong>Fecha Recepción:</strong> {selected.fecha_recepcion_cliente || "—"}</p>
+                            <p><strong>Hora Solicitud MP:</strong> {formatFechaFull(selected.fecha_solicitud_materias_primas)}</p>
+                            <p><strong>Hora Entrega MP:</strong> {formatFechaFull(selected.fecha_entrega_de_materias_primas_e_insumos)}</p>
                             <p><strong>Liberación Cuarentena:</strong> {selected.fecha_liberacion_cuarentena 
                                 ? <span style={{color: '#10b981'}}>✔ Liberada</span> 
                                 : <span style={{color: '#ef4444'}}>⏳ Pendiente</span>}

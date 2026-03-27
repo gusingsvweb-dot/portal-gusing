@@ -800,7 +800,7 @@ export default function Produccion() {
     const { error } = await supabase
       .from("pedidos_produccion")
       .update({
-        fecha_solicitud_materias_primas: hoyISO(),
+        fecha_solicitud_materias_primas: ahoraISO(),
         asignado_a: "bodega",
       })
       .eq("id", selected.id);
@@ -2597,23 +2597,21 @@ export default function Produccion() {
                       <label style={{ display: 'block', fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>
                         Fecha solicitud
                       </label>
-                      <input
-                        type="date"
-                        value={selected.fecha_solicitud_materias_primas || ""}
-                        disabled
-                        style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#f8fafc' }}
-                      />
+                      <div style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#f8fafc', fontSize: '13px', minHeight: '35px', display: 'flex', alignItems: 'center' }}>
+                        {selected.fecha_solicitud_materias_primas 
+                          ? new Date(selected.fecha_solicitud_materias_primas).toLocaleString("es-CO", { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) 
+                          : "—"}
+                      </div>
                     </div>
                     <div>
                       <label style={{ display: 'block', fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>
                         Fecha entrega
                       </label>
-                      <input
-                        type="date"
-                        value={selected.fecha_entrega_de_materias_primas_e_insumos || ""}
-                        disabled
-                        style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#f8fafc' }}
-                      />
+                      <div style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#f8fafc', fontSize: '13px', minHeight: '35px', display: 'flex', alignItems: 'center' }}>
+                        {selected.fecha_entrega_de_materias_primas_e_insumos 
+                          ? new Date(selected.fecha_entrega_de_materias_primas_e_insumos).toLocaleString("es-CO", { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) 
+                          : "—"}
+                      </div>
                     </div>
                   </div>
 
