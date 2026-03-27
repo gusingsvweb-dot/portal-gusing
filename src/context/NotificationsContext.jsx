@@ -182,7 +182,8 @@ export function NotificationsProvider({ children }) {
 
     const [toast, setToast] = useState(null);
 
-    const addNotification = (type, message) => {
+    const addNotificationUI = (type, message) => {
+        console.log("🔔 addNotificationUI Triggered:", { type, message });
         setToast({ type, message });
         setTimeout(() => setToast(null), 4000); // Desaparece tras 4s
     };
@@ -196,7 +197,7 @@ export function NotificationsProvider({ children }) {
         activarNotifsEscritorio,
         reloadCountdown,
         cancelReload,
-        addNotification
+        addNotificationUI
     };
 
     return (

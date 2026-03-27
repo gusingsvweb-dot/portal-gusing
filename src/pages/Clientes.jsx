@@ -8,8 +8,10 @@ import "./Clientes.css";
 
 export default function Clientes() {
     const { theme } = useTheme();
-    const { addNotification } = useNotifications();
+    const { addNotificationUI } = useNotifications();
     const navigate = useNavigate();
+
+    console.log("🛠 Clientes Render | useNotifications:", { addNotificationUI });
 
     // Estados Generales
     const [clientes, setClientes] = useState([]);
@@ -86,10 +88,11 @@ export default function Clientes() {
                 throw error;
             }
 
-            if (typeof addNotification === 'function') {
-                addNotification("success", "Registrado exitosamente");
+            if (typeof addNotificationUI === 'function') {
+                addNotificationUI("success", "Registrado exitosamente");
             } else {
-                console.warn("addNotification no está disponible");
+                console.error("CRÍTICO: addNotificationUI no detectado");
+                alert("Registrado exitosamente (UI Error)");
             }
             
             setClientes(prev => [data[0], ...prev]); // Añadir el nuevo arriba
@@ -125,7 +128,7 @@ export default function Clientes() {
                         <button className="btn-back" onClick={() => navigate("/atencion")}>
                             ⬅ Volver al Perfil
                         </button>
-                        <h1>👥 Gestión de Clientes</h1>
+                        <h1>👥 Cartera de Clientes</h1>
                         <p>Base de datos comercial para atención y pedidos cruzados.</p>
                     </div>
                     <button className="btn-add-cliente" onClick={() => setShowModal(true)}>
