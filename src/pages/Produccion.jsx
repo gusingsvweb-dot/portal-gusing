@@ -171,6 +171,79 @@ export default function Produccion() {
   const [devolucionItems, setDevolucionItems] = useState([]);
   const [devolucionLoading, setDevolucionLoading] = useState(false);
 
+  /* ===========================================================
+     MODAL: DEVOLVER SOBRANTES A INVENTARIO
+  ============================================================ */
+  function abrirModalDevolucion() {
+    const itemsParaDevolver = itemsSolicitados.map(it => ({
+      ...it,
+      devolver: 0
+    }));
+    setDevolucionItems(itemsParaDevolver);
+    setShowDevolucionModal(true);
+  }
+
+  async function registrarDevolucionSobrantes() {
+    const itemsAfectados = devolucionItems.filter(it => it.devolver > 0);
+    if (itemsAfectados.length === 0) {
+      alert("No has ingresado ninguna cantidad a devolver.");
+      return;
+    }
+
+    setDevolucionLoading(true);
+    try {
+      let resumen = [];
+      for (const it of itemsAfectados) {
+        // 1. Update pedidos_bodega_items (sumar a cantidad_devuelta)
+        const devueltosActuales = Number(it.cantidad_devuelta || 0) + Number(it.devolver);
+        await supabase
+          .from("pedidos_bodega_items")
+          .update({ cantidad_devuelta: devueltosActuales })
+          .eq("id", it.id);
+
+        // 2. Update MateriasPrimas (sumar a stock_actual)
+        const { data: mpData } = await supabase
+          .from("MateriasPrimas")
+          .select("stock_actual")
+          .eq("REFERENCIA", it.referencia_materia_prima)
+          .single();
+
+        const nuevoStock = Number(mpData?.stock_actual || 0) + Number(it.devolver);
+
+        await supabase
+          .from("MateriasPrimas")
+          .update({ stock_actual: nuevoStock })
+          .eq("REFERENCIA", it.referencia_materia_prima);
+
+        resumen.push(`- ${it.articulo_nombre}: devolvió ${it.devolver} ${it.unidad} (Stock actual: ${nuevoStock})`);
+      }
+
+      // 3. Crear observación en pedido
+      await supabase.from("observaciones_pedido").insert({
+        pedido_id: selected.id,
+        usuario: usuarioActual?.usuario || "Producción",
+        observacion: `♻️ DEVOLUCIÓN DE SOBRANTES DE MP:\n${resumen.join('\n')}`
+      });
+
+      // 4. Notificar a bodega
+      await notifyRoles(
+        ["bodega", "bodega_mp", "bodegapt"],
+        "Sobrantes de MP Devueltos",
+        `Producción ha devuelto insumos sobrantes al inventario para el Pedido #${selected.id}.`,
+        selected.id,
+        "informacion"
+      );
+
+      alert("Devolución registrada correctamente en el inventario.");
+      setShowDevolucionModal(false);
+      await cargarItemsSolicitados(selected.id); // Refrescar tabla visual de listado
+    } catch (err) {
+      console.error("Error al registrar devolucion:", err);
+      alert("Error al registrar la devolución.");
+    }
+    setDevolucionLoading(false);
+  }
+
   async function checkExistenciaSolicitudMicro(pedidoId) {
     if (!pedidoId || !areaMicroId) return;
 
@@ -733,79 +806,6 @@ export default function Produccion() {
      Se llama justo después de crear solicitud MB
   ============================================================ */
   async function crearEtapasParaPedidoSiNoExisten(pedido) {
-
-  /* ===========================================================
-     MODAL: DEVOLVER SOBRANTES A INVENTARIO
-  ============================================================ */
-  function abrirModalDevolucion() {
-    const itemsParaDevolver = itemsSolicitados.map(it => ({
-      ...it,
-      devolver: 0
-    }));
-    setDevolucionItems(itemsParaDevolver);
-    setShowDevolucionModal(true);
-  }
-
-  async function registrarDevolucionSobrantes() {
-    const itemsAfectados = devolucionItems.filter(it => it.devolver > 0);
-    if (itemsAfectados.length === 0) {
-      alert("No has ingresado ninguna cantidad a devolver.");
-      return;
-    }
-
-    setDevolucionLoading(true);
-    try {
-      let resumen = [];
-      for (const it of itemsAfectados) {
-        // 1. Update pedidos_bodega_items (sumar a cantidad_devuelta)
-        const devueltosActuales = Number(it.cantidad_devuelta || 0) + Number(it.devolver);
-        await supabase
-          .from("pedidos_bodega_items")
-          .update({ cantidad_devuelta: devueltosActuales })
-          .eq("id", it.id);
-
-        // 2. Update MateriasPrimas (sumar a stock_actual)
-        const { data: mpData } = await supabase
-          .from("MateriasPrimas")
-          .select("stock_actual")
-          .eq("REFERENCIA", it.referencia_materia_prima)
-          .single();
-
-        const nuevoStock = Number(mpData?.stock_actual || 0) + Number(it.devolver);
-
-        await supabase
-          .from("MateriasPrimas")
-          .update({ stock_actual: nuevoStock })
-          .eq("REFERENCIA", it.referencia_materia_prima);
-
-        resumen.push(`- ${it.articulo_nombre}: devolvió ${it.devolver} ${it.unidad} (Stock actual: ${nuevoStock})`);
-      }
-
-      // 3. Crear observación en pedido
-      await supabase.from("observaciones_pedido").insert({
-        pedido_id: selected.id,
-        usuario: usuarioActual?.usuario || "Producción",
-        observacion: `♻️ DEVOLUCIÓN DE SOBRANTES DE MP:\n${resumen.join('\n')}`
-      });
-
-      // 4. Notificar a bodega
-      await notifyRoles(
-        ["bodega", "bodega_mp", "bodegapt"],
-        "Sobrantes de MP Devueltos",
-        `Producción ha devuelto insumos sobrantes al inventario para el Pedido #${selected.id}.`,
-        selected.id,
-        "informacion"
-      );
-
-      alert("Devolución registrada correctamente en el inventario.");
-      setShowDevolucionModal(false);
-      await cargarItemsSolicitados(selected.id); // Refrescar tabla visual de listado
-    } catch (err) {
-      console.error("Error al registrar devolucion:", err);
-      alert("Error al registrar la devolución.");
-    }
-    setDevolucionLoading(false);
-  }
     if (!pedido?.id) throw new Error("Pedido inválido (sin id).");
 
     // 0) Si ya existen, no duplicar
