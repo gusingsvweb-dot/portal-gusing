@@ -856,7 +856,7 @@ export default function Microbiologia() {
 
   // Registra salida de un pedido simple (solicitud inicial)
   async function registrarSalidaMBSimple(pid, comment, nAnalisis, respManual) {
-    const pData = (pedidos || []).find(p => p.id === pid); // si lo tenemos en memoria
+
     
     // Trazabilidad
     const esEsterilizacion = toLowerSafe(selected?.tipos_solicitud?.nombre).includes("esterilizaci") || toLowerSafe(selected?.descripcion).includes("esterilizaci");
