@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "../api/supabaseClient";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
@@ -6,6 +7,7 @@ import { useAuth } from "../context/AuthContext";
 import "../pages/Produccion.css";
 
 export default function Bodega() {
+  const [searchParams] = useSearchParams();
   const { usuarioActual } = useAuth();
   const rol = usuarioActual?.rol || "bodega";
 
@@ -230,8 +232,7 @@ export default function Bodega() {
   // Seleccionar automáticamente si viene un ?id= en la URL
   useEffect(() => {
     if (pedidos.length === 0) return;
-    const params = new URLSearchParams(window.location.search);
-    const idParam = params.get("id");
+    const idParam = searchParams.get("id");
     if (!idParam) return;
     const targetId = Number(idParam);
     const p = pedidos.find(it => it.id === targetId);
@@ -239,7 +240,7 @@ export default function Bodega() {
       seleccionarPedido(p);
       window.history.replaceState({}, '', window.location.pathname);
     }
-  }, [pedidos]);
+  }, [pedidos, searchParams]);
 
   /* ===========================================================
      SELECCIONAR PEDIDO

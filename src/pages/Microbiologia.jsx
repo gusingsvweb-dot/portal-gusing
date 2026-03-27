@@ -1,5 +1,6 @@
 // src/pages/Microbiologia.jsx
 import React, { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "../api/supabaseClient";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
@@ -40,6 +41,7 @@ function SidebarSection({ title, count, children, isOpen, onToggle }) {
 }
 
 export default function Microbiologia() {
+  const [searchParams] = useSearchParams();
   const { usuarioActual } = useAuth(); // { usuario, rol, areadetrabajo, ... }
   const rolUsuario = usuarioActual?.rol || "microbiologia";
 
@@ -200,8 +202,7 @@ export default function Microbiologia() {
   // Seleccionar automáticamente si viene un ?id= en la URL
   useEffect(() => {
     if (pedidos.length === 0 && solicitudesIniciales.length === 0 && etapas.length === 0) return;
-    const params = new URLSearchParams(window.location.search);
-    const idParam = params.get("id");
+    const idParam = searchParams.get("id");
     if (!idParam) return;
     const targetId = Number(idParam);
 
@@ -219,7 +220,7 @@ export default function Microbiologia() {
       seleccionarSolicitud(s);
       window.history.replaceState({}, '', window.location.pathname);
     }
-  }, [pedidos, solicitudesIniciales, etapas]);
+  }, [pedidos, solicitudesIniciales, etapas, searchParams]);
 
   /* ===========================================================
      FILTROS (Memo)

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "../api/supabaseClient";
 import Navbar from "../components/navbar.jsx";
 import Footer from "../components/Footer.jsx";
@@ -9,6 +10,7 @@ import LoaderOverlay from "../components/LoaderOverlay.jsx";
 import "../components/LoaderOverlay.css";
 
 export default function PedidosEnCurso() {
+  const [searchParams] = useSearchParams();
   const [pedidosRaw, setPedidosRaw] = useState([]); // Todo lo que viene de BD
   const [pedidos, setPedidos] = useState([]);       // Filtrados
   const [selected, setSelected] = useState(null);
@@ -45,8 +47,7 @@ export default function PedidosEnCurso() {
   // Seleccionar automáticamente si viene un ?id= en la URL
   useEffect(() => {
     if (pedidosRaw.length === 0) return;
-    const params = new URLSearchParams(window.location.search);
-    const idParam = params.get("id");
+    const idParam = searchParams.get("id");
     if (!idParam) return;
     const targetId = Number(idParam);
     const p = pedidosRaw.find(it => it.id === targetId);
@@ -54,7 +55,7 @@ export default function PedidosEnCurso() {
       seleccionarPedido(p);
       window.history.replaceState({}, '', window.location.pathname);
     }
-  }, [pedidosRaw]);
+  }, [pedidosRaw, searchParams]);
 
   // Recalcular lista filtrada cuando cambien datos o filtros
   useEffect(() => {

@@ -1,5 +1,6 @@
 // src/pages/Acondicionamiento.jsx
 import React, { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "../api/supabaseClient";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
@@ -7,6 +8,7 @@ import { useAuth } from "../context/AuthContext";
 import "../pages/Produccion.css"; // reutilizamos los mismos estilos
 
 export default function Acondicionamiento() {
+  const [searchParams] = useSearchParams();
   const { usuarioActual } = useAuth();
   const rolUsuario = usuarioActual?.rol || "";
 
@@ -98,8 +100,7 @@ export default function Acondicionamiento() {
   // Seleccionar automáticamente si viene un ?id= en la URL
   useEffect(() => {
     if (pedidos.length === 0) return;
-    const params = new URLSearchParams(window.location.search);
-    const idParam = params.get("id");
+    const idParam = searchParams.get("id");
     if (!idParam) return;
     const targetId = Number(idParam);
     const p = pedidos.find(it => it.id === targetId);
@@ -107,7 +108,7 @@ export default function Acondicionamiento() {
       seleccionarPedido(p);
       window.history.replaceState({}, '', window.location.pathname);
     }
-  }, [pedidos]);
+  }, [pedidos, searchParams]);
 
   /* ===========================================================
       CARGAR OBSERVACIONES

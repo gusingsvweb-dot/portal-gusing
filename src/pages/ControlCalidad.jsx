@@ -1,5 +1,6 @@
 // src/pages/ControlCalidad.jsx
 import React, { useState, useEffect, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "../api/supabaseClient";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
@@ -35,6 +36,7 @@ function SidebarSection({ title, count, children, isOpen, onToggle }) {
 }
 
 export default function ControlCalidad() {
+  const [searchParams] = useSearchParams();
   const { usuarioActual } = useAuth();
   const usuarioId = usuarioActual?.id ?? null; // UUID from Supabase Auth
 
@@ -271,8 +273,7 @@ export default function ControlCalidad() {
   // Seleccionar automáticamente si viene un ?id= en la URL
   useEffect(() => {
     if (pedidosPT.length === 0 && etapas.length === 0) return;
-    const params = new URLSearchParams(window.location.search);
-    const idParam = params.get("id");
+    const idParam = searchParams.get("id");
     if (!idParam) return;
 
     const targetId = Number(idParam);
@@ -293,7 +294,7 @@ export default function ControlCalidad() {
       seleccionarItem(p, isCua ? 'cuarentena' : 'pt');
       window.history.replaceState({}, '', window.location.pathname);
     }
-  }, [pedidosPT, etapas, pedidosCuarentenaFiltrados]);
+  }, [pedidosPT, etapas, pedidosCuarentenaFiltrados, searchParams]);
 
   /* ===========================================================
      CHECK MICROBIOLOGÍA (Requisito para liberación de PT)

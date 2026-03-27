@@ -491,11 +491,12 @@ export default function Produccion() {
     loadPedidos();
   }, []);
 
+
+
   // Seleccionar automáticamente si viene un ?id= en la URL
   useEffect(() => {
     if (pedidos.length === 0) return;
-    const params = new URLSearchParams(window.location.search);
-    const idParam = params.get("id");
+    const idParam = searchParams.get("id");
     if (!idParam) return;
     const targetId = Number(idParam);
     const p = pedidos.find(it => it.id === targetId);
@@ -503,10 +504,10 @@ export default function Produccion() {
       setSelected(p);
       // Mantener ?lote=true si estaba, pero quitar el id
       const base = window.location.pathname;
-      const isLote = params.get("lote");
+      const isLote = searchParams.get("lote");
       window.history.replaceState({}, '', isLote ? `${base}?lote=true` : base);
     }
-  }, [pedidos]);
+  }, [pedidos, searchParams]);
 
   // Cargar etapas activas para pedidos en estado 8 (Etapas internas)
   useEffect(() => {
@@ -2445,17 +2446,15 @@ export default function Produccion() {
               <p>
                 <strong>Estado:</strong>{" "}
                 <span className={`pc-chip estado-${p.estado_id}`}>
-                  {(() => {
-                      return (() => {
-                        const raw = etapasDict[p.id];
-                        if (!raw) return "Entrada Acondicionamiento";
-                        // Normalización rápida
-                        const n = raw.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-                        if (n.includes("revision de particulas visibles")) return "Entrada Acondicionamiento";
-                        return `Etapas internas - ${raw}`;
-                      })();
-                    return p.estados?.nombre;
-                  })()}
+                  {p.estado_id === 8 ? (
+                    (() => {
+                      const raw = etapasDict[p.id];
+                      if (!raw) return "Cargando etapa...";
+                      return `Etapa: ${raw}`;
+                    })()
+                  ) : (
+                    p.estados?.nombre
+                  )}
                 </span>
               </p>
 

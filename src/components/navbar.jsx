@@ -306,7 +306,7 @@ export default function Navbar() {
                                 handleNotifClick(n);
                               }}
                             >
-                              🚀
+                              ➡️
                             </button>
                           )}
                           {!n.leida && (
