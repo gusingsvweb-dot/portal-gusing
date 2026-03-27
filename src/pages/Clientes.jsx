@@ -86,7 +86,12 @@ export default function Clientes() {
                 throw error;
             }
 
-            addNotification("success", "Cliente registrado exitosamente.");
+            if (typeof addNotification === 'function') {
+                addNotification("success", "Registrado exitosamente");
+            } else {
+                console.warn("addNotification no está disponible");
+            }
+            
             setClientes(prev => [data[0], ...prev]); // Añadir el nuevo arriba
             cerrarModal();
         } catch (error) {
