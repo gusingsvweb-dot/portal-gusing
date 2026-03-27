@@ -829,7 +829,15 @@ export default function Microbiologia() {
     }).eq("id", pid);
 
     // Notificar
-    await notifyRoles(["produccion"], "Liberación MB", `Liberado Pedido #${pid}`, pid, "proceso_completado");
+    const esDesp = toLowerSafe(selected?.tipos_solicitud?.nombre).includes("despirogeniza") || 
+                   toLowerSafe(selected?.tipos_solicitud?.nombre).includes("lavado") ||
+                   toLowerSafe(selected?.descripcion).includes("despirogeniza") ||
+                   toLowerSafe(selected?.descripcion).includes("lavado");
+    
+    const rolesANotificar = ["produccion"];
+    if (esDesp) rolesANotificar.push("microbiologia", "controlcalidad");
+
+    await notifyRoles(rolesANotificar, "Liberación MB", `Liberado Pedido #${pid}${esDesp ? ' (Despirogenización/Lavado)' : ''}`, pid, "proceso_completado");
   }
 
   // Busca y libera la etapa de "Despirogenización/Lavado" de un pedido específico
@@ -883,7 +891,7 @@ export default function Microbiologia() {
       observacion: `✅ LIBERACIÓN EN LOTE (Etapa: ${etapaBatch.nombre}): ${comment || "Sin comentarios"}`,
     });
 
-    await notifyRoles(["produccion"], "Lote Liberado", `Etapa ${etapaBatch.nombre} liberada para #${pid}`, pid, "proceso_completado");
+    await notifyRoles(["produccion", "microbiologia", "controlcalidad"], "Lote Liberado", `Etapa ${etapaBatch.nombre} liberada para #${pid}`, pid, "proceso_completado");
     await checkAndNotifyFlowCompletion(pid);
   }
 
