@@ -565,7 +565,7 @@ export default function Produccion() {
       // Notificar a Bodega (sin cambiar asignación)
       try {
         await notifyRoles(
-          ["bodega"],
+          ["bodega", "bodega_mp", "bodegapt"],
           "Solicitud Adicional de Insumos",
           `Producción ha solicitado insumos ADICIONALES para el Pedido #${selected.id}`,
           selected.id,
@@ -633,7 +633,7 @@ export default function Produccion() {
     // 🔔 NOTIFICAR A BODEGA
     try {
       await notifyRoles(
-        ["bodega"],
+        ["bodega", "bodega_mp", "bodegapt"],
         "Solicitud de Materias Primas",
         `Producción ha solicitado materias primas para el Pedido #${selected.id} (${selected.productos?.articulo || ""})`,
         selected.id,
@@ -694,7 +694,7 @@ export default function Produccion() {
     // 🔔 NOTIFICAR A BODEGA
     try {
       await notifyRoles(
-        ["bodega"],
+        ["bodega", "bodega_mp", "bodegapt"],
         "Pedido Devuelto por Producción",
         `Producción ha devuelto el Pedido #${selected.id} por materia prima incompleta. Motivo: ${razon}`,
         selected.id,
