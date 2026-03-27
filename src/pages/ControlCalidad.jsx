@@ -171,7 +171,7 @@ export default function ControlCalidad() {
       .eq("requiere_liberacion", true)
       .ilike("rol_liberador", "%control_calidad%")
       .eq("estado", "en_revision")
-      .order("fecha_inicio", { ascending: true });
+      .order("fecha_inicio", { ascending: false });
 
     if (error) {
       console.error("❌ Error cargando etapas CC:", error);
@@ -193,7 +193,7 @@ export default function ControlCalidad() {
         estados ( nombre )
       `)
       .in("estado_id", [10, 11]) 
-      .order("id", { ascending: true });
+      .order("id", { ascending: false });
 
     if (error) console.error("Error cargando pedidos QC:", error);
     setPedidosPT(data || []);
