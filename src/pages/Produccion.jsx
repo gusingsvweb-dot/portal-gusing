@@ -168,15 +168,23 @@ export default function Produccion() {
 
   const materialesFiltrados = useMemo(() => {
     const search = busquedaMP.toLowerCase().trim();
-    if (!search) return materialesCatalogo;
     
     return materialesCatalogo.filter(m => {
-      // 1. Coincide con la búsqueda
-      const matches = m.ARTICULO.toLowerCase().includes(search) || String(m.REFERENCIA).toLowerCase().includes(search);
+      const nombre = (m.ARTICULO || "").toLowerCase();
+      const isInactivo = nombre.includes("inactivo");
+
+      // 1. Si es inactivo, solo mostrar si ya está seleccionado (para no romper vistas previas)
+      const isSelected = materialesSeleccionados.some(sel => String(sel.referencia) === String(m.REFERENCIA));
+      if (isInactivo && !isSelected) return false;
+
+      // 2. Si no hay búsqueda, mostrar todo lo que sea activo
+      if (!search) return true;
+
+      // 3. Si hay búsqueda, filtrar por nombre o referencia
+      const matches = nombre.includes(search) || String(m.REFERENCIA).toLowerCase().includes(search);
       if (matches) return true;
       
-      // 2. O está seleccionado en alguna fila (para no perder visibilidad)
-      const isSelected = materialesSeleccionados.some(sel => String(sel.referencia) === String(m.REFERENCIA));
+      // 4. O si ya está seleccionado (para mantener visibilidad al buscar otra cosa)
       return isSelected;
     });
   }, [materialesCatalogo, busquedaMP, materialesSeleccionados]);
@@ -2961,7 +2969,8 @@ export default function Produccion() {
                   borderRadius: '8px',
                   border: '1px solid #cbd5e1',
                   fontSize: '14px',
-                  background: '#f8fafc'
+                  background: '#f8fafc',
+                  color: '#0f172a'
                 }}
               />
               {busquedaMP && (
