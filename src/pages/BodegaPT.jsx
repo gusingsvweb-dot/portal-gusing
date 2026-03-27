@@ -161,23 +161,7 @@ export default function BodegaPT() {
                             </p>
                         </div>
 
-                        {!selected.fecha_liberacion_cuarentena && (
-                            <div style={{
-                                marginTop: '15px',
-                                padding: '10px',
-                                background: '#fef2f2',
-                                border: '1px solid #fee2e2',
-                                borderRadius: '8px',
-                                color: '#991b1b',
-                                fontSize: '13px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px'
-                            }}>
-                                <span>⚠️</span>
-                                <p style={{margin: 0}}><strong>Atención:</strong> Este pedido no puede ser despachado físicamente hasta que sea liberado de Cuarentena por Control de Calidad.</p>
-                            </div>
-                        )}
+
 
                         {/* SECCIÓN DE OBSERVACIONES */}
                         <div style={{ marginTop: '20px', padding: '15px', backgroundColor: 'var(--bg-app)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
@@ -212,13 +196,50 @@ export default function BodegaPT() {
                             </div>
                         </div>
 
-                        <div style={{ background: 'rgba(52, 211, 153, 0.1)', padding: '20px', borderRadius: '12px', border: '1px solid #10b981', marginTop: '20px' }}>
+                        <div style={{ backgroundColor: 'rgba(52, 211, 153, 0.1)', padding: '20px', borderRadius: '12px', border: '1px solid #10b981', marginTop: '20px' }}>
+                            <p style={{ color: selected.fecha_liberacion_cuarentena ? '#10b981' : '#f59e0b', fontSize: '15px', lineHeight: '1.5', fontWeight: '600', marginBottom: '10px' }}>
+                                {selected.fecha_liberacion_cuarentena 
+                                    ? "Este pedido ha sido liberado por Control de Calidad y está listo para ser entregado al cliente."
+                                    : "Este pedido ha sido liberado administrativamente (PT), pero aún requiere liberación física de CUARENTENA."}
+                            </p>
+
                             {selected.estado_id === 11 ? (
-                                <button className="pc-btn" style={{ background: '#10b981' }} onClick={solicitarAutorizacion}>📩 Solicitar Autorización</button>
+                                <div style={{ marginTop: '10px' }}>
+                                    <p style={{ fontWeight: '600', color: 'var(--text-main)', marginBottom: '10px', fontSize: '14px' }}>
+                                        Paso siguiente: Solicitar autorización de despacho a Atención al Cliente.
+                                    </p>
+                                    <button
+                                        className="pc-btn"
+                                        style={{ background: '#10b981', width: '100%' }}
+                                        onClick={solicitarAutorizacion}
+                                    >
+                                        📩 Solicitar Autorización de Despacho
+                                    </button>
+                                </div>
                             ) : selected.asignado_a === 'bodega' ? (
-                                <button className="pc-btn" style={{ background: '#059669' }} onClick={despacharProducto}>🚚 Registrar Despacho Físico</button>
+                                <div style={{ marginTop: '10px' }}>
+                                    <p style={{ fontWeight: '600', color: '#10b981', marginBottom: '10px', fontSize: '14px' }}>
+                                        ✅ ¡DESPACHO AUTORIZADO!
+                                    </p>
+                                    <p style={{ fontSize: '13px', color: 'var(--text-main)', marginBottom: '15px' }}>
+                                        Atención al Cliente ha aprobado la entrega. Proceda al despacho físico.
+                                    </p>
+                                    <button
+                                        className="pc-btn"
+                                        onClick={despacharProducto}
+                                        style={{ 
+                                          background: selected.fecha_liberacion_cuarentena ? '#059669' : '#94a3b8', 
+                                          width: '100%',
+                                          cursor: selected.fecha_liberacion_cuarentena ? 'pointer' : 'not-allowed'
+                                        }}
+                                    >
+                                        🚚 Registrar Despacho Físico
+                                    </button>
+                                </div>
                             ) : (
-                                <p>⏳ Esperando autorización...</p>
+                                <div style={{ marginTop: '10px', textAlign: 'center' }}>
+                                    <p style={{ color: '#6366f1', fontWeight: '600' }}>⏳ Esperando autorización de Atención al Cliente...</p>
+                                </div>
                             )}
                         </div>
                     </div>
