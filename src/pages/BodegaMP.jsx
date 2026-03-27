@@ -151,9 +151,9 @@ export default function BodegaMP() {
     }
 
     async function ejecutarUpdateEntrega() {
-        const hoy = new Date().toISOString().slice(0, 10);
+        const ahora = new Date().toISOString();
         const { error } = await supabase.from("pedidos_produccion").update({
-            fecha_entrega_de_materias_primas_e_insumos: hoy,
+            fecha_entrega_de_materias_primas_e_insumos: ahora,
             estado_id: 5,
             asignado_a: "produccion",
         }).eq("id", selected.id);
@@ -230,6 +230,9 @@ export default function BodegaMP() {
                             <span className="pc-item-op">Or. Producción: {p.op || p.id}</span>
                             <p><strong>Producto:</strong> {p.productos?.articulo}</p>
                             <p><strong>Cliente:</strong> {p.clientes?.nombre}</p>
+                            <p style={{ fontSize: '11px', color: 'var(--text-sub)', marginTop: '4px' }}>
+                                🕒 Pedido: {p.fecha_solicitud_materias_primas ? new Date(p.fecha_solicitud_materias_primas).toLocaleTimeString("es-CO", { hour: '2-digit', minute: '2-digit' }) : "—"}
+                            </p>
                         </div>
                     ))}
                 </div>
@@ -347,7 +350,11 @@ export default function BodegaMP() {
                     <thead><tr><th>ID</th><th>Producto</th><th>Fecha</th></tr></thead>
                     <tbody>
                         {historial.map(h => (
-                            <tr key={h.id}><td>#{h.id}</td><td>{h.productos?.articulo}</td><td>{h.fecha_entrega_de_materias_primas_e_insumos}</td></tr>
+                            <tr key={h.id}>
+                                <td>#{h.id}</td>
+                                <td>{h.productos?.articulo}</td>
+                                <td>{h.fecha_entrega_de_materias_primas_e_insumos ? new Date(h.fecha_entrega_de_materias_primas_e_insumos).toLocaleString("es-CO", { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : "—"}</td>
+                            </tr>
                         ))}
                     </tbody>
                 </table>

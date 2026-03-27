@@ -367,10 +367,11 @@ export default function Bodega() {
     // 3. Ejecutar acción
     if (avanzarAProduccion) {
       // AVANZAR A PRODUCCION (Estado 5)
+      const ahora = new Date().toISOString();
       const { error } = await supabase
         .from("pedidos_produccion")
         .update({
-          fecha_entrega_de_materias_primas_e_insumos: hoy,
+          fecha_entrega_de_materias_primas_e_insumos: ahora,
           estado_id: 5,
           asignado_a: "produccion",
         })
@@ -452,6 +453,9 @@ export default function Bodega() {
                   </div>
                   <p style={{ marginTop: 8 }}><strong>Cliente:</strong> {p.clientes?.nombre}</p>
                   <p><strong>Estado:</strong> {p.estados?.nombre}</p>
+                  <p style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>
+                    🕒 Pedido: {p.fecha_solicitud_materias_primas ? new Date(p.fecha_solicitud_materias_primas).toLocaleTimeString("es-CO", { hour: '2-digit', minute: '2-digit' }) : "—"}
+                  </p>
                 </div>
               ))}
             </>
@@ -480,6 +484,9 @@ export default function Bodega() {
                   </div>
                   <p style={{ marginTop: 8 }}><strong>Cliente:</strong> {p.clientes?.nombre}</p>
                   <p><strong>Estado:</strong> <span style={{ color: '#059669', fontWeight: 'bold' }}>{p.estados?.nombre}</span></p>
+                  <p style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>
+                    🕒 Solicitado: {p.fecha_solicitud_materias_primas ? new Date(p.fecha_solicitud_materias_primas).toLocaleTimeString("es-CO", { hour: '2-digit', minute: '2-digit' }) : "—"}
+                  </p>
                 </div>
               ))}
             </>
@@ -723,7 +730,7 @@ export default function Bodega() {
                     <td>#{h.id}</td>
                     <td>{h.productos?.articulo}</td>
                     <td>{h.clientes?.nombre}</td>
-                    <td>{new Date(h.fecha_entrega_de_materias_primas_e_insumos).toLocaleDateString()}</td>
+                    <td>{h.fecha_entrega_de_materias_primas_e_insumos ? new Date(h.fecha_entrega_de_materias_primas_e_insumos).toLocaleString("es-CO", { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : "—"}</td>
                   </tr>
                 ))}
               </tbody>

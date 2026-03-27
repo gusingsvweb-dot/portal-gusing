@@ -227,7 +227,7 @@ export default function Produccion() {
       await supabase.from("observaciones_pedido").insert({
         pedido_id: selected.id,
         usuario: usuarioActual?.usuario || "Producción",
-        observacion: `♻️ DEVOLUCIÓN DE SOBRANTES DE MP:\n${resumen.join('\n')}`
+        observacion: `♻️ DEVOLUCIÓN DE SOBRANTES DE MP`
       });
 
       // 4. Notificar a bodega
