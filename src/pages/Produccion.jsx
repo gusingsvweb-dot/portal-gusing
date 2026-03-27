@@ -166,6 +166,11 @@ export default function Produccion() {
   const [showItemsSolicitados, setShowItemsSolicitados] = useState(false);
   const [haSolicitadoMicro, setHaSolicitadoMicro] = useState(false);
 
+  // NUEVO: Modal de devolución de sobrantes
+  const [showDevolucionModal, setShowDevolucionModal] = useState(false);
+  const [devolucionItems, setDevolucionItems] = useState([]);
+  const [devolucionLoading, setDevolucionLoading] = useState(false);
+
   async function checkExistenciaSolicitudMicro(pedidoId) {
     if (!pedidoId || !areaMicroId) return;
 
@@ -728,6 +733,79 @@ export default function Produccion() {
      Se llama justo después de crear solicitud MB
   ============================================================ */
   async function crearEtapasParaPedidoSiNoExisten(pedido) {
+
+  /* ===========================================================
+     MODAL: DEVOLVER SOBRANTES A INVENTARIO
+  ============================================================ */
+  function abrirModalDevolucion() {
+    const itemsParaDevolver = itemsSolicitados.map(it => ({
+      ...it,
+      devolver: 0
+    }));
+    setDevolucionItems(itemsParaDevolver);
+    setShowDevolucionModal(true);
+  }
+
+  async function registrarDevolucionSobrantes() {
+    const itemsAfectados = devolucionItems.filter(it => it.devolver > 0);
+    if (itemsAfectados.length === 0) {
+      alert("No has ingresado ninguna cantidad a devolver.");
+      return;
+    }
+
+    setDevolucionLoading(true);
+    try {
+      let resumen = [];
+      for (const it of itemsAfectados) {
+        // 1. Update pedidos_bodega_items (sumar a cantidad_devuelta)
+        const devueltosActuales = Number(it.cantidad_devuelta || 0) + Number(it.devolver);
+        await supabase
+          .from("pedidos_bodega_items")
+          .update({ cantidad_devuelta: devueltosActuales })
+          .eq("id", it.id);
+
+        // 2. Update MateriasPrimas (sumar a stock_actual)
+        const { data: mpData } = await supabase
+          .from("MateriasPrimas")
+          .select("stock_actual")
+          .eq("REFERENCIA", it.referencia_materia_prima)
+          .single();
+
+        const nuevoStock = Number(mpData?.stock_actual || 0) + Number(it.devolver);
+
+        await supabase
+          .from("MateriasPrimas")
+          .update({ stock_actual: nuevoStock })
+          .eq("REFERENCIA", it.referencia_materia_prima);
+
+        resumen.push(`- ${it.articulo_nombre}: devolvió ${it.devolver} ${it.unidad} (Stock actual: ${nuevoStock})`);
+      }
+
+      // 3. Crear observación en pedido
+      await supabase.from("observaciones_pedido").insert({
+        pedido_id: selected.id,
+        usuario: usuarioActual?.usuario || "Producción",
+        observacion: `♻️ DEVOLUCIÓN DE SOBRANTES DE MP:\n${resumen.join('\n')}`
+      });
+
+      // 4. Notificar a bodega
+      await notifyRoles(
+        ["bodega", "bodega_mp", "bodegapt"],
+        "Sobrantes de MP Devueltos",
+        `Producción ha devuelto insumos sobrantes al inventario para el Pedido #${selected.id}.`,
+        selected.id,
+        "informacion"
+      );
+
+      alert("Devolución registrada correctamente en el inventario.");
+      setShowDevolucionModal(false);
+      await cargarItemsSolicitados(selected.id); // Refrescar tabla visual de listado
+    } catch (err) {
+      console.error("Error al registrar devolucion:", err);
+      alert("Error al registrar la devolución.");
+    }
+    setDevolucionLoading(false);
+  }
     if (!pedido?.id) throw new Error("Pedido inválido (sin id).");
 
     // 0) Si ya existen, no duplicar
@@ -2334,10 +2412,17 @@ export default function Produccion() {
 
                   {/* BOTÓN PARA SOLICITAR ADICIONALES (Solo visible en el menú oculto y si pedido no finalizado) */}
                   {showItemsSolicitados && selected.estado_id < 12 && (
-                    <div style={{ marginTop: '10px', textAlign: 'right' }}>
+                    <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
                       <button
                         className="pc-btn"
-                        style={{ background: '#f59e0b', fontSize: '12px', padding: '5px 10px' }}
+                        style={{ background: '#059669', fontSize: '12px', padding: '5px 10px', border: '1px solid #047857' }}
+                        onClick={abrirModalDevolucion}
+                      >
+                        ♻️ Devolver Sobrantes
+                      </button>
+                      <button
+                        className="pc-btn"
+                        style={{ background: '#f59e0b', fontSize: '12px', padding: '5px 10px', border: 'none' }}
                         onClick={() => {
                           setIsAdditionalRequestMode(true);
                           setMaterialesSeleccionados([{ referencia: "", cantidad: 1 }]);
@@ -2737,6 +2822,68 @@ export default function Produccion() {
           </div>
         </div>
       )}
+      {/* MODAL DE DEVOLUCIÓN DE SOBRANTES */}
+      {showDevolucionModal && (
+        <div className="modal-backdrop" onClick={() => setShowDevolucionModal(false)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{ width: '600px', maxWidth: '95vw' }}>
+            <h3>♻️ Devolver Sobrantes de MP a Inventario</h3>
+            <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '15px' }}>
+              Indica la cantidad que deseas retornar a bodega. Se sumará automáticamente al stock en inventario y dejará trazabilidad.
+            </p>
+
+            <div style={{ maxHeight: '400px', overflowY: 'auto', marginBottom: '20px' }}>
+              <table style={{ width: '100%', fontSize: '12px', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid #cbd5e1', textAlign: 'left' }}>
+                    <th style={{ padding: '8px' }}>Insumo</th>
+                    <th style={{ padding: '8px' }}>Solicitado</th>
+                    <th style={{ padding: '8px', color: '#e11d48' }}>Ya devuelto</th>
+                    <th style={{ padding: '8px' }}>Devolver ahora</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {devolucionItems.map((it, idx) => (
+                    <tr key={it.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      <td style={{ padding: '8px' }}>
+                        <strong>{it.articulo_nombre}</strong>
+                        <div style={{ color: '#94a3b8', fontSize: '10px' }}>{it.unidad}</div>
+                      </td>
+                      <td style={{ padding: '8px' }}>{it.cantidad}</td>
+                      <td style={{ padding: '8px', color: '#e11d48', fontWeight: 'bold' }}>{it.cantidad_devuelta || 0}</td>
+                      <td style={{ padding: '8px' }}>
+                        <input
+                          type="number"
+                          min="0"
+                          max={it.cantidad}
+                          value={it.devolver === 0 ? '' : it.devolver}
+                          onChange={(e) => {
+                            let val = e.target.value === '' ? 0 : Number(e.target.value);
+                            if (val < 0) val = 0;
+                            const updated = [...devolucionItems];
+                            updated[idx].devolver = val;
+                            setDevolucionItems(updated);
+                          }}
+                          style={{ width: '80px', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button className="pc-btn" style={{ background: '#e2e8f0', color: '#0f172a' }} onClick={() => setShowDevolucionModal(false)} disabled={devolucionLoading}>
+                Cancelar
+              </button>
+              <button className="pc-btn" style={{ background: '#059669', border: 'none' }} onClick={registrarDevolucionSobrantes} disabled={devolucionLoading}>
+                {devolucionLoading ? "Registrando..." : "Registrar Devolución"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </>
   );
 }
