@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo, useRef } from "react";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
-import { supabase, st } from "../api/supabaseClient";
+import { supabase, st, ss } from "../api/supabaseClient";
 import { useAuth } from "../context/AuthContext";
 import "./MisSolicitudes.css";
 

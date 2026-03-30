@@ -1,6 +1,6 @@
 // src/pages/Dashboard.jsx
 import React, { useEffect, useMemo, useState } from "react";
-import { supabase, st } from "../api/supabaseClient";
+import { supabase, st, ss } from "../api/supabaseClient";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
 import { useTheme } from "../context/ThemeContext";

@@ -1,7 +1,7 @@
 // src/pages/Microbiologia.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { supabase, st } from "../api/supabaseClient";
+import { supabase, st, ss } from "../api/supabaseClient";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
 import { useAuth } from "../context/AuthContext";
