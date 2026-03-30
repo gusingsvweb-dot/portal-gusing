@@ -38,10 +38,10 @@ export const ss = (selectString) => {
 
   let result = selectString;
   relationships.forEach(rel => {
-    // Regex para encontrar la relación al inicio de una línea o después de una coma/espacio/salto de línea
-    // capturando también espacios opcionales para preservar el formato.
-    const regex = new RegExp(`(^|[\\\\s,])(\\\\s*)(${rel})(\\\\s*[\\\\(\\\\)])`, 'g');
-    result = result.replace(regex, `$1$2$3:NO_$3$4`);
+    // Se usa un límite de palabra (\b) para encontrar el nombre de la relación.
+    // Esto es robusto ante espacios/saltos de línea y evita renombrar si ya tiene prefijo (ej: NO_).
+    const regex = new RegExp("\\b(" + rel + ")\\s*\\(", "g");
+    result = result.replace(regex, "$1:NO_$1(");
   });
 
   return result;
