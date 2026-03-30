@@ -893,6 +893,14 @@ export default function Microbiologia() {
     if (esDesp) rolesANotificar.push("microbiologia", "controlcalidad");
 
     await notifyRoles(rolesANotificar, "Liberación MB", `Liberado Pedido #${pid}${esDesp ? ' (Despirogenización/Lavado)' : ''}`, pid, "proceso_completado");
+    
+    // ✅ NUEVO: Liberar automáticamente etapa de Lavado/Despirogenización interna
+    // Esto evita la doble aprobación manual que reportaba el usuario.
+    try {
+      await procesarLiberacionAutomaticaEtapa(pid, comment, nAnalisis, respManual);
+    } catch (errSync) {
+      console.error("⚠️ Error sincronizando etapa interna:", errSync);
+    }
   }
 
   // Busca y libera la etapa de "Despirogenización/Lavado" de un pedido específico
