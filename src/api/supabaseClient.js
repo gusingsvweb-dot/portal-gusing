@@ -33,15 +33,15 @@ export const ss = (selectString) => {
     'productos', 'clientes', 'estados', 'usuarios', 'areas',
     'prioridades', 'tipos_solicitud', 'pedido_etapas', 'pedidos_produccion',
     'observaciones_pedido', 'MateriasPrimas', 'flujos_forma', 'pedidos_bodega_items',
-    'notificaciones', 'tareas_produccion'
+    'notificaciones', 'tareas_produccion', 'pedido_etapas_liberaciones'
   ];
 
   let result = selectString;
   relationships.forEach(rel => {
-    // Se usa un límite de palabra (\b) para encontrar el nombre de la relación.
-    // Esto es robusto ante espacios/saltos de línea y evita renombrar si ya tiene prefijo (ej: NO_).
-    const regex = new RegExp("\\b(" + rel + ")\\s*\\(", "g");
-    result = result.replace(regex, "$1:NO_$1(");
+    // Busca el nombre de la relación seguido de ( o !
+    // Ejemplo: productos ( o pedidos_bodega_items!inner(
+    const regex = new RegExp("\\b(" + rel + ")\\b(?=\\s*[\\(!])", "g");
+    result = result.replace(regex, "$1:NO_$1");
   });
 
   return result;
