@@ -49,12 +49,12 @@ export default function Dashboard() {
   async function loadPedidos() {
     const { data, error } = await supabase
       .from(st("pedidos_produccion"))
-      .select(`
+      .select(ss(`
         *,
         productos ( articulo ),
         clientes ( nombre ),
         estados ( nombre )
-      `)
+      `))
       .order("id", { ascending: false });
 
     if (error) {

@@ -42,12 +42,12 @@ export default function ConsolidadoPedidos() {
         // Hacemos JOIN con clientes, productos y estados para mostrar nombres reales
         const { data, error } = await supabase
             .from(st("pedidos_produccion"))
-            .select(`
+            .select(ss(`
         *,
         cliente:clientes(nombre),
         producto:productos(articulo),
         estado:estados(nombre)
-      `)
+      `))
             .order("id", { ascending: false });
 
         if (error) {

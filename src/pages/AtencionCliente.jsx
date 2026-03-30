@@ -35,12 +35,12 @@ export default function AtencionCliente() {
 
 
   async function cargarClientes() {
-    const { data } = await supabase.from(st("clientes")).select("*").order("nombre");
+    const { data } = await supabase.from(st("clientes")).select(ss("*")).order("nombre");
     setClientes(data || []);
   }
 
   async function cargarProductos() {
-    const { data } = await supabase.from(st("productos")).select("*").order("articulo");
+    const { data } = await supabase.from(st("productos")).select(ss("*")).order("articulo");
     setProductos(data || []);
   }
 
@@ -141,7 +141,7 @@ export default function AtencionCliente() {
           prioridad: it.prioridad
         };
 
-        const { data: pIns, error: errP } = await supabase.from(st("pedidos_produccion")).insert([nuevoP]).select("*");
+      const { data: pIns, error: errP } = await supabase.from(st("pedidos_produccion")).insert([nuevoP]).select(ss("*"));
         if (errP) throw errP;
 
         const pedidoId = pIns[0].id;
@@ -198,7 +198,7 @@ export default function AtencionCliente() {
         prioridad: form.prioridad,
       };
 
-      const { data: pIns, error: errP } = await supabase.from(st("pedidos_produccion")).insert([nuevoPedido]).select("*");
+        const { data: pIns, error: errP } = await supabase.from(st("pedidos_produccion")).insert([nuevoPedido]).select(ss("*"));
       if (errP) throw errP;
 
       const pedidoId = pIns[0].id;

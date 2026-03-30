@@ -464,7 +464,7 @@ export default function Produccion() {
     const { data, error } = await supabase
       .from(st("pedidos_produccion"))
       .select(
-        `
+        ss(`
         *,
         productos (
           articulo,
@@ -475,7 +475,7 @@ export default function Produccion() {
         ),
         clientes ( nombre ),
         estados ( nombre )
-      `
+      `)
       )
       .order("id", { ascending: false });
 
@@ -518,7 +518,7 @@ export default function Produccion() {
     async function loadEtapasBatch() {
       const { data } = await supabase
         .from(st("pedido_etapas"))
-        .select("pedido_id, nombre, estado, orden")
+          .select(ss("*, pedidos_produccion ( id, op, lote, productos(articulo), clientes(nombre) )"))
         .in("pedido_id", pedidosEnEtapas)
         .neq("estado", "completada");
 
@@ -675,7 +675,7 @@ export default function Produccion() {
     const { data, error } = await supabase
       .from(st("pedidos_produccion"))
       .select(
-        `
+        ss(`
         *,
         productos (
           articulo,
@@ -686,7 +686,7 @@ export default function Produccion() {
         ),
         clientes ( nombre ),
         estados ( nombre )
-      `
+      `)
       )
       .eq("id", selected.id)
       .single();

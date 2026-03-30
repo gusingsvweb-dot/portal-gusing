@@ -44,12 +44,7 @@ export default function Bodega() {
     // 1. Pedidos asignados explicitamente a bodega
     const { data: dataBodega, error: errBodega } = await supabase
       .from(st("pedidos_produccion"))
-      .select(`
-        *,
-        productos ( articulo ),
-        clientes ( nombre ),
-        estados ( nombre )
-      `)
+      .select(ss("*, productos ( articulo ), clientes ( nombre ), estados ( nombre )"))
       .eq("asignado_a", "bodega")
       .order("id", { ascending: false });
 
@@ -59,13 +54,13 @@ export default function Bodega() {
     // Filtramos aquellos que tengan items NO completados
     const { data: dataPendientes, error: errPend } = await supabase
       .from(st("pedidos_produccion"))
-      .select(`
+      .select(ss(`
         *,
         productos ( articulo ),
         clientes ( nombre ),
         estados ( nombre ),
         pedidos_bodega_items!inner(id)
-      `)
+      `))
       .neq("asignado_a", "bodega") // Evitar duplicados con la primera query
       .eq("pedidos_bodega_items.completado", false)
       .order("id", { ascending: false });
@@ -188,12 +183,12 @@ export default function Bodega() {
   async function loadHistorial() {
     const { data, error } = await supabase
       .from(st("pedidos_produccion"))
-      .select(`
+      .select(ss(`
         id,
         fecha_entrega_de_materias_primas_e_insumos,
         productos ( articulo ),
         clientes ( nombre )
-      `)
+      `))
       .not("fecha_entrega_de_materias_primas_e_insumos", "is", null)
       .order("fecha_entrega_de_materias_primas_e_insumos", { ascending: false });
 
@@ -206,7 +201,7 @@ export default function Bodega() {
   async function cargarObservaciones(pedidoId) {
     const { data, error } = await supabase
       .from(st("observaciones_pedido"))
-      .select("*")
+      .select(ss("*"))
       .eq("pedido_id", pedidoId)
       .order("created_at", { ascending: false });
 

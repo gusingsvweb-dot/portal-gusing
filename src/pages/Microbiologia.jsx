@@ -284,7 +284,7 @@ export default function Microbiologia() {
   async function loadEtapasIntermedias() {
     const { data, error } = await supabase
       .from(st("pedido_etapas"))
-      .select(`
+      .select(ss(`
         *,
         pedidos_produccion (
           id,
@@ -295,7 +295,7 @@ export default function Microbiologia() {
           productos ( articulo, forma_farmaceutica ),
           clientes ( nombre )
         )
-      `)
+      `))
       .eq("requiere_liberacion", true)
       .eq("requiere_liberacion", true)
       .ilike("rol_liberador", "%microbiologia%")
@@ -311,11 +311,11 @@ export default function Microbiologia() {
     if (!areaMicroId) return;
     const { data, error } = await supabase
       .from(st("solicitudes"))
-      .select(`
+      .select(ss(`
         *,
         tipos_solicitud ( nombre ),
         prioridades ( nombre )
-      `)
+      `))
       .eq("area_id", areaMicroId)
       .eq("estado_id", 1) // Pendiente
       .order("id", { ascending: false });
@@ -334,7 +334,7 @@ export default function Microbiologia() {
       if (ids.length > 0) {
         const { data: pedidos } = await supabase
           .from(st("pedidos_produccion"))
-          .select("id, fecha_inicio_analisis_mb, productos(articulo, forma_farmaceutica)")
+          .select(ss("id, fecha_inicio_analisis_mb, productos(articulo, forma_farmaceutica)"))
           .in("id", ids);
 
         const mapPedidos = {};
@@ -366,11 +366,11 @@ export default function Microbiologia() {
       // Intentar traer datos del pedido para mayor detalle
       const { data: pedido } = await supabase
         .from(st("pedidos_produccion"))
-        .select(`
+        .select(ss(`
           *,
           productos ( articulo, forma_farmaceutica ),
           clientes ( nombre )
-        `)
+        `))
         .eq("id", item.consecutivo)
         .single();
 
@@ -489,7 +489,7 @@ export default function Microbiologia() {
     // 1) Liberaciones de etapas hechas por Microbiología
     const { data: dataEtapas, error: errEtapas } = await supabase
       .from(st("pedido_etapas_liberaciones"))
-      .select(`
+      .select(ss(`
         id,
         created_at,
         comentario,
@@ -504,7 +504,7 @@ export default function Microbiologia() {
             clientes ( nombre )
           )
         )
-      `)
+      `))
       .eq("rol", "microbiologia")
       .eq("liberada", true)
       .order("created_at", { ascending: false })
@@ -513,14 +513,14 @@ export default function Microbiologia() {
     // 2) Solicitudes de liberación completadas (estado_id = 2)
     const { data: dataSolicitudes, error: errSols } = await supabase
       .from(st("solicitudes"))
-      .select(`
+      .select(ss(`
         id,
         consecutivo,
         tipos_solicitud ( nombre ),
         accion_realizada,
         created_at,
         area_solicitante
-      `)
+      `))
       .eq("area_id", areaMicroId)
       .eq("estado_id", 2)
       .order("created_at", { ascending: false })
@@ -537,7 +537,7 @@ export default function Microbiologia() {
     if (pedidoIds.length > 0) {
       const { data: dataP } = await supabase
         .from(st("pedidos_produccion"))
-        .select("id, op, lote, productos(articulo)")
+        .select(ss("id, op, lote, productos(articulo)"))
         .in("id", pedidoIds);
       (dataP || []).forEach(p => {
         mappingPedidos[p.id] = p;

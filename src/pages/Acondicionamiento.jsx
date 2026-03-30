@@ -33,13 +33,13 @@ export default function Acondicionamiento() {
   async function loadHistorial() {
     const { data, error } = await supabase
       .from(st("pedidos_produccion"))
-      .select(`
+      .select(ss(`
         id,
         productos ( articulo ),
         clientes ( nombre ),
         cantidad,
         fecha_fin_acondicionamiento
-      `)
+      `))
       .not("fecha_fin_acondicionamiento", "is", null)
       .order("fecha_fin_acondicionamiento", { ascending: false });
 
@@ -76,12 +76,12 @@ export default function Acondicionamiento() {
   async function loadPedidos() {
     const { data, error } = await supabase
       .from(st("pedidos_produccion"))
-      .select(`
+      .select(ss(`
         *,
-        productos ( articulo, presentacion_comercial ),
+        productos ( articulo, forma_farmaceutica ),
         clientes ( nombre ),
         estados ( nombre )
-      `)
+      `))
       .eq("asignado_a", "acondicionamiento")
       .order("id", { ascending: false });
 
@@ -116,7 +116,7 @@ export default function Acondicionamiento() {
   async function cargarObservaciones(id) {
     const { data } = await supabase
       .from(st("observaciones_pedido"))
-      .select("*")
+      .select(ss("*"))
       .eq("pedido_id", id)
       .order("created_at", { ascending: false });
 

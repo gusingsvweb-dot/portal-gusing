@@ -25,13 +25,13 @@ export default function MisSolicitudes() {
 
     const { data, error } = await supabase
       .from(st("solicitudes"))
-      .select(`
+      .select(ss(`
         *,
         tipos_solicitud ( nombre ),
         prioridades ( nombre ),
         estados ( nombre ),
         areas:area_id ( nombre )
-      `)
+      `))
       .eq("usuario_id", usuarioActual.usuario)
       .order("id", { ascending: false });
 
