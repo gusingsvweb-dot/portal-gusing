@@ -900,7 +900,7 @@ export default function Microbiologia() {
     // 1. Buscar la etapa activa que sea Lavado o Despirogenización para este pedido
     const { data: etapas } = await supabase
       .from(st("pedido_etapas"))
-      .select("id, nombre")
+      .select(ss("id, nombre"))
       .eq("pedido_id", pid)
       .neq("estado", "completada");
 
@@ -929,7 +929,7 @@ export default function Microbiologia() {
     // 3. Verificar si se completa la etapa (si solo micro liberaba)
     const { data: todas } = await supabase
       .from(st("pedido_etapas_liberaciones"))
-      .select("liberada")
+      .select(ss("liberada"))
       .eq("pedido_etapa_id", etapaBatch.id);
 
     if (todas?.every(l => l.liberada)) {

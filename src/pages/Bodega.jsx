@@ -265,7 +265,7 @@ export default function Bodega() {
       // 1. Cargar items del pedido
       const { data: items, error: errItems } = await supabase
         .from(st("pedidos_bodega_items"))
-        .select("*")
+        .select(ss("*"))
         .eq("pedido_id", p.id)
         .order("id", { ascending: true });
 
@@ -275,7 +275,7 @@ export default function Bodega() {
         // 2. Cargar catálogo de materias primas para cruzar nombres
         const { data: catalogo, error: errCat } = await supabase
           .from(st("MateriasPrimas"))
-          .select("REFERENCIA, ARTICULO, UNIDAD");
+          .select(ss("REFERENCIA, ARTICULO, UNIDAD"));
 
         if (errCat) throw errCat;
 

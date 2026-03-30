@@ -96,7 +96,7 @@ export default function GerenciaCompras() {
     // 1. Verificar si existe registro previo
     const { data: existing, error: errFind } = await supabase
       .from(st("aprobaciones"))
-      .select("id")
+      .select(ss("id"))
       .eq("solicitud_id", solicitudId)
       .maybeSingle();
 
