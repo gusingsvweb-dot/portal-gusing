@@ -204,14 +204,14 @@ export default function Microbiologia() {
   useEffect(() => {
     async function init() {
       // 1. Cargar área
-      const { data: areasData } = await supabase.from(st("areas")).select("*");
+      const { data: areasData } = await supabase.from(st("areas")).select(ss("*"));
       const areaMB = (areasData || []).find(x => (x.nombre || "").toLowerCase().includes("micro"));
       setAreaMicroId(areaMB?.id || null);
 
       // 2. Cargar responsables MB
       const { data: resp } = await supabase
         .from(st("responsables_liberacion"))
-        .select("*")
+        .select(ss("*"))
         .eq("area", "microbiologia")
         .eq("activo", true);
       setResponsables(resp || []);
@@ -395,7 +395,7 @@ export default function Microbiologia() {
   async function cargarObservaciones(pedidoId) {
     const { data, error } = await supabase
       .from(st("observaciones_pedido"))
-      .select("*")
+      .select(ss("*"))
       .eq("pedido_id", pedidoId)
       .order("created_at", { ascending: false });
 
@@ -437,7 +437,7 @@ export default function Microbiologia() {
     // 1) Traer todas las etapas del pedido
     const { data: etapas, error: errE } = await supabase
       .from(st("pedido_etapas"))
-      .select("id, orden, nombre, rol_liberador, requiere_liberacion, estado, fecha_inicio, fecha_fin")
+      .select(ss("id, orden, nombre, rol_liberador, requiere_liberacion, estado, fecha_inicio, fecha_fin"))
       .eq("pedido_id", pedidoId)
       .order("orden", { ascending: true });
 
@@ -454,7 +454,7 @@ export default function Microbiologia() {
     if (etapaIds.length) {
       const { data: l, error: errL } = await supabase
         .from(st("pedido_etapas_liberaciones"))
-        .select("*")
+        .select(ss("*"))
         .in("pedido_etapa_id", etapaIds)
         .order("created_at", { ascending: false });
 
@@ -616,7 +616,7 @@ export default function Microbiologia() {
         // 2) Verificar si ya todos liberaron para cerrar etapa
         const { data: todasLibs, error: errCheck } = await supabase
           .from(st("pedido_etapas_liberaciones"))
-          .select("liberada")
+          .select(ss("liberada"))
           .eq("pedido_etapa_id", selected.id);
 
         if (errCheck) {

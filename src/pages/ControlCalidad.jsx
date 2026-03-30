@@ -1,7 +1,7 @@
 // src/pages/ControlCalidad.jsx
 import React, { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
-import { supabase, st } from "../api/supabaseClient";
+import { supabase, st, ss } from "../api/supabaseClient";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
 import { useAuth } from "../context/AuthContext";
@@ -168,7 +168,7 @@ export default function ControlCalidad() {
   async function loadEtapas() {
     const { data, error } = await supabase
       .from(st("pedido_etapas"))
-      .select(`
+      .select(ss(`
         *,
         pedidos_produccion (
           id,
@@ -179,7 +179,7 @@ export default function ControlCalidad() {
           productos ( articulo, forma_farmaceutica ),
           clientes ( nombre )
         )
-      `)
+      `))
       .eq("requiere_liberacion", true)
       .ilike("rol_liberador", "%control_calidad%")
       .in("estado", ["en_revision", "pendiente_liberacion"])
@@ -198,12 +198,12 @@ export default function ControlCalidad() {
     // PT y Cuarentena pueden estar en estado 10 o 11 (si PT se liberó pero Cuarentena no)
     const { data, error } = await supabase
       .from(st("pedidos_produccion"))
-      .select(`
+      .select(ss(`
         *,
         productos ( articulo, forma_farmaceutica ),
         clientes ( nombre ),
         estados ( nombre )
-      `)
+      `))
       .in("estado_id", [10, 11, 13]) 
       .order("id", { ascending: false });
 
@@ -214,14 +214,14 @@ export default function ControlCalidad() {
   // Cargar áreas para identificar Microbiología
   useEffect(() => {
     async function cargarCatalogos() {
-      const { data: areas } = await supabase.from(st("areas")).select("*");
+      const { data: areas } = await supabase.from(st("areas")).select(ss("*"));
       const mb = (areas || []).find(x => (x.nombre || "").toLowerCase().includes("micro"));
       setMicroAreaId(mb?.id || null);
 
       // Cargar responsables de liberación (CC)
       const { data: resp } = await supabase
         .from(st("responsables_liberacion"))
-        .select("*")
+        .select(ss("*"))
         .eq("area", "control_calidad")
         .eq("activo", true);
       setResponsables(resp || []);
@@ -330,7 +330,7 @@ export default function ControlCalidad() {
     // Buscamos todas las solicitudes de Microbiología
     const { data, error } = await supabase
       .from(st("solicitudes"))
-      .select("id, descripcion, estado_id, consecutivo")
+      .select(ss("id, descripcion, estado_id, consecutivo"))
       .eq("area_id", microAreaId);
 
     if (error) {
@@ -405,7 +405,7 @@ export default function ControlCalidad() {
     // 1) Etapas intermedias liberadas por CC
     const { data: dataEtapas, error: errEtapas } = await supabase
       .from(st("pedido_etapas_liberaciones"))
-      .select(`
+      .select(ss(`
         id,
         created_at,
         comentario,
@@ -420,7 +420,7 @@ export default function ControlCalidad() {
             clientes ( nombre )
           )
         )
-      `)
+      `))
       .eq("rol", "control_calidad")
       .eq("liberada", true)
       .order("created_at", { ascending: false })
@@ -429,7 +429,7 @@ export default function ControlCalidad() {
     // 2) Producto Terminado y Cuarentena
     const { data: dataCC, error: errCC } = await supabase
       .from(st("pedidos_produccion"))
-      .select(`
+      .select(ss(`
         id,
         fecha_liberacion_pt,
         fecha_liberacion_cuarentena,
@@ -438,7 +438,7 @@ export default function ControlCalidad() {
         lote,
         productos ( articulo ),
         clientes ( nombre )
-      `)
+      `))
       .or("fecha_liberacion_pt.not.is.null,fecha_liberacion_cuarentena.not.is.null")
       .order("id", { ascending: false })
       .limit(30);
@@ -504,7 +504,7 @@ export default function ControlCalidad() {
   async function cargarObservaciones(pedidoId) {
     const { data } = await supabase
       .from(st("observaciones_pedido"))
-      .select("*")
+      .select(ss("*"))
       .eq("pedido_id", pedidoId)
       .order("created_at", { ascending: false });
 
@@ -563,7 +563,7 @@ export default function ControlCalidad() {
         // 2) Verificar si ya todos liberaron para cerrar etapa
         const { data: todasLibs, error: errCheck } = await supabase
           .from(st("pedido_etapas_liberaciones"))
-          .select("liberada")
+          .select(ss("liberada"))
           .eq("pedido_etapa_id", selected.id);
 
         if (errCheck) {

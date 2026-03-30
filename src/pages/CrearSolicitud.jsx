@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { supabase, st } from "../api/supabaseClient";
+import { supabase, st, ss } from "../api/supabaseClient";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
 import "./CrearSolicitud.css";
@@ -30,9 +30,9 @@ export default function CrearSolicitud() {
   // ================================
   useEffect(() => {
     async function loadData() {
-      const { data: a } = await supabase.from(st("areas")).select("*");
-      const { data: t } = await supabase.from(st("tipos_solicitud")).select("*");
-      const { data: p } = await supabase.from(st("prioridades")).select("*");
+      const { data: a } = await supabase.from(st("areas")).select(ss("*"));
+      const { data: t } = await supabase.from(st("tipos_solicitud")).select(ss("*"));
+      const { data: p } = await supabase.from(st("prioridades")).select(ss("*"));
 
       setAreas(a || []);
       setTipos(t || []);
@@ -72,7 +72,7 @@ export default function CrearSolicitud() {
     let nextConsecutivo = 1;
     const { data: maxData, error: maxError } = await supabase
       .from(st("solicitudes"))
-      .select("consecutivo")
+      .select(ss("consecutivo"))
       .eq("area_id", form.area_id)
       .order("consecutivo", { ascending: false })
       .limit(1);

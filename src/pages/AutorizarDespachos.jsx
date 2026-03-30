@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { supabase, st } from "../api/supabaseClient";
+import { supabase, st, ss } from "../api/supabaseClient";
 import Navbar from "../components/navbar.jsx";
 import Footer from "../components/Footer";
 import { notifyRoles } from "../api/notifications";
@@ -20,11 +20,11 @@ export default function AutorizarDespachos() {
         setLoading(true);
         const { data } = await supabase
             .from(st("pedidos_produccion"))
-            .select(`
+            .select(ss(`
         *,
         productos ( articulo ),
         clientes ( nombre )
-      `)
+      `))
             .eq("estado_id", 13)
             .eq("asignado_a", "atencion")
             .order("id", { ascending: false });

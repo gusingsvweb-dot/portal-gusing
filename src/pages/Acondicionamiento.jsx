@@ -130,7 +130,7 @@ export default function Acondicionamiento() {
     if (!pedidoId) return;
     const { data, error } = await supabase
       .from(st("pedido_etapas"))
-      .select("*")
+      .select(ss("*"))
       .eq("pedido_id", pedidoId)
       .order("orden", { ascending: true });
 

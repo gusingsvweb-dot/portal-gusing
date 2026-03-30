@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase, st } from "../api/supabaseClient";
+import { supabase, st, ss } from "../api/supabaseClient";
 import { useNotifications } from "../context/NotificationsContext";
 import { useTheme } from "../context/ThemeContext";
 import Navbar from "../components/navbar";
@@ -38,7 +38,7 @@ export default function Clientes() {
             setLoading(true);
             const { data, error } = await supabase
                 .from(st('clientes'))
-                .select('*')
+                .select(ss('*'))
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
@@ -79,7 +79,7 @@ export default function Clientes() {
                         telefono: formData.telefono.trim() || null
                     }
                 ])
-                .select();
+                .select(ss('*'));
 
             if (error) {
                 if (error.code === '23505') { // Código de violación de UNIQUE en PostgreSQL

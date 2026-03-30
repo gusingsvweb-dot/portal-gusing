@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
-import { supabase, st } from "../api/supabaseClient";
+import { supabase, st, ss } from "../api/supabaseClient";
 import { useAuth } from "../context/AuthContext";
 import "./Compras.css";
 
@@ -31,13 +31,13 @@ export default function Compras() {
     // 1(Pendiente), 17(Rev), 18(Ger), 23(CrearOC), 24(RevOC), 19(Comprar), 14(Fin)
     const { data, error } = await supabase
       .from(st("solicitudes"))
-      .select(`
+      .select(ss(`
         *,
         tipos_solicitud ( nombre ),
         prioridades ( nombre ),
         estados ( nombre ),
         areas ( nombre )
-      `)
+      `))
       .eq("area_id", 4)
       .in("estado_id", [1, 14, 17, 18, 19, 23, 24])
       .order("id", { ascending: false });

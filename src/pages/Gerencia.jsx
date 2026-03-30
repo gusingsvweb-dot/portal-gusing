@@ -1,6 +1,6 @@
 // src/pages/Gerencia.jsx
 import React, { useEffect, useState } from "react";
-import { supabase, st } from "../api/supabaseClient";
+import { supabase, st, ss } from "../api/supabaseClient";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
 import "./Gerencia.css";
@@ -24,12 +24,12 @@ export default function Gerencia() {
   async function loadPedidos() {
     const { data, error } = await supabase
       .from(st("pedidos_produccion"))
-      .select(`
+      .select(ss(`
         *,
         productos ( articulo ),
         clientes ( nombre ),
         estados ( nombre )
-      `)
+      `))
       .order("id", { ascending: false });
 
     if (error) {

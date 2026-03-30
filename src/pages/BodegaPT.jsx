@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { supabase, st } from "../api/supabaseClient";
+import { supabase, st, ss } from "../api/supabaseClient";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
 import "../pages/Produccion.css";
@@ -35,7 +35,7 @@ export default function BodegaPT() {
     async function cargarObservaciones(pedidoId) {
         const { data, error } = await supabase
             .from(st("observaciones_pedido"))
-            .select("*")
+            .select(ss("*"))
             .eq("pedido_id", pedidoId)
             .order("created_at", { ascending: false });
 
@@ -68,12 +68,12 @@ export default function BodegaPT() {
         // Pedidos liberados (estado_id >= 11)
         const { data, error } = await supabase
             .from(st("pedidos_produccion"))
-            .select(`
+            .select(ss(`
         *,
         productos ( articulo ),
         clientes ( nombre ),
         estados ( nombre )
-      `)
+      `))
             .in("estado_id", [11, 13])
             .order("id", { ascending: false });
 

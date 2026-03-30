@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import { supabase, st } from "../api/supabaseClient";
+import { supabase, st, ss } from "../api/supabaseClient";
 
 const AuthContext = createContext();
 
@@ -113,7 +113,7 @@ export const AuthProvider = ({ children }) => {
           // Si entra por aquí, buscamos sus datos en public.usuarios
           const { data: dbUser } = await supabase
             .from(st("usuarios"))
-            .select("*")
+            .select(ss("*"))
             .eq("id", data.user.id)
             .single();
 
@@ -135,7 +135,7 @@ export const AuthProvider = ({ children }) => {
       // Intento 2: Buscar por usuario en la tabla personalizada (Legacy)
       const { data, error } = await supabase
         .from(st("usuarios"))
-        .select("*")
+        .select(ss("*"))
         .eq("usuario", usuarioInput)
         .limit(1);
 

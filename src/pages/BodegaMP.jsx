@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { supabase, st } from "../api/supabaseClient";
+import { supabase, st, ss } from "../api/supabaseClient";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
 import "../pages/Produccion.css";
@@ -33,7 +33,7 @@ export default function BodegaMP() {
     async function cargarObservaciones(pedidoId) {
         const { data, error } = await supabase
             .from(st("observaciones_pedido"))
-            .select("*")
+            .select(ss("*"))
             .eq("pedido_id", pedidoId)
             .order("created_at", { ascending: false });
 
@@ -78,13 +78,13 @@ export default function BodegaMP() {
         // Solo pedidos con items pendientes (estado_id < 11)
         const { data, error } = await supabase
             .from(st("pedidos_produccion"))
-            .select(`
+            .select(ss(`
         *,
         productos ( articulo ),
         clientes ( nombre ),
         estados ( nombre ),
         pedidos_bodega_items!inner(id)
-      `)
+      `))
             .lt("estado_id", 11)
             .eq("pedidos_bodega_items.completado", false)
             .order("id", { ascending: false });
@@ -108,12 +108,12 @@ export default function BodegaMP() {
     async function loadHistorial() {
         const { data, error } = await supabase
             .from(st("pedidos_produccion"))
-            .select(`
+            .select(ss(`
         id,
         fecha_entrega_de_materias_primas_e_insumos,
         productos ( articulo ),
         clientes ( nombre )
-      `)
+      `))
             .not("fecha_entrega_de_materias_primas_e_insumos", "is", null)
             .order("fecha_entrega_de_materias_primas_e_insumos", { ascending: false });
 
@@ -147,14 +147,14 @@ export default function BodegaMP() {
         try {
             const { data: items, error: errItems } = await supabase
                 .from(st("pedidos_bodega_items"))
-                .select("*")
+                .select(ss("*"))
                 .eq("pedido_id", p.id)
                 .order("id", { ascending: true });
 
             if (errItems) throw errItems;
 
             if (items && items.length > 0) {
-                const { data: catalogo } = await supabase.from(st("MateriasPrimas")).select("REFERENCIA, ARTICULO, UNIDAD");
+                const { data: catalogo } = await supabase.from(st("MateriasPrimas")).select(ss("REFERENCIA, ARTICULO, UNIDAD"));
                 const itemsConNombre = items.map(it => {
                     const matched = catalogo?.find(c => Number(c.REFERENCIA) === Number(it.referencia_materia_prima));
                     return { ...it, materia_prima: matched || { ARTICULO: `Ref: ${it.referencia_materia_prima}`, UNIDAD: "—" } };

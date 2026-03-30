@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { supabase, st } from "../api/supabaseClient";
+import { supabase, st, ss } from "../api/supabaseClient";
 import Navbar from "../components/navbar.jsx";
 import { useAuth } from "../context/AuthContext";
 import "./CalendarioProduccion.css";
@@ -61,7 +61,7 @@ export default function CalendarioProduccion() {
 
         const { data, error } = await supabase
             .from(st("tareas_produccion"))
-            .select("*")
+            .select(ss("*"))
             .gte("fecha", start)
             .lte("fecha", end);
 

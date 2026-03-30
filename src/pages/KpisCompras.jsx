@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
-import { supabase, st } from "../api/supabaseClient";
+import { supabase, st, ss } from "../api/supabaseClient";
 import "./KpisCompras.css";
 
 export default function KpisCompras() {
@@ -13,14 +13,14 @@ export default function KpisCompras() {
         async function load() {
             const { data, error } = await supabase
                 .from(st("solicitudes"))
-                .select(`
+                .select(ss(`
           id,
           estado_id,
           prioridad_id,
           area_solicitante,
           estados ( nombre ),
           prioridades ( nombre )
-        `)
+        `))
                 .eq("area_id", 4); // Area 4 = Compras
 
             if (!error) {

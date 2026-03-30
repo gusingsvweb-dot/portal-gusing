@@ -228,12 +228,13 @@ export default function Produccion() {
         await supabase
           .from(st("pedidos_bodega_items"))
           .update({ cantidad_devuelta: devueltosActuales })
-          .eq("id", it.id);
+          .eq("id", it.id)
+          .select(ss("*"));
 
         // 2. Update MateriasPrimas (sumar a stock_actual)
         const { data: mpData } = await supabase
           .from(st("MateriasPrimas"))
-          .select("stock_actual")
+          .select(ss("stock_actual"))
           .eq("REFERENCIA", it.referencia_materia_prima)
           .single();
 
@@ -278,7 +279,7 @@ export default function Produccion() {
 
     const { data, error } = await supabase
       .from(st("solicitudes"))
-      .select("id")
+      .select(ss("id"))
       .eq("consecutivo", pedidoId)
       .eq("area_id", areaMicroId)
       .limit(1);
@@ -297,7 +298,7 @@ export default function Produccion() {
     // 1. Cargar items del pedido (SIN JOIN para evitar error de FK)
     const { data: items, error: errItems } = await supabase
       .from(st("pedidos_bodega_items"))
-      .select("*")
+      .select(ss("*"))
       .eq("pedido_id", pedidoId)
       .order("id", { ascending: true });
 
@@ -309,7 +310,7 @@ export default function Produccion() {
     // 2. Cargar catálogo de materias primas para cruzar nombres
     const { data: catalogo, error: errCat } = await supabase
       .from(st("MateriasPrimas"))
-      .select("REFERENCIA, ARTICULO, UNIDAD");
+      .select(ss("REFERENCIA, ARTICULO, UNIDAD"));
 
     if (errCat) {
       console.error("Error cargando catálogo de materias primas:", errCat);
@@ -405,12 +406,12 @@ export default function Produccion() {
   ============================================================ */
   useEffect(() => {
     async function loadSolicitudCatalogos() {
-      const { data: a, error: ea } = await supabase.from(st("areas")).select("*");
-      const { data: t, error: et } = await supabase.from(st("tipos_solicitud")).select("*");
-      const { data: p, error: ep } = await supabase.from(st("prioridades")).select("*");
+      const { data: a, error: ea } = await supabase.from(st("areas")).select(ss("*"));
+      const { data: t, error: et } = await supabase.from(st("tipos_solicitud")).select(ss("*"));
+      const { data: p, error: ep } = await supabase.from(st("prioridades")).select(ss("*"));
       const { data: f, error: ef } = await supabase
         .from(st("flujos_forma"))
-        .select("*")
+        .select(ss("*"))
         .eq("activo", true);
 
       if (ea) console.error("Error areas:", ea);
@@ -435,7 +436,7 @@ export default function Produccion() {
   }, []);
 
   async function loadMateriales() {
-    const { data, error } = await supabase.from(st("MateriasPrimas")).select("*").order("ARTICULO", { ascending: true });
+    const { data, error } = await supabase.from(st("MateriasPrimas")).select(ss("*")).order("ARTICULO", { ascending: true });
     if (error) console.error("Error cargando materias primas:", error);
     else setMaterialesCatalogo(data || []);
   }
@@ -594,7 +595,7 @@ export default function Produccion() {
   async function cargarObservaciones(pedidoId) {
     const { data, error } = await supabase
       .from(st("observaciones_pedido"))
-      .select("*")
+      .select(ss("*"))
       .eq("pedido_id", pedidoId)
       .order("created_at", { ascending: false });
 
@@ -615,7 +616,7 @@ export default function Produccion() {
 
     const { data, error } = await supabase
       .from(st("pedido_etapas"))
-      .select("*, pedido_etapas_liberaciones(*)")
+      .select(ss("*, pedido_etapas_liberaciones(*)"))
       .eq("pedido_id", pedidoId)
       .order("orden", { ascending: true });
 
@@ -915,7 +916,7 @@ export default function Produccion() {
     // 0) Si ya existen, no duplicar
     const { data: ya, error: errYa } = await supabase
       .from(st("pedido_etapas"))
-      .select("id")
+      .select(ss("id"))
       .eq("pedido_id", pedido.id)
       .limit(1);
 
@@ -948,7 +949,7 @@ export default function Produccion() {
     // para obtener el ID exacto y asegurarnos que existe en BD al momento de crear.
     const { data: flujo, error: errFlujo } = await supabase
       .from(st("flujos_forma"))
-      .select("id, forma_farmaceutica, activo")
+      .select(ss("id, forma_farmaceutica, activo"))
       .ilike("forma_farmaceutica", forma.trim())   // ayuda por mayúsculas
       .eq("activo", true)
       .limit(1)
@@ -979,7 +980,7 @@ export default function Produccion() {
     // 2) Traer catálogo de etapas del flujo
     const { data: cat, error: errCat } = await supabase
       .from(st("flujos_forma_etapas"))
-      .select("flujo_id, orden, nombre, requiere_liberacion, rol_liberador")
+      .select(ss("flujo_id, orden, nombre, requiere_liberacion, rol_liberador"))
       .eq("flujo_id", flujo.id)
       .order("orden", { ascending: true });
 
@@ -1032,7 +1033,7 @@ export default function Produccion() {
     // 4) Crear liberaciones pendientes para las que requieren liberación
     const { data: creadas, error: errCreadas } = await supabase
       .from(st("pedido_etapas"))
-      .select("id, rol_liberador, requiere_liberacion")
+      .select(ss("id, rol_liberador, requiere_liberacion"))
       .eq("pedido_id", pedido.id)
       .eq("requiere_liberacion", true);
 

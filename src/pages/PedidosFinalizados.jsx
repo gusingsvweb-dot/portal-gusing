@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { supabase, st } from "../api/supabaseClient";
+import { supabase, st, ss } from "../api/supabaseClient";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
 import "./PedidosFinalizados.css";
@@ -23,12 +23,12 @@ export default function PedidosFinalizados() {
   async function loadPedidos() {
     const { data, error } = await supabase
       .from(st("pedidos_produccion"))
-      .select(`
+      .select(ss(`
         *,
         productos ( articulo ),
         clientes ( nombre ),
         estados ( nombre )
-      `)
+      `))
       .in("estado_id", [12, 22])
       .order("id", { ascending: false });
 
@@ -42,7 +42,7 @@ export default function PedidosFinalizados() {
 
   // Cargar productos para filtro
   async function loadProductos() {
-    const { data } = await supabase.from(st("productos")).select("id, articulo");
+    const { data } = await supabase.from(st("productos")).select(ss("id, articulo"));
     setListaProductos(data || []);
   }
 

@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
-import { supabase, st } from "../api/supabaseClient";
+import { supabase, st, ss } from "../api/supabaseClient";
 import { useAuth } from "../context/AuthContext";
 import "./GestionCalidad.css";
 
@@ -28,13 +28,13 @@ export default function GestionCalidad() {
  async function loadSolicitudes() {
   const { data, error } = await supabase
     .from(st("solicitudes"))
-    .select(`
+    .select(ss(`
       *,
       tipos_solicitud ( nombre ),
       prioridades ( nombre ),
       estados ( nombre ),
       areas ( nombre )
-    `)
+    `))
     .eq("area_id", 4)
     .eq("estado_id", 1)  // SOLO pendientes, NO 17
     .order("id", { ascending: false });
@@ -49,14 +49,14 @@ export default function GestionCalidad() {
   async function loadHistorial() {
     const { data, error } = await supabase
       .from(st("solicitudes"))
-      .select(`
+      .select(ss(`
         id,
         consecutivo,
         created_at,
         area_solicitante,
         usuario_id,
         tipos_solicitud ( nombre )
-      `)
+      `))
       .eq("area_id", 4)
       .not("consecutivo", "is", null)
       .order("consecutivo", { ascending: false });
@@ -80,7 +80,7 @@ export default function GestionCalidad() {
     // último consecutivo del área
     const { data: ultimo } = await supabase
       .from(st("solicitudes"))
-      .select("consecutivo")
+      .select(ss("consecutivo"))
       .eq("area_id", selected.area_id)
       .not("consecutivo", "is", null)
       .order("consecutivo", { ascending: false })

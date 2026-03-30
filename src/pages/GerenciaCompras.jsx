@@ -1,6 +1,6 @@
 // src/pages/GerenciaCompras.jsx
 import React, { useEffect, useMemo, useState } from "react";
-import { supabase, st } from "../api/supabaseClient";
+import { supabase, st, ss } from "../api/supabaseClient";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
 import { useAuth } from "../context/AuthContext";
@@ -27,13 +27,13 @@ export default function GerenciaCompras() {
     // OJO: Traemos todo el flujo de supervision
     const { data, error } = await supabase
       .from(st("solicitudes"))
-      .select(`
+      .select(ss(`
         *,
         tipos_solicitud ( nombre ),
         prioridades ( nombre ),
         estados ( nombre ),
         areas ( nombre )
-      `)
+      `))
       .eq("area_id", 4) // destino Compras
       .in("estado_id", [14, 18, 19, 23, 24])
       .order("id", { ascending: false });
