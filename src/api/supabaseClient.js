@@ -39,9 +39,9 @@ export const ss = (selectString) => {
   let result = selectString;
   relationships.forEach(rel => {
     // Regex para encontrar la relación al inicio de una línea o después de una coma/espacio/salto de línea
-    // y que NO tenga ya un alias definido.
-    const regex = new RegExp(`(^|[\\\\s,])(${rel})(\\\\s*[\\\\(\\\\)])`, 'g');
-    result = result.replace(regex, `$1$2:NO_$2$3`);
+    // capturando también espacios opcionales para preservar el formato.
+    const regex = new RegExp(`(^|[\\\\s,])(\\\\s*)(${rel})(\\\\s*[\\\\(\\\\)])`, 'g');
+    result = result.replace(regex, `$1$2$3:NO_$3$4`);
   });
 
   return result;
