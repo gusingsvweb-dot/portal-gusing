@@ -74,10 +74,10 @@ export default function PedidosFinalizados() {
       filtroProducto === "todos" ||
       p.productos?.articulo === filtroProducto;
 
-    const fecha = p.fecha_entrega_bodega || p.fecha_liberacion_pt;
+    const fecha = p.fecha_entrega_cliente || p.fecha_entrega_bodega || p.fecha_liberacion_pt;
     const coincideFecha =
-      (!fechaInicio || fecha >= fechaInicio) &&
-      (!fechaFin || fecha <= fechaFin);
+      (!fechaInicio || (fecha && fecha >= fechaInicio)) &&
+      (!fechaFin || (fecha && fecha <= fechaFin));
 
     return (
       coincideTexto &&
@@ -184,7 +184,7 @@ export default function PedidosFinalizados() {
               <h4>{p.productos?.articulo}</h4>
               <p><strong>Cliente:</strong> {p.clientes?.nombre}</p>
               <p><strong>Cantidad:</strong> {p.cantidad}</p>
-              <p><strong>Fecha finalización:</strong> {p.fecha_entrega_bodega}</p>
+              <p><strong>Fecha finalización:</strong> {p.fecha_entrega_cliente}</p>
             </div>
           ))}
 
@@ -206,7 +206,7 @@ export default function PedidosFinalizados() {
               <p><strong>Cliente:</strong> {selected.clientes?.nombre}</p>
               <p><strong>Cantidad:</strong> {selected.cantidad}</p>
               <p><strong>Responsable final:</strong> {selected.asignado_a}</p>
-              <p><strong>Finalizado el:</strong> {selected.fecha_entrega_bodega}</p>
+              <p><strong>Finalizado el:</strong> {selected.fecha_entrega_cliente}</p>
             </div>
 
             <h3 style={{ marginTop: 25 }}>📚 Historial</h3>

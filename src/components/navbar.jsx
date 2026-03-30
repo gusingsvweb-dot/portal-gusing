@@ -357,14 +357,6 @@ export default function Navbar() {
           </div>
         )}
 
-        <button
-          className="nav-theme-toggle"
-          onClick={toggleTheme}
-          title={`Activar modo ${theme === 'light' ? 'oscuro' : 'claro'}`}
-        >
-          {theme === 'light' ? '🌙' : '☀️'}
-        </button>
-
         <button className="nav-logout" onClick={cerrarSesion}>
           🚪 Salir
         </button>

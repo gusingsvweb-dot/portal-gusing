@@ -135,6 +135,12 @@ export default function Bodega() {
   async function despacharProducto() {
     if (!selected) return;
 
+    // Bloqueo duro por Cuarentena (Debe estar ANTES del update)
+    if (!selected.fecha_liberacion_cuarentena) {
+        alert("⚠️ No se puede registrar el despacho: El pedido aún no cuenta con la liberación física de Cuarentena por parte de Control de Calidad.");
+        return;
+    }
+
     if (!window.confirm(`¿Confirmar DESPACHO FÍSICO del pedido #${selected.id}?\nEsta acción registrará la fecha de entrega y finalizará el pedido.`)) return;
 
     const hoy = new Date().toISOString().slice(0, 10);
@@ -151,12 +157,6 @@ export default function Bodega() {
     if (error) {
       alert("Error al registrar despacho.");
       return;
-    }
-
-    // Bloqueo duro por Cuarentena
-    if (!selected.fecha_liberacion_cuarentena) {
-        alert("⚠️ No se puede registrar el despacho: El pedido aún no cuenta con la liberación física de Cuarentena por parte de Control de Calidad.");
-        return;
     }
 
     // Notificar a Atención al Cliente
