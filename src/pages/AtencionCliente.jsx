@@ -92,7 +92,7 @@ export default function AtencionCliente() {
       const itemsDetectados = filteredData.map((row, index) => {
         // Buscar columnas (pueden variar nombres ligeramente por espacios)
         const rawConcepto = row["Concepto (Comentario)"] || row["Concepto"] || row["descripcion"];
-        const concepto = rawConcepto ? String(rawConcepto) : "";
+        const concepto = rawConcepto ? String(rawConcepto).trim() : "";
         const cantidadStr = row["Cantidad"] || row["cantidad"] || 0;
 
         // Extraer referencia entre paréntesis (...) o usar el texto completo si no hay
@@ -103,13 +103,18 @@ export default function AtencionCliente() {
         let prod = null;
         if (refDetectada) {
           prod = productos.find(p => {
-            const refP = String(p.referencia).replace(/^0+/, "");
+            const refP = String(p.referencia || "").trim().replace(/^0+/, "");
             const refExcel = String(refDetectada).replace(/^0+/, "");
             return refP === refExcel;
           });
-        } else if (concepto) {
-          // Si no hay paréntesis, buscar por nombre exacto
-          prod = productos.find(p => p.articulo.toLowerCase() === concepto.toLowerCase());
+        }
+        
+        if (!prod && concepto) {
+          // Intentar por nombre exacto (ignorando espacios extras)
+          const cleanConcepto = concepto.toLowerCase().replace(/\s+/g, ' ').trim();
+          prod = productos.find(p => 
+            (p.articulo || "").toLowerCase().replace(/\s+/g, ' ').trim() === cleanConcepto
+          );
         }
 
         return {
@@ -161,14 +166,17 @@ export default function AtencionCliente() {
 
         if (!desc || cant <= 0) continue;
 
-        // Intentar buscar por nombre
-        let prod = localProductos.find(p => p.articulo.toLowerCase() === desc.toLowerCase());
+        // Intentar buscar por nombre (normalizado)
+        const cleanDesc = desc.toLowerCase().replace(/\s+/g, ' ').trim();
+        let prod = localProductos.find(p => 
+          (p.articulo || "").toLowerCase().replace(/\s+/g, ' ').trim() === cleanDesc
+        );
 
         if (!prod) {
           // Generar referencia aleatoria única
-          const timestamp = Date.now().toString(36).slice(-4).toUpperCase();
-          const random = Math.random().toString(36).substring(2, 6).toUpperCase();
-          const refAleatoria = `EXT-${timestamp}${random}`;
+          const timestamp = Date.now().toString().slice(-4);
+          const random = Math.floor(1000 + Math.random() * 9000);
+          const refAleatoria = `99${timestamp}${random}`; // Usar números por si acaso la columna es numérica
           
           const { data: newProd, error: errIns } = await supabase.from(st("productos")).insert([{
             referencia: refAleatoria,
@@ -177,6 +185,8 @@ export default function AtencionCliente() {
 
           if (errIns) {
             console.error("Error creando producto:", errIns);
+            // Si falla con la referencia numérica larga, intentar una más corta o reportar
+            alert(`Error al registrar el producto "${desc}": ${errIns.message}`);
           } else if (newProd && newProd[0]) {
             prod = newProd[0];
             localProductos.push(prod);
