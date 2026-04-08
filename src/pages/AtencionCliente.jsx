@@ -82,7 +82,15 @@ export default function AtencionCliente() {
 
       console.log("📊 Datos crudos del Excel:", data);
 
-      const itemsDetectados = data.map((row, index) => {
+      // 🛑 Filtrar filas: Si dice "SE ENVIA A MEDIDA QUE SALGA DE PRODUCCION", ignorar esa y todo lo siguiente
+      const stopIndex = data.findIndex(row => {
+        const val = row["Concepto (Comentario)"] || row["Concepto"] || row["descripcion"] || "";
+        return String(val).toUpperCase().includes("SE ENVIA A MEDIDA QUE SALGA DE PRODUCCION");
+      });
+
+      const processedData = stopIndex === -1 ? data : data.slice(0, stopIndex);
+
+      const itemsDetectados = processedData.map((row, index) => {
         // Buscar columnas (pueden variar nombres ligeramente por espacios)
         const rawConcepto = row["Concepto (Comentario)"] || row["Concepto"] || row["descripcion"];
         const concepto = rawConcepto ? String(rawConcepto) : "";
@@ -146,6 +154,11 @@ export default function AtencionCliente() {
         const row = rawExcelData[i];
         const desc = String(row[mappingCols.description] || "").trim();
         const cant = Number(row[mappingCols.quantity] || 0);
+
+        // 🛑 Detener si aparece el texto prohibido
+        if (desc.toUpperCase().includes("SE ENVIA A MEDIDA QUE SALGA DE PRODUCCION")) {
+          break;
+        }
 
         if (!desc || cant <= 0) continue;
 
