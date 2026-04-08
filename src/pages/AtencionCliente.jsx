@@ -20,7 +20,7 @@ export default function AtencionCliente() {
     cliente_id: "",
     producto_id: "",
     cantidad: "",
-    prioridad: "Bajo",
+    prioridad: "Muy Alto",
     observaciones: "",
   });
 
@@ -118,7 +118,7 @@ export default function AtencionCliente() {
           articulo: prod ? prod.articulo : (concepto || "Sin Descripción"),
           cantidad: Number(cantidadStr),
           cliente_id: "",
-          prioridad: "Bajo",
+          prioridad: "Muy Alto",
           observaciones: "",
           encontrado: !!prod
         };
@@ -165,8 +165,10 @@ export default function AtencionCliente() {
         let prod = localProductos.find(p => p.articulo.toLowerCase() === desc.toLowerCase());
 
         if (!prod) {
-          // Generar referencia aleatoria y crear producto
-          const refAleatoria = "EXT-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+          // Generar referencia aleatoria única
+          const timestamp = Date.now().toString(36).slice(-4).toUpperCase();
+          const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+          const refAleatoria = `EXT-${timestamp}${random}`;
           
           const { data: newProd, error: errIns } = await supabase.from(st("productos")).insert([{
             referencia: refAleatoria,
@@ -187,7 +189,7 @@ export default function AtencionCliente() {
           articulo: prod ? prod.articulo : desc,
           cantidad: cant,
           cliente_id: "",
-          prioridad: "Bajo",
+          prioridad: "Muy Alto",
           observaciones: "Carga vía Excel (Nuevo Formato)",
           encontrado: !!prod
         });
