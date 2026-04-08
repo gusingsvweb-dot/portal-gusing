@@ -168,7 +168,7 @@ export default function Produccion() {
 
   const materialesFiltrados = useMemo(() => {
     const search = busquedaMP.toLowerCase().trim();
-    
+
     return materialesCatalogo.filter(m => {
       const nombre = (m.ARTICULO || "").toLowerCase();
       const isInactivo = nombre.includes("inactivo");
@@ -183,7 +183,7 @@ export default function Produccion() {
       // 3. Si hay búsqueda, filtrar por nombre o referencia
       const matches = nombre.includes(search) || String(m.REFERENCIA).toLowerCase().includes(search);
       if (matches) return true;
-      
+
       // 4. O si ya está seleccionado (para mantener visibilidad al buscar otra cosa)
       return isSelected;
     });
@@ -348,11 +348,6 @@ export default function Produccion() {
     msg: "",
     action: null, // () => Promise<void>
   });
-
-  // Cancelación
-  const [showCancelModal, setShowCancelModal] = useState(false);
-  const [cancelReason, setCancelReason] = useState("");
-  const [cancelLoading, setCancelLoading] = useState(false);
 
   function pedirConfirmacion(mensaje, accionAsync) {
     setConfirmData({
@@ -519,7 +514,7 @@ export default function Produccion() {
     async function loadEtapasBatch() {
       const { data } = await supabase
         .from(st("pedido_etapas"))
-          .select(ss("*, pedidos_produccion ( id, op, lote, productos(articulo), clientes(nombre) )"))
+        .select(ss("*, pedidos_produccion ( id, op, lote, productos(articulo), clientes(nombre) )"))
         .in("pedido_id", pedidosEnEtapas)
         .neq("estado", "completada");
 
@@ -556,17 +551,17 @@ export default function Produccion() {
   ============================================================ */
   const pedidosFiltrados = useMemo(() => {
     return pedidos.filter((p) => {
-      // Ocultar finalizados (12) y cancelados (22) por defecto (solo ver en Cerrados o si se filtra específicamente)
-      if ((p.estado_id === 12 || p.estado_id === 22) && filtroEstado === "todos") return false;
+      // Ocultar finalizados (12) por defecto (solo ver en Cerrados o si se filtra específicamente)
+      if (p.estado_id === 12 && filtroEstado === "todos") return false;
 
       // Modo Lote vía URL (Filtro Especial)
       if (isModoLoteUrl) {
         const canBatch = p.id && p.estado_id === 8 && (
-          (etapasDict[p.id] || "").toLowerCase().includes("lavado") || 
+          (etapasDict[p.id] || "").toLowerCase().includes("lavado") ||
           (etapasDict[p.id] || "").toLowerCase().includes("despirogeniza")
         );
-        const esEsteril = (p.productos?.forma_farmaceutica || "").toLowerCase().includes("esteril") || 
-                          (p.productos?.forma_farmaceutica || "").toLowerCase().includes("estéril");
+        const esEsteril = (p.productos?.forma_farmaceutica || "").toLowerCase().includes("esteril") ||
+          (p.productos?.forma_farmaceutica || "").toLowerCase().includes("estéril");
         return esEsteril && canBatch;
       }
 
@@ -700,7 +695,7 @@ export default function Produccion() {
     setSelected(data);
     cargarObservaciones(data.id);
     cargarPedidoEtapas(data.id);
-    
+
     // Forzar actualización de la lista de insumos solicitados en este pedido si ya la tenía.
     if (data.fecha_solicitud_materias_primas) {
       await cargarItemsSolicitados(data.id);
@@ -1219,7 +1214,7 @@ export default function Produccion() {
 
     // 1. Filtrar los pedidos seleccionados del estado local
     const seleccionados = pedidos.filter(p => selectedBatchIds.includes(p.id));
-    
+
     // 2. Pedir confirmación
     const listaIds = seleccionados.map(p => `#${p.id}`).join(", ");
     pedirConfirmacion(
@@ -1230,7 +1225,7 @@ export default function Produccion() {
         try {
           // A) Crear la solicitud unificada en la tabla solicitudes
           const descLote = `[LOTE_DESPIROGENIZACION] IDs Seleccionados: ${listaIds}. Solicitado por Producción para proceso conjunto.`;
-          
+
           const { error: errSol } = await supabase.from(st("solicitudes")).insert([
             {
               tipo_solicitud_id: 1, // Análisis Microbiológico
@@ -1629,7 +1624,7 @@ export default function Produccion() {
     }
 
     await reloadSelected();
-    
+
     // 🔔 NOTIFICAR AL NUEVO ASIGNADO (si cambió y no es producción)
     if (update.asignado_a && update.asignado_a !== "produccion") {
       try {
@@ -1769,7 +1764,7 @@ export default function Produccion() {
 
         {etapasLoading && <p style={{ marginTop: 8 }}>Cargando etapas…</p>}
 
-             {!etapasLoading && pedidoEtapas?.length > 0 && (() => {
+        {!etapasLoading && pedidoEtapas?.length > 0 && (() => {
           const etapasVisibles = pedidoEtapas.filter(e => {
             const n = (e.nombre || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
             return !n.includes("particulas visibles");
@@ -1927,59 +1922,6 @@ export default function Produccion() {
   /* ===========================================================
      FORMULARIO DINÁMICO POR ESTADO (flujo viejo)
   ============================================================ */
-  /* ===========================================================
-     CANCELACIÓN DE PEDIDO
-  =========================================================== */
-  function clickCancelarPedido() {
-    setCancelReason("");
-    setShowCancelModal(true);
-  }
-
-  async function confirmarCancelacion() {
-    if (!cancelReason.trim()) {
-      alert("Debes escribir un motivo para cancelar.");
-      return;
-    }
-    setCancelLoading(true);
-
-    try {
-      // 1. Insertar observación con motivo
-      const { error: errObs } = await supabase.from(st("observaciones_pedido")).insert([{
-        pedido_id: selected.id,
-        usuario: usuarioActual?.usuario || usuarioActual?.email || "Producción",
-        observacion: `🚫 PEDIDO CANCELADO. Motivo: ${cancelReason}`
-      }]);
-      if (errObs) throw errObs;
-
-      // 2. Actualizar estado a 22 (Cancelado)
-      const { error: errUpd } = await supabase
-        .from(st("pedidos_produccion"))
-        .update({ estado_id: 22, asignado_a: null })
-        .eq("id", selected.id);
-
-      if (errUpd) throw errUpd;
-
-      // 3. Recargar
-      await loadPedidos();
-      if (selected) {
-        setSelected(prev => ({ ...prev, estado_id: 22 }));
-      }
-      setShowCancelModal(false);
-
-      // Feedback opcional
-      setConfirmData({
-        isOpen: true,
-        msg: "El pedido ha sido cancelado exitosamente.",
-        action: () => Promise.resolve()
-      });
-
-    } catch (error) {
-      console.error("Error cancelando:", error);
-      alert("Error al cancelar el pedido.");
-    } finally {
-      setCancelLoading(false);
-    }
-  }
 
   function renderEtapa() {
     if (!selected) return null;
@@ -2317,11 +2259,11 @@ export default function Produccion() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
             <h2 style={{ margin: 0 }}>🏭 Producción</h2>
             {isModoLoteUrl && (
-              <span style={{ 
-                background: '#2563eb', 
-                color: 'white', 
-                fontSize: '11px', 
-                padding: '4px 8px', 
+              <span style={{
+                background: '#2563eb',
+                color: 'white',
+                fontSize: '11px',
+                padding: '4px 8px',
                 borderRadius: '12px',
                 fontWeight: '600',
                 display: 'flex',
@@ -2334,9 +2276,9 @@ export default function Produccion() {
           </div>
 
           {isModoLoteUrl && (
-            <div style={{ 
-              marginBottom: '10px', 
-              fontSize: '12px', 
+            <div style={{
+              marginBottom: '10px',
+              fontSize: '12px',
               color: '#64748b',
               background: '#f8fafc',
               padding: '8px',
@@ -2347,7 +2289,7 @@ export default function Produccion() {
               alignItems: 'center'
             }}>
               <span>Viendo solo estériles para batch</span>
-              <button 
+              <button
                 style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', fontWeight: 'bold' }}
                 onClick={() => setSearchParams({})}
               >
@@ -2358,11 +2300,11 @@ export default function Produccion() {
 
           {/* BARRA DE ACCIONES EN LOTE (Sticky superior) */}
           {selectedBatchIds.length >= 2 && (
-            <div className="fadeIn" style={{ 
-              background: '#eff6ff', 
-              padding: '12px', 
-              borderRadius: '8px', 
-              marginBottom: '15px', 
+            <div className="fadeIn" style={{
+              background: '#eff6ff',
+              padding: '12px',
+              borderRadius: '8px',
+              marginBottom: '15px',
               border: '1px solid #bfdbfe',
               boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
               position: 'sticky',
@@ -2370,19 +2312,19 @@ export default function Produccion() {
               zIndex: 100
             }}>
               <p style={{ fontSize: '13px', color: '#1e40af', margin: '0 0 10px 0', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <span style={{ background: '#2563eb', color: 'white', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}>{selectedBatchIds.length}</span> 
+                <span style={{ background: '#2563eb', color: 'white', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}>{selectedBatchIds.length}</span>
                 Pedidos seleccionados para Lote
               </p>
               <div style={{ display: 'flex', gap: '8px' }}>
-                <button 
-                  className="pc-btn" 
+                <button
+                  className="pc-btn"
                   style={{ background: '#2563eb', fontSize: '12px', padding: '6px 12px', flex: 1, border: 'none' }}
                   onClick={crearSolicitudLoteMB}
                 >
                   🧫 Solicitar Lote MB
                 </button>
-                <button 
-                  className="pc-btn" 
+                <button
+                  className="pc-btn"
                   style={{ background: '#f8fafc', color: '#64748b', fontSize: '12px', padding: '6px 12px', border: '1px solid #cbd5e1' }}
                   onClick={() => setSelectedBatchIds([])}
                 >
@@ -2446,56 +2388,56 @@ export default function Produccion() {
               >
                 {/* CHECKBOX PARA LOTE (Solo si aplica) */}
                 {esEsteril && (
-                  <div 
+                  <div
                     style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 10 }}
                     onClick={(e) => {
                       e.stopPropagation();
-                      setSelectedBatchIds(prev => 
+                      setSelectedBatchIds(prev =>
                         prev.includes(p.id) ? prev.filter(id => id !== p.id) : [...prev, p.id]
                       );
                     }}
                   >
-                    <input 
-                      type="checkbox" 
-                      checked={inBatch} 
-                      onChange={() => {}} // handled by div click
+                    <input
+                      type="checkbox"
+                      checked={inBatch}
+                      onChange={() => { }} // handled by div click
                       style={{ cursor: 'pointer', transform: 'scale(1.2)' }}
                     />
                   </div>
                 )}
                 <span className="pc-id-tag">#{p.id}</span>
 
-              <h4>{p.productos?.articulo}</h4>
-              <small style={{ display: 'block', color: '#64748b', marginBottom: '4px' }}>
-                orden produccion: {p.op || "—"}
-              </small>
-              <p>
-                <strong>Cliente:</strong> {p.clientes?.nombre}
-              </p>
-              <p>
-                <strong>Cantidad:</strong> {p.cantidad}
-              </p>
-              <p>
-                <strong>Estado:</strong>{" "}
-                <span className={`pc-chip estado-${p.estado_id}`}>
-                  {p.estado_id === 8 ? (
-                    (() => {
-                      const raw = etapasDict[p.id];
-                      if (!raw) return "Cargando etapa...";
-                      return `Etapa: ${raw}`;
-                    })()
-                  ) : (
-                    p.estados?.nombre
-                  )}
-                </span>
-              </p>
+                <h4>{p.productos?.articulo}</h4>
+                <small style={{ display: 'block', color: '#64748b', marginBottom: '4px' }}>
+                  orden produccion: {p.op || "—"}
+                </small>
+                <p>
+                  <strong>Cliente:</strong> {p.clientes?.nombre}
+                </p>
+                <p>
+                  <strong>Cantidad:</strong> {p.cantidad}
+                </p>
+                <p>
+                  <strong>Estado:</strong>{" "}
+                  <span className={`pc-chip estado-${p.estado_id}`}>
+                    {p.estado_id === 8 ? (
+                      (() => {
+                        const raw = etapasDict[p.id];
+                        if (!raw) return "Cargando etapa...";
+                        return `Etapa: ${raw}`;
+                      })()
+                    ) : (
+                      p.estados?.nombre
+                    )}
+                  </span>
+                </p>
 
-              <p style={{ fontSize: "13px", marginTop: "6px", color: "#475569" }}>
-                <strong>Asignado a:</strong> {p.asignado_a || "Sin asignar"}
-              </p>
-                </div>
-              );
-            })}
+                <p style={{ fontSize: "13px", marginTop: "6px", color: "#475569" }}>
+                  <strong>Asignado a:</strong> {p.asignado_a || "Sin asignar"}
+                </p>
+              </div>
+            );
+          })}
 
           {pedidosFiltrados.length === 0 && (
             <p style={{ marginTop: 10, fontSize: 14, color: "#777" }}>
@@ -2615,8 +2557,8 @@ export default function Produccion() {
                         Fecha solicitud
                       </label>
                       <div style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#f8fafc', fontSize: '13px', minHeight: '35px', display: 'flex', alignItems: 'center' }}>
-                        {selected.fecha_solicitud_materias_primas 
-                          ? new Date(selected.fecha_solicitud_materias_primas).toLocaleString("es-CO", { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) 
+                        {selected.fecha_solicitud_materias_primas
+                          ? new Date(selected.fecha_solicitud_materias_primas).toLocaleString("es-CO", { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
                           : "—"}
                       </div>
                     </div>
@@ -2625,8 +2567,8 @@ export default function Produccion() {
                         Fecha entrega
                       </label>
                       <div style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#f8fafc', fontSize: '13px', minHeight: '35px', display: 'flex', alignItems: 'center' }}>
-                        {selected.fecha_entrega_de_materias_primas_e_insumos 
-                          ? new Date(selected.fecha_entrega_de_materias_primas_e_insumos).toLocaleString("es-CO", { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) 
+                        {selected.fecha_entrega_de_materias_primas_e_insumos
+                          ? new Date(selected.fecha_entrega_de_materias_primas_e_insumos).toLocaleString("es-CO", { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
                           : "—"}
                       </div>
                     </div>
@@ -2802,60 +2744,10 @@ export default function Produccion() {
               <div className="pc-historial">{renderHistorial()}</div>
             </CollapsibleSection>
 
-            {/* BOTÓN CANCELAR (Solo Producción y si no está cancelado/finalizado) */}
-            {esProduccion && selected.estado_id !== 22 && selected.estado_id !== 12 && (
-              <button
-                className="pc-btn"
-                style={{ marginTop: 20, background: "#ef4444" }}
-                onClick={clickCancelarPedido}
-              >
-                🛑 Cancelar Pedido
-              </button>
-            )}
           </div>
         )}
       </div>
 
-      {/* ==========================
-          MODAL CANCELACIÓN
-         ========================== */}
-      {showCancelModal && (
-        <div className="modal-backdrop" style={{ zIndex: 10001 }}>
-          <div className="modal-card">
-            <h3>🛑 Cancelar Pedido #{selected?.id}</h3>
-            <p style={{ marginTop: 6, color: "#64748b", fontSize: "14px" }}>
-              Esta acción detendrá el flujo del pedido. Es obligatorio indicar el motivo.
-            </p>
-
-            <textarea
-              rows="3"
-              placeholder="Indica el motivo de la cancelación..."
-              value={cancelReason}
-              onChange={(e) => setCancelReason(e.target.value)}
-              style={{ marginTop: 15, borderColor: "#ef4444" }}
-            />
-
-            <div style={{ display: "flex", gap: 10, marginTop: 18, justifyContent: "flex-end" }}>
-              <button
-                className="pc-btn"
-                style={{ background: "#f1f5f9", color: "#475569" }}
-                onClick={() => setShowCancelModal(false)}
-                disabled={cancelLoading}
-              >
-                Volver
-              </button>
-              <button
-                className="pc-btn"
-                style={{ background: "#ef4444" }}
-                onClick={confirmarCancelacion}
-                disabled={cancelLoading}
-              >
-                {cancelLoading ? "Cancelando..." : "Confirmar Cancelación"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ==========================
           MODAL SOLICITUD MB (sin Área)
@@ -3035,7 +2927,7 @@ export default function Produccion() {
                 }}
               />
               {busquedaMP && (
-                <button 
+                <button
                   onClick={() => setBusquedaMP("")}
                   style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'none', cursor: 'pointer', color: '#64748b' }}
                 >
@@ -3127,7 +3019,7 @@ export default function Produccion() {
                 className="cal-btn save"
                 onClick={async () => {
                   const success = await solicitarMateriasPrimas(true, true);
-                  if (success !== false) setBusquedaMP(""); 
+                  if (success !== false) setBusquedaMP("");
                 }}
                 disabled={materialesLoading || materialesSeleccionados.every(m => !m.referencia)}
               >

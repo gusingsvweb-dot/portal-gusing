@@ -28,6 +28,12 @@ export default function AtencionCliente() {
   const [bulkItems, setBulkItems] = useState([]); // Array de pedidos detectados
   const [clienteGlobal, setClienteGlobal] = useState(""); // Para asignar a todos con un clic
 
+  // 🗺️ Estados para mapeo dinámico
+  const [showMappingModal, setShowMappingModal] = useState(false);
+  const [excelHeaders, setExcelHeaders] = useState([]);
+  const [rawExcelData, setRawExcelData] = useState([]);
+  const [mappingCols, setMappingCols] = useState({ description: "", quantity: "" });
+
   useEffect(() => {
     cargarClientes();
     cargarProductos();
@@ -63,43 +69,56 @@ export default function AtencionCliente() {
       const ws = wb.Sheets[wsname];
       const data = XLSX.utils.sheet_to_json(ws);
 
+      // 🔍 Detectar si es el formato complejo
+      const allHeaders = XLSX.utils.sheet_to_json(ws, { header: 1 })[0] || [];
+      const hasComplexHeaders = allHeaders.includes("Vr. Unit") || allHeaders.includes("Bodega") || allHeaders.includes("Concepto (Comentario)");
+
+      if (hasComplexHeaders && !allHeaders.includes("descripcion")) {
+        setExcelHeaders(allHeaders);
+        setRawExcelData(data);
+        setShowMappingModal(true);
+        return;
+      }
+
       console.log("📊 Datos crudos del Excel:", data);
 
       const itemsDetectados = data.map((row, index) => {
         // Buscar columnas (pueden variar nombres ligeramente por espacios)
-        const rawConcepto = row["Concepto (Comentario)"] || row["Concepto"];
+        const rawConcepto = row["Concepto (Comentario)"] || row["Concepto"] || row["descripcion"];
         const concepto = rawConcepto ? String(rawConcepto) : "";
-        const cantidadStr = row["Cantidad"] || 0;
+        const cantidadStr = row["Cantidad"] || row["cantidad"] || 0;
 
-        // Extraer referencia entre paréntesis (...)
+        // Extraer referencia entre paréntesis (...) o usar el texto completo si no hay
         const match = concepto.match(/\(([^)]+)\)/);
         const refDetectada = match ? match[1].trim() : null;
 
-        // Buscar producto con coincidencia flexible (ignorando ceros a la izquierda y tipos)
+        // Buscar producto con coincidencia flexible
         let prod = null;
         if (refDetectada) {
           prod = productos.find(p => {
-            // Normalizar a string y quitar ceros al inicio para comparar
             const refP = String(p.referencia).replace(/^0+/, "");
             const refExcel = String(refDetectada).replace(/^0+/, "");
             return refP === refExcel;
           });
+        } else if (concepto) {
+          // Si no hay paréntesis, buscar por nombre exacto
+          prod = productos.find(p => p.articulo.toLowerCase() === concepto.toLowerCase());
         }
 
         return {
           idTmp: index,
-          referencia: refDetectada,
-          articulo: prod ? prod.articulo : (refDetectada ? `Ref: ${refDetectada} (No encontrada)` : "Sin Referencia"),
+          referencia: prod ? prod.referencia : (refDetectada || "N/A"),
+          articulo: prod ? prod.articulo : (concepto || "Sin Descripción"),
           cantidad: Number(cantidadStr),
           cliente_id: "",
           prioridad: "Bajo",
           observaciones: "",
           encontrado: !!prod
         };
-      }).filter(item => item.referencia && item.cantidad > 0); // Filtrar filas vacías o sin ref
+      }).filter(item => (item.referencia !== "N/A" || item.articulo !== "Sin Descripción") && item.cantidad > 0);
 
       if (itemsDetectados.length === 0) {
-        alert("No se detectaron productos válidos con formato (referencia) en la columna 'Concepto'.");
+        alert("No se detectaron productos válidos. Asegúrate de que el archivo tenga columnas de descripción/concepto y cantidad.");
         return;
       }
 
@@ -108,6 +127,70 @@ export default function AtencionCliente() {
     };
     reader.readAsBinaryString(file);
     e.target.value = null; // Reset input
+  };
+
+  const procesarMapeo = async () => {
+    if (!mappingCols.description || !mappingCols.quantity) {
+      alert("Por favor, selecciona las columnas para Descripción y Cantidad.");
+      return;
+    }
+
+    setLoading(true);
+    setMensaje("⏳ Procesando mapeo y verificando productos...");
+    
+    try {
+      let localProductos = [...productos];
+      const nuevosItems = [];
+
+      for (let i = 0; i < rawExcelData.length; i++) {
+        const row = rawExcelData[i];
+        const desc = String(row[mappingCols.description] || "").trim();
+        const cant = Number(row[mappingCols.quantity] || 0);
+
+        if (!desc || cant <= 0) continue;
+
+        // Intentar buscar por nombre
+        let prod = localProductos.find(p => p.articulo.toLowerCase() === desc.toLowerCase());
+
+        if (!prod) {
+          // Generar referencia aleatoria y crear producto
+          const refAleatoria = "EXT-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+          
+          const { data: newProd, error: errIns } = await supabase.from(st("productos")).insert([{
+            referencia: refAleatoria,
+            articulo: desc
+          }]).select(ss("*"));
+
+          if (errIns) {
+            console.error("Error creando producto:", errIns);
+          } else if (newProd && newProd[0]) {
+            prod = newProd[0];
+            localProductos.push(prod);
+          }
+        }
+
+        nuevosItems.push({
+          idTmp: i,
+          referencia: prod ? prod.referencia : "N/A",
+          articulo: prod ? prod.articulo : desc,
+          cantidad: cant,
+          cliente_id: "",
+          prioridad: "Bajo",
+          observaciones: "Carga vía Excel (Nuevo Formato)",
+          encontrado: !!prod
+        });
+      }
+
+      setProductos(localProductos);
+      setBulkItems(nuevosItems);
+      setShowMappingModal(false);
+      setMensaje("");
+    } catch (err) {
+      console.error(err);
+      alert("Error procesando el mapeo: " + err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const updateBulkItem = (id, field, value) => {
@@ -395,6 +478,47 @@ export default function AtencionCliente() {
           )}
         </div>
       </div>
+
+      {/* 🗺️ MODAL DE MAPEO */}
+      {showMappingModal && (
+        <div className="ac-modal-overlay">
+          <div className="ac-modal-content fadeIn">
+            <h3 className="ac-modal-title">🗺️ Mapear Columnas de Excel</h3>
+            <p className="ac-modal-subtitle">Selecciona qué columnas corresponden a cada dato necesario.</p>
+            
+            <div className="ac-form">
+              <div className="ac-field">
+                <label>Columna de Producto / Descripción</label>
+                <select 
+                  value={mappingCols.description} 
+                  onChange={(e) => setMappingCols({ ...mappingCols, description: e.target.value })}
+                >
+                  <option value="">Seleccione columna...</option>
+                  {excelHeaders.map(h => <option key={h} value={h}>{h}</option>)}
+                </select>
+              </div>
+
+              <div className="ac-field">
+                <label>Columna de Cantidad</label>
+                <select 
+                  value={mappingCols.quantity} 
+                  onChange={(e) => setMappingCols({ ...mappingCols, quantity: e.target.value })}
+                >
+                  <option value="">Seleccione columna...</option>
+                  {excelHeaders.map(h => <option key={h} value={h}>{h}</option>)}
+                </select>
+              </div>
+
+              <div className="ac-bulk-actions" style={{ marginTop: '20px' }}>
+                <button className="ac-bulk-btn-cancel" onClick={() => setShowMappingModal(false)}>Cancelar</button>
+                <button className="ac-btn" style={{ padding: '10px 30px' }} onClick={procesarMapeo} disabled={loading}>
+                  {loading ? "Procesando..." : "Continuar"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </>

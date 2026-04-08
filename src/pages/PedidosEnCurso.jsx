@@ -20,6 +20,12 @@ export default function PedidosEnCurso() {
   const [observaciones, setObservaciones] = useState([]);
   const [nuevaObs, setNuevaObs] = useState("");
   const [usuarioActual, setUsuarioActual] = useState(null);
+  const esAtencionCliente = usuarioActual?.rol === "atencion";
+
+  // MODAL CANCELACIÓN
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelLoading, setCancelLoading] = useState(false);
 
   // Filtros
   const [searchCliente, setSearchCliente] = useState("");
@@ -263,27 +269,58 @@ export default function PedidosEnCurso() {
   }
 
   async function agregarObservacion() {
-    if (!nuevaObs.trim() || !selected || !usuarioActual) return;
-
-    const obs = {
+    if (!nuevaObs.trim()) return;
+    const { error } = await supabase.from(st("observaciones_pedido")).insert([{
       pedido_id: selected.id,
-      usuario: usuarioActual.usuario, // viene de tu AuthContext / localStorage
-      observacion: nuevaObs.trim(),
-    };
-
-    const { error } = await supabase
-      .from(st("observaciones_pedido"))
-      .insert([obs]);
-
+      usuario: usuarioActual?.usuario || usuarioActual?.email || "Atención al Cliente",
+      observacion: nuevaObs
+    }]);
     if (error) {
-      console.error("❌ ERROR insertando observación:", error);
-      return;
+      console.error("❌ Error agregando observacion:", error);
+      alert("Error al agregar observación.");
+    } else {
+      setNuevaObs("");
+      cargarObservaciones(selected.id);
     }
-
-    setNuevaObs("");
-    cargarObservaciones(selected.id);
   }
 
+  async function confirmarCancelacion() {
+    if (!cancelReason.trim()) {
+      alert("Debes escribir un motivo para cancelar.");
+      return;
+    }
+    setCancelLoading(true);
+
+    try {
+      // 1. Insertar observación con motivo
+      const { error: errObs } = await supabase.from(st("observaciones_pedido")).insert([{
+        pedido_id: selected.id,
+        usuario: usuarioActual?.usuario || usuarioActual?.email || "Atención al Cliente",
+        observacion: `🚫 PEDIDO CANCELADO. Motivo: ${cancelReason}`
+      }]);
+      if (errObs) throw errObs;
+
+      // 2. Actualizar estado a 22 (Cancelado)
+      const { error: errUpd } = await supabase
+        .from(st("pedidos_produccion"))
+        .update({ estado_id: 22, asignado_a: null })
+        .eq("id", selected.id);
+
+      if (errUpd) throw errUpd;
+
+      // 3. Recargar
+      await cargarPedidos(false);
+      setSelected(prev => ({ ...prev, estado_id: 22 }));
+      setShowCancelModal(false);
+      alert("El pedido ha sido cancelado exitosamente.");
+
+    } catch (error) {
+      console.error("Error cancelando:", error);
+      alert("Error al cancelar el pedido.");
+    } finally {
+      setCancelLoading(false);
+    }
+  }
   // =======================
   // Render
   // =======================
@@ -468,13 +505,69 @@ export default function PedidosEnCurso() {
               {renderHistorial()}
             </div>
 
+            {/* BOTÓN CANCELAR (Solo Atención al Cliente y si no está cancelado/finalizado) */}
+            {esAtencionCliente && selected.estado_id !== 22 && selected.estado_id !== 12 && (
+              <button
+                className="pc-btn"
+                style={{
+                  marginTop: 20,
+                  background: "#ef4444",
+                  width: "100%",
+                  padding: "12px",
+                  borderRadius: "8px",
+                  color: "white",
+                  fontWeight: "bold",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+                onClick={() => {
+                  setCancelReason("");
+                  setShowCancelModal(true);
+                }}
+              >
+                🛑 Cancelar Pedido
+              </button>
+            )}
           </div>
-
         )}
-
-
-
       </div>
+
+      {/* MODAL CANCELACIÓN */}
+      {showCancelModal && (
+        <div className="modal-backdrop" style={{ zIndex: 10001, position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="modal-card" style={{ background: 'white', padding: '30px', borderRadius: '12px', width: '90%', maxWidth: '500px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}>
+            <h3 style={{ color: '#1e293b', marginBottom: '10px' }}>🛑 Cancelar Pedido #{selected?.id}</h3>
+            <p style={{ color: "#64748b", fontSize: "14px", marginBottom: '15px' }}>
+              Esta acción detendrá el flujo del pedido. Es obligatorio indicar el motivo.
+            </p>
+
+            <textarea
+              rows="3"
+              placeholder="Indica el motivo de la cancelación..."
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ef4444', marginBottom: '20px', outline: 'none' }}
+            />
+
+            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+              <button
+                style={{ padding: '10px 20px', borderRadius: '8px', border: '1px solid #e2e8f0', background: 'white', color: '#475569', cursor: 'pointer' }}
+                onClick={() => setShowCancelModal(false)}
+                disabled={cancelLoading}
+              >
+                Volver
+              </button>
+              <button
+                style={{ padding: '10px 20px', borderRadius: '8px', border: 'none', background: '#ef4444', color: 'white', cursor: 'pointer' }}
+                onClick={confirmarCancelacion}
+                disabled={cancelLoading}
+              >
+                {cancelLoading ? "Cancelando..." : "Confirmar Cancelación"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </>

@@ -126,7 +126,7 @@ export default function Acondicionamiento() {
   /* ===========================================================
       CARGAR ETAPAS INTERNAS DEL PEDIDO
   ============================================================ */
-  async function cargarEtapasPedido(pedidoId) {
+  async function cargarEtapasPedido(pedidoId, fullPedido = null) {
     if (!pedidoId) return;
     const { data, error } = await supabase
       .from(st("pedido_etapas"))
@@ -140,11 +140,29 @@ export default function Acondicionamiento() {
     }
     setPedidoEtapas(data || []);
 
-    // Buscar específicamente la etapa de partículas visibles
-    const particulas = (data || []).find(e =>
-      e.nombre.toLowerCase().includes("partículas visibles")
-    );
-    setEtapaParticulas(particulas || null);
+    // Buscar específicamente la etapa de partículas visibles SOLO si es solución estéril
+    const pedido = fullPedido || selected;
+    if (!pedido) return;
+
+    const formaFarm = (pedido.productos?.forma_farmaceutica || "").toUpperCase();
+    const nombreProd = (pedido.productos?.articulo || "").toUpperCase();
+
+    // Condición: Forma farmacéutica estéril O Nombre del producto contiene AMPOLLA o VIAL
+    const esEsteril = 
+      formaFarm.includes("SOLUCIONES ESTERILES (AMPOLLAS - VIALES)") || 
+      formaFarm.includes("AMPOLLAS") || 
+      formaFarm.includes("VIALES") ||
+      nombreProd.includes("AMPOLLA") ||
+      nombreProd.includes("VIAL");
+
+    if (esEsteril) {
+      const particulas = (data || []).find(e =>
+        e.nombre.toLowerCase().includes("partículas visibles")
+      );
+      setEtapaParticulas(particulas || null);
+    } else {
+      setEtapaParticulas(null);
+    }
   }
 
   /* ===========================================================
@@ -152,8 +170,8 @@ export default function Acondicionamiento() {
   ============================================================ */
   function seleccionarPedido(p) {
     setSelected(p);
+    cargarEtapasPedido(p.id, p);
     cargarObservaciones(p.id);
-    cargarEtapasPedido(p.id);
   }
 
   /* ===========================================================
@@ -489,16 +507,16 @@ export default function Acondicionamiento() {
               </p>
             </div>
 
-            {/* NUEVO: Panel de Revisión de Partículas Visibles */}
+            {/* NUEVO: Panel de Revisión de Partículas Visibles (Solo para soluciones estériles) */}
             {etapaParticulas && etapaParticulas.estado !== "completada" && (
               <div className="pc-box" style={{ borderLeft: '4px solid #f59e0b', background: '#fffbeb', marginBottom: '20px' }}>
                 <h4 style={{ color: '#92400e' }}>🔍 Revisión de Partículas Visibles Pendiente</h4>
                 <p style={{ fontSize: '13px', color: '#b45309', marginBottom: '15px' }}>
                   Este es un producto de <strong>Soluciones Estériles</strong>. Debe realizar y registrar la revisión de partículas antes de proceder con el acondicionamiento.
                 </p>
-                <button 
-                  className="pc-btn" 
-                  style={{ background: '#f59e0b' }} 
+                <button
+                  className="pc-btn"
+                  style={{ background: '#f59e0b' }}
                   onClick={liberarParticulas}
                   disabled={loadingAction}
                 >
