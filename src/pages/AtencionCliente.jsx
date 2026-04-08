@@ -69,28 +69,27 @@ export default function AtencionCliente() {
       const ws = wb.Sheets[wsname];
       const data = XLSX.utils.sheet_to_json(ws);
 
+      console.log("📊 Datos crudos del Excel:", data);
+
+      // 🛑 Filtrado universal: Si alguna columna contiene "SE ENVIA A MEDIDA QUE SALGA DE PRODUCCION", cortar ahí.
+      const stopWord = "SE ENVIA A MEDIDA QUE SALGA DE PRODUCCION";
+      const stopIndex = data.findIndex(row => 
+        Object.values(row).some(val => String(val).toUpperCase().includes(stopWord))
+      );
+      const filteredData = stopIndex === -1 ? data : data.slice(0, stopIndex);
+
       // 🔍 Detectar si es el formato complejo
       const allHeaders = XLSX.utils.sheet_to_json(ws, { header: 1 })[0] || [];
       const hasComplexHeaders = allHeaders.includes("Vr. Unit") || allHeaders.includes("Bodega") || allHeaders.includes("Concepto (Comentario)");
 
       if (hasComplexHeaders && !allHeaders.includes("descripcion")) {
         setExcelHeaders(allHeaders);
-        setRawExcelData(data);
+        setRawExcelData(filteredData);
         setShowMappingModal(true);
         return;
       }
 
-      console.log("📊 Datos crudos del Excel:", data);
-
-      // 🛑 Filtrar filas: Si dice "SE ENVIA A MEDIDA QUE SALGA DE PRODUCCION", ignorar esa y todo lo siguiente
-      const stopIndex = data.findIndex(row => {
-        const val = row["Concepto (Comentario)"] || row["Concepto"] || row["descripcion"] || "";
-        return String(val).toUpperCase().includes("SE ENVIA A MEDIDA QUE SALGA DE PRODUCCION");
-      });
-
-      const processedData = stopIndex === -1 ? data : data.slice(0, stopIndex);
-
-      const itemsDetectados = processedData.map((row, index) => {
+      const itemsDetectados = filteredData.map((row, index) => {
         // Buscar columnas (pueden variar nombres ligeramente por espacios)
         const rawConcepto = row["Concepto (Comentario)"] || row["Concepto"] || row["descripcion"];
         const concepto = rawConcepto ? String(rawConcepto) : "";
@@ -155,7 +154,7 @@ export default function AtencionCliente() {
         const desc = String(row[mappingCols.description] || "").trim();
         const cant = Number(row[mappingCols.quantity] || 0);
 
-        // 🛑 Detener si aparece el texto prohibido
+        // 🛑 Detener si aparece el texto prohibido (doble verificación por seguridad)
         if (desc.toUpperCase().includes("SE ENVIA A MEDIDA QUE SALGA DE PRODUCCION")) {
           break;
         }
