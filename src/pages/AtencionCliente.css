@@ -108,10 +108,24 @@
 }
 
 .ac-bulk-table td {
-  padding: 12px;
+  padding: 10px;
   text-align: left;
   border-bottom: 1px solid var(--border-color);
   color: var(--text-main);
+  vertical-align: middle;
+}
+
+/* Estilización de inputs dentro de la tabla */
+.ac-bulk-table input[type="number"],
+.ac-bulk-table input[type="text"],
+.ac-bulk-table select {
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-input);
+  color: var(--text-main);
+  font-size: 14px;
+  width: 100%;
 }
 
 .ac-bulk-upload-zone {
