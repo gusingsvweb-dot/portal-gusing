@@ -44,9 +44,9 @@ export default function ConsolidadoPedidos() {
             .from(st("pedidos_produccion"))
             .select(ss(`
         *,
-        cliente:clientes(nombre),
-        producto:productos(articulo),
-        estado:estados(nombre)
+        clientes(nombre),
+        productos(articulo),
+        estados(nombre)
       `))
             .order("id", { ascending: false });
 
@@ -126,9 +126,9 @@ export default function ConsolidadoPedidos() {
     const pedidosFiltrados = useMemo(() => {
         return pedidos.filter(p => {
             const matchId = String(p.id).includes(filtros.id);
-            const matchCliente = (p.cliente?.nombre || "").toLowerCase().includes(filtros.cliente.toLowerCase());
-            const matchProducto = (p.producto?.articulo || "").toLowerCase().includes(filtros.producto.toLowerCase());
-            const matchEstado = (p.estado?.nombre || "").toLowerCase().includes(filtros.estado.toLowerCase());
+            const matchCliente = (p.clientes?.nombre || "").toLowerCase().includes(filtros.cliente.toLowerCase());
+            const matchProducto = (p.productos?.articulo || "").toLowerCase().includes(filtros.producto.toLowerCase());
+            const matchEstado = (p.estados?.nombre || "").toLowerCase().includes(filtros.estado.toLowerCase());
             const matchPrioridad = (p.prioridad || "").toLowerCase().includes(filtros.prioridad.toLowerCase());
             const matchFecha = (p.fecha_recepcion_cliente || "").includes(filtros.fecha);
 
@@ -159,10 +159,10 @@ export default function ConsolidadoPedidos() {
             const c = getCalculatedValues(p);
             return [
                 p.id,
-                p.cliente?.nombre || "",
-                p.producto?.articulo || "",
+                p.clientes?.nombre || "",
+                p.productos?.articulo || "",
                 p.prioridad || "",
-                p.estado?.nombre || "",
+                p.estados?.nombre || "",
                 p.cantidad,
                 p.fecha_recepcion_cliente || "",
                 p.entregado_cliente ? "SI" : "NO",
@@ -289,9 +289,9 @@ export default function ConsolidadoPedidos() {
                                         return (
                                             <tr key={p.id}>
                                                 <td className="sticky-col col-id id-cell">#{p.id}</td>
-                                                <td className="sticky-col col-cliente">{p.cliente?.nombre || "Sin Cliente"}</td>
-                                                <td className="sticky-col col-producto" title={p.producto?.articulo}>
-                                                    {p.producto?.articulo || "Sin Producto"}
+                                                <td className="sticky-col col-cliente">{p.clientes?.nombre || "Sin Cliente"}</td>
+                                                <td className="sticky-col col-producto" title={p.productos?.articulo}>
+                                                    {p.productos?.articulo || "Sin Producto"}
                                                 </td>
 
                                                 <td>
@@ -301,7 +301,7 @@ export default function ConsolidadoPedidos() {
                                                 </td>
                                                 <td>
                                                     <span className="state-label">
-                                                        {p.estado?.nombre || "-"}
+                                                        {p.estados?.nombre || "-"}
                                                     </span>
                                                 </td>
                                                 <td style={{ textAlign: "center" }}>{p.cantidad}</td>
