@@ -88,6 +88,7 @@ export default function Navbar() {
           { to: "/gerenciamantenimiento", label: "Mantenimiento", icon: "🛠️" },
           { to: "/consolidado", label: "Consolidado", icon: "📊" },
           { to: "/dashboard", label: "Métricas", icon: "📈" },
+          { to: "/kpis-mantenimiento", label: "Mantenimiento Stats", icon: "🛠️" },
         ],
       },
 
@@ -118,6 +119,7 @@ export default function Navbar() {
       bodega_pt: {
         title: "Bodega PT",
         items: [
+          { to: "/atencion", label: "Registro", icon: "📝" },
           { to: "/bodega-pt", label: "Despachos", icon: "🚚" },
           { to: "/pedidos-curso", label: "En Curso", icon: "⚡" },
         ],
@@ -136,6 +138,10 @@ export default function Navbar() {
         title: "Mantenimiento",
         items: [
           { to: "/mantenimiento", label: "Órdenes", icon: "🛠️" },
+          { to: "/mantenimiento/activos", label: "Activos", icon: "🏢" },
+          { to: "/mantenimiento/plan-maestro", label: "Plan Maestro", icon: "📅" },
+          { to: "/mantenimiento/repuestos", label: "Repuestos", icon: "⚙️" },
+          { to: "/mantenimiento/proveedores", label: "Proveedores", icon: "🚚" },
           { to: "/kpis-mantenimiento", label: "KPIs", icon: "📈" },
         ],
       },

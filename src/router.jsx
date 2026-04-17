@@ -29,6 +29,10 @@ import AutorizarDespachos from "./pages/AutorizarDespachos";
 import GarantiaCalidad from "./pages/GarantiaCalidad";
 import BodegaMP from "./pages/BodegaMP";
 import BodegaPT from "./pages/BodegaPT";
+import GestionActivos from "./pages/GestionActivos.jsx";
+import GestionProveedoresMant from "./pages/GestionProveedoresMant.jsx";
+import PlanMaestro from "./pages/PlanMaestro.jsx";
+import GestionRepuestos from "./pages/GestionRepuestos.jsx";
 
 
 export default function AppRouter() {
@@ -153,7 +157,7 @@ export default function AppRouter() {
       <Route
         path="/atencion"
         element={
-          usuarioActual?.rol === "atencion"
+          ["atencion", "bodega_pt"].includes(usuarioActual?.rol)
             ? <Atencion />
             : <Navigate to="/" />
         }
@@ -287,6 +291,42 @@ export default function AppRouter() {
         element={
           ["mantenimiento"].includes(usuarioActual?.rol)
             ? <Mantenimiento />
+            : <Navigate to="/" />
+        }
+      />
+
+      <Route
+        path="/mantenimiento/activos"
+        element={
+          ["mantenimiento", "gerencia"].includes(usuarioActual?.rol)
+            ? <GestionActivos />
+            : <Navigate to="/" />
+        }
+      />
+
+      <Route
+        path="/mantenimiento/proveedores"
+        element={
+          ["mantenimiento", "gerencia"].includes(usuarioActual?.rol)
+            ? <GestionProveedoresMant />
+            : <Navigate to="/" />
+        }
+      />
+
+      <Route
+        path="/mantenimiento/plan-maestro"
+        element={
+          ["mantenimiento", "gerencia"].includes(usuarioActual?.rol)
+            ? <PlanMaestro />
+            : <Navigate to="/" />
+        }
+      />
+
+      <Route
+        path="/mantenimiento/repuestos"
+        element={
+          ["mantenimiento", "gerencia"].includes(usuarioActual?.rol)
+            ? <GestionRepuestos />
             : <Navigate to="/" />
         }
       />

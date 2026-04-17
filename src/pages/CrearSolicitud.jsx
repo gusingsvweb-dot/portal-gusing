@@ -20,6 +20,9 @@ export default function CrearSolicitud() {
     prioridad_id: "",
     descripcion: "",
     justificacion: "",
+    activo_id: "", 
+    maint_category: "", // Nuevo para jerarquía
+    maint_type: "",      // Nuevo para jerarquía
   });
 
   const [loading, setLoading] = useState(false);
@@ -52,8 +55,8 @@ export default function CrearSolicitud() {
       );
       setTiposFiltrados(filtrados);
 
-      // Reset tipo si cambió el área
-      setForm((prev) => ({ ...prev, tipo_solicitud_id: "" }));
+      // Reset campos si cambió el área
+      setForm((prev) => ({ ...prev, tipo_solicitud_id: "", activo_id: "" }));
     }
   }, [form.area_id, tipos]);
 
@@ -61,7 +64,17 @@ export default function CrearSolicitud() {
   // Guardar solicitud
   // ================================
   async function enviarSolicitud() {
-    if (!form.area_id || !form.tipo_solicitud_id || !form.prioridad_id || !form.descripcion) {
+    // Validación obligatoria de jerarquía para Mantenimiento (Area ID 1)
+    if (Number(form.area_id) === 1) {
+      if (!form.maint_category || !form.maint_type || !form.activo_id) {
+        return setMensaje("⚠️ Para mantenimiento debes seleccionar Categoría, Tipo y Activo.");
+      }
+    } else if (!form.tipo_solicitud_id) {
+      // Para otras áreas, el tipo estándar es obligatorio
+      return setMensaje("⚠️ Debes seleccionar el tipo de solicitud.");
+    }
+
+    if (!form.prioridad_id || !form.descripcion) {
       return setMensaje("⚠️ Debes completar todos los campos obligatorios.");
     }
 
@@ -81,18 +94,32 @@ export default function CrearSolicitud() {
       nextConsecutivo = (maxData[0].consecutivo || 0) + 1;
     }
 
-    // 2. Insertar solicitud
+    // 2. Determinar tipo_solicitud_id final
+    let finalTipoId = form.tipo_solicitud_id;
+    let finalDesc = form.descripcion;
+
+    if (Number(form.area_id) === 1) {
+      // Mapear maint_type al ID real en la tabla tipos_solicitud
+      const mapped = tiposFiltrados.find(t => t.nombre.toLowerCase().includes(form.maint_type.toLowerCase()));
+      if (mapped) finalTipoId = mapped.id;
+      
+      // Enriquecer descripción
+      finalDesc = `[${form.maint_category.toUpperCase()} - ${form.maint_type.toUpperCase()}] \n${form.descripcion}`;
+    }
+
+    // 3. Insertar solicitud
     const { error } = await supabase.from(st("solicitudes")).insert([
       {
-        tipo_solicitud_id: form.tipo_solicitud_id,
+        tipo_solicitud_id: finalTipoId,
         prioridad_id: form.prioridad_id,
-        descripcion: form.descripcion,
+        descripcion: finalDesc,
         justificacion: form.justificacion,
         usuario_id: usuarioActual?.usuario,
         area_solicitante: usuarioActual?.areadetrabajo,
         estado_id: 1, // Pendiente
         area_id: form.area_id,
-        consecutivo: nextConsecutivo, // <--- Guardamos el consecutivo calculado
+        consecutivo: nextConsecutivo,
+        activo_id: form.activo_id || null, 
       },
     ]);
 
@@ -104,9 +131,7 @@ export default function CrearSolicitud() {
     }
 
     setMensaje("✅ Solicitud enviada correctamente.");
-    console.log("DEBUG usuarioActual:", usuarioActual);
-
-
+    
     // Reset formulario
     setForm({
       area_id: "",
@@ -114,6 +139,7 @@ export default function CrearSolicitud() {
       prioridad_id: "",
       descripcion: "",
       justificacion: "",
+      activo_id: "",
     });
   }
 
@@ -143,25 +169,28 @@ export default function CrearSolicitud() {
             ))}
           </select>
 
-          {/* Tipo de solicitud */}
-          <label>Tipo de solicitud *</label>
-          <select
-            value={form.tipo_solicitud_id}
-            onChange={(e) =>
-              setForm({ ...form, tipo_solicitud_id: e.target.value })
-            }
-            disabled={!form.area_id}
-          >
-            <option value="">
-              {form.area_id ? "Seleccione..." : "Primero seleccione un área"}
-            </option>
-
-            {tiposFiltrados.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.nombre}
-              </option>
-            ))}
-          </select>
+          {/* Tipo de solicitud (OCULTO para Mantenimiento) */}
+          {Number(form.area_id) !== 1 && (
+            <>
+              <label>Tipo de solicitud *</label>
+              <select
+                value={form.tipo_solicitud_id}
+                onChange={(e) =>
+                  setForm({ ...form, tipo_solicitud_id: e.target.value })
+                }
+                disabled={!form.area_id}
+              >
+                <option value="">
+                  {form.area_id ? "Seleccione..." : "Primero seleccione un área"}
+                </option>
+                {tiposFiltrados.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.nombre}
+                  </option>
+                ))}
+              </select>
+            </>
+          )}
 
           {/* Prioridad */}
           <label>Prioridad *</label>
@@ -179,10 +208,11 @@ export default function CrearSolicitud() {
             ))}
           </select>
 
-          {/* Campos dinámicos según el tipo */}
-          {form.tipo_solicitud_id && (
+          {/* Campos dinámicos según el área/tipo */}
+          {(form.tipo_solicitud_id || Number(form.area_id) === 1) && (
             <CamposDinamicos
               tipo={form.tipo_solicitud_id}
+              areaId={form.area_id}
               form={form}
               setForm={setForm}
             />

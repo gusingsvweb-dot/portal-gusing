@@ -18,10 +18,14 @@ export default function KpisMantenimiento() {
           estado_id,
           prioridad_id,
           area_solicitante,
+          created_at,
+          fecha_cierre,
+          tipo_solicitud_id,
           estados ( nombre ),
-          prioridades ( nombre )
+          prioridades ( nombre ),
+          activos ( criticidad )
         `))
-                .eq("area_id", 1); // Area 1 = Mantenimiento
+                .eq("area_id", 1); 
 
             if (!error) {
                 setSolicitudes(data || []);
@@ -59,7 +63,29 @@ export default function KpisMantenimiento() {
             return acc;
         }, {});
 
-        return { total, porEstado, porPrioridad, porArea };
+        // MTTR (Mean Time to Repair) - Solo finalizados
+        const finalizados = solicitudes.filter(s => s.fecha_cierre && s.created_at);
+        let totalHoras = 0;
+        finalizados.forEach(s => {
+            const horas = (new Date(s.fecha_cierre) - new Date(s.created_at)) / (1000 * 60 * 60);
+            totalHoras += horas;
+        });
+        const mttr = finalizados.length > 0 ? (totalHoras / finalizados.length).toFixed(1) : 0;
+
+        // Distribución por Criticidad
+        const porCriticidad = solicitudes.reduce((acc, curr) => {
+            const c = curr.activos?.criticidad || "Baja";
+            acc[c] = (acc[c] || 0) + 1;
+            return acc;
+        }, {});
+
+        // Ratio Preventivo vs Correctivo
+        const ratio = {
+            preventivo: solicitudes.filter(s => s.tipo_solicitud_id === 2).length, // Asumido 2
+            correctivo: solicitudes.filter(s => s.tipo_solicitud_id === 1).length, // Asumido 1
+        };
+
+        return { total, porEstado, porPrioridad, porArea, mttr, porCriticidad, ratio };
     }, [solicitudes]);
 
     if (loading) return <div className="kpi-loading">Cargando métricas...</div>;
@@ -73,19 +99,19 @@ export default function KpisMantenimiento() {
                 {/* TARJETAS RESUMEN */}
                 <div className="kpi-summary-grid">
                     <CardStat title="Total Solicitudes" value={stats.total} icon="🔧" color="blue" />
-                    <CardStat title="Pendientes" value={stats.porEstado.pendientes} icon="⏳" color="orange" />
-                    <CardStat title="En Proceso" value={stats.porEstado.proceso} icon="⚙️" color="indigo" />
-                    <CardStat title="Finalizadas" value={stats.porEstado.finalizados} icon="✅" color="green" />
+                    <CardStat title="MTTR (Horas Promedio)" value={stats.mttr} icon="⏱️" color="red" />
+                    <CardStat title="Preventivos" value={stats.ratio.preventivo} icon="📅" color="purple" />
+                    <CardStat title="Correctivos" value={stats.ratio.correctivo} icon="🚨" color="orange" />
                 </div>
 
                 <div className="kpi-charts-row">
 
-                    {/* CHART: Por Prioridad */}
+                    {/* CHART: Por Criticidad */}
                     <div className="kpi-chart-card">
-                        <h3>Distribución por Prioridad</h3>
+                        <h3>Impacto por Criticidad</h3>
                         <div className="chart-bars">
-                            {Object.entries(stats.porPrioridad).map(([key, val]) => (
-                                <BarItem key={key} label={key} value={val} total={stats.total} colorClass="bar-priority" />
+                            {Object.entries(stats.porCriticidad).map(([key, val]) => (
+                                <BarItem key={key} label={key} value={val} total={stats.total} colorClass={`bar-${key.toLowerCase()}`} />
                             ))}
                         </div>
                     </div>
@@ -95,8 +121,8 @@ export default function KpisMantenimiento() {
                         <h3>Solicitudes por Área</h3>
                         <div className="chart-bars">
                             {Object.entries(stats.porArea)
-                                .sort((a, b) => b[1] - a[1]) // Ordenar mayor a menor
-                                .slice(0, 6) // Top 6 areas
+                                .sort((a, b) => b[1] - a[1]) 
+                                .slice(0, 5) 
                                 .map(([key, val]) => (
                                     <BarItem key={key} label={key} value={val} total={stats.total} colorClass="bar-area" />
                                 ))}

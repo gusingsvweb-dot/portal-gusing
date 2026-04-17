@@ -1,0 +1,88 @@
+/* Reusing global premium styles from Mantenimiento.css */
+
+.assets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+/* Specific styles for Assets that were not moved to global */
+.asset-icon-box {
+  width: 60px;
+  height: 60px;
+  background: #f8fafc;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  margin-bottom: 16px;
+  transition: transform 0.3s ease;
+}
+
+.asset-details h4 {
+  margin: 0 0 5px 0;
+  font-size: 1.1rem;
+  color: var(--mant-text-main);
+}
+
+.asset-location {
+  font-size: 0.85rem;
+  color: var(--mant-text-muted);
+  margin-bottom: 15px;
+}
+
+.asset-code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  background: #f1f5f9;
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: #64748b;
+}
+
+.btn-view-rutina {
+  margin-top: auto;
+  padding-top: 15px;
+  color: var(--mant-primary);
+  font-weight: 700;
+  font-size: 0.85rem;
+  background: none;
+  border: none;
+  border-top: 1px solid var(--mant-border);
+  width: 100%;
+  cursor: pointer;
+}
+
+/* Modal specific overrides if any */
+.header-with-icon {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.big-icon {
+  font-size: 2.5rem;
+}
+
+/* Criticality Badges */
+.v2-crit-badge {
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 99px;
+  letter-spacing: 0.05em;
+}
+
+.v2-crit-badge.crit-alta { background: #fee2e2; color: #ef4444; border: 1px solid #fecaca; }
+.v2-crit-badge.crit-media { background: #ffedd5; color: #f59e0b; border: 1px solid #fed7aa; }
+.v2-crit-badge.crit-baja { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
+
+/* Criticality Card Glows */
+.asset-card-v2.crit-alta { border-left: 5px solid #ef4444; }
+.asset-card-v2.crit-media { border-left: 5px solid #f59e0b; }
+.asset-card-v2.crit-baja { border-left: 5px solid #cbd5e1; }
+
+.asset-card-v2.crit-alta:hover { box-shadow: 0 20px 40px -15px rgba(239, 68, 68, 0.15); }
