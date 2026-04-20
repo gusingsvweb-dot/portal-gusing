@@ -9,7 +9,8 @@ function normalize(str) {
         .replace(/[\u0300-\u036f]/g, "");
 }
 
-const MAX_VISIBLE = 80; // Límite de resultados visibles para performance
+const MAX_RESULTS = 80; // Máximo de resultados al filtrar
+const MAX_PREVIEW = 20; // Máximo de resultados sin filtro (estado inicial)
 
 export default function SearchableSelect({
     options,
@@ -17,91 +18,90 @@ export default function SearchableSelect({
     onChange,
     placeholder = "Escribe para buscar...",
     name,
-    required = false
+    required = false,
+    initialSearch = "",  // Nuevo: término de búsqueda inicial (ej: del buscador global)
 }) {
     const [isOpen, setIsOpen] = useState(false);
-    const [searchTerm, setSearchTerm] = useState("");
+    const [searchTerm, setSearchTerm] = useState(initialSearch || "");
     const wrapperRef = useRef(null);
     const inputRef = useRef(null);
-    // Guardamos el valor "comprometido" para no confundir con lo que se está escribiendo
-    const committedValueRef = useRef(value);
 
     // Encontrar la etiqueta del valor seleccionado
     const selectedOption = options.find(opt => String(opt.value) === String(value));
 
-    // Solo actualizar el texto visible cuando cambia el `value` externamente
-    // (no cuando el usuario está escribiendo)
+    // Cuando se cierra el dropdown: restaurar texto al ítem seleccionado (o limpiar)
     useEffect(() => {
         if (!isOpen) {
-            // Sólo sincronizamos si el valor realmente es diferente al que teníamos
-            if (value !== committedValueRef.current) {
-                committedValueRef.current = value;
-            }
             if (selectedOption) {
                 setSearchTerm(selectedOption.label);
             } else {
-                setSearchTerm("");
+                // Si no hay selección, dejar el initialSearch para que el usuario sepa qué está buscando
+                setSearchTerm(initialSearch || "");
             }
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [value, isOpen]); // NO incluimos selectedOption para evitar loops
+    }, [isOpen]);
+
+    // Si el valor externo cambia (selección desde afuera), sincronizar
+    useEffect(() => {
+        if (!isOpen && selectedOption) {
+            setSearchTerm(selectedOption.label);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [value]);
+
+    // Si el initialSearch cambia (usuario escribe en buscador global) y el dropdown está cerrado sin selección
+    useEffect(() => {
+        if (!isOpen && !value) {
+            setSearchTerm(initialSearch || "");
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [initialSearch]);
 
     // Cerrar al hacer clic fuera
     useEffect(() => {
         function handleClickOutside(event) {
             if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
                 setIsOpen(false);
-                // Restaurar texto al item seleccionado (o vacío)
-                setSearchTerm(selectedOption ? selectedOption.label : "");
             }
         }
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedOption?.label]); // solo la label, no el objeto
+    }, []);
 
-    // Filtrar opciones con normalización de texto (sin tildes)
+    // Filtrar opciones con normalización (sin tildes)
     const normSearch = normalize(searchTerm);
     const filteredOptions = normSearch
         ? options.filter(opt => normalize(opt.label).includes(normSearch))
         : options;
 
-    // Si no hay texto escrito, mostrar solo 20 items como sugerencia inicial
-    const MAX_WHEN_EMPTY = 20;
-    const limit = normSearch ? MAX_VISIBLE : MAX_WHEN_EMPTY;
+    // Limitar resultados
+    const limit = normSearch ? MAX_RESULTS : MAX_PREVIEW;
     const visibleOptions = filteredOptions.slice(0, limit);
     const hiddenCount = filteredOptions.length - visibleOptions.length;
 
     const handleSelect = useCallback((option) => {
-        committedValueRef.current = option.value;
         onChange({ target: { name, value: option.value } });
         setSearchTerm(option.label);
         setIsOpen(false);
     }, [onChange, name]);
 
     const handleInputChange = (e) => {
-        const val = e.target.value;
-        setSearchTerm(val);
+        setSearchTerm(e.target.value);
         setIsOpen(true);
-        // Si borra todo el texto, limpiar la selección
-        if (val === "") {
-            committedValueRef.current = "";
+        if (e.target.value === "") {
             onChange({ target: { name, value: "" } });
         }
     };
 
     const handleFocus = () => {
         setIsOpen(true);
-        // Seleccionar todo el texto para que el usuario pueda escribir directamente encima
+        // Seleccionar todo para que el usuario pueda escribir directamente encima
         setTimeout(() => {
             if (inputRef.current) {
                 inputRef.current.select();
             }
         }, 0);
-    };
-
-    const handleBlur = () => {
-        // No hacemos nada aquí; el cierre lo maneja el click outside
     };
 
     return (
@@ -114,7 +114,6 @@ export default function SearchableSelect({
                 value={searchTerm}
                 onChange={handleInputChange}
                 onFocus={handleFocus}
-                onBlur={handleBlur}
                 autoComplete="off"
                 required={required && !value}
             />
@@ -125,10 +124,10 @@ export default function SearchableSelect({
                         <>
                             {visibleOptions.map((opt) => (
                                 <li
-                                    key={opt.value + "_" + opt.label.slice(0, 10)}
+                                    key={opt.value + "|" + opt.label}
                                     className={`searchable-option ${String(opt.value) === String(value) ? "selected" : ""}`}
                                     onMouseDown={(e) => {
-                                        e.preventDefault(); // Evitar que blur cierre antes de seleccionar
+                                        e.preventDefault();
                                         handleSelect(opt);
                                     }}
                                 >
@@ -136,7 +135,10 @@ export default function SearchableSelect({
                                 </li>
                             ))}
                             {hiddenCount > 0 && (
-                                <li className="searchable-no-results" style={{ fontStyle: "italic", color: "#6366f1" }}>
+                                <li
+                                    className="searchable-no-results"
+                                    style={{ fontStyle: "italic", color: "#6366f1", cursor: "default" }}
+                                >
                                     +{hiddenCount} más — escribe para filtrar
                                 </li>
                             )}

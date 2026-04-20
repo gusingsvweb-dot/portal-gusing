@@ -3022,6 +3022,7 @@ export default function Produccion() {
                             value={String(item.referencia || "")}
                             onChange={(e) => handleMaterialChange(index, 'referencia', e.target.value)}
                             placeholder="Buscar insumo..."
+                            initialSearch={busquedaMP}
                           />
                         </div>
                       </td>
