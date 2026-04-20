@@ -190,6 +190,25 @@ export default function Produccion() {
     });
   }, [materialesCatalogo, busquedaMP, materialesSeleccionados]);
 
+  // Catálogo completo para el SearchableSelect (sin filtrar por busquedaMP).
+  // Cada dropdown busca en TODOS los items independientemente del buscador global.
+  const materialesOpciones = useMemo(() => {
+    return materialesCatalogo
+      .filter(m => {
+        const nombre = (m.ARTICULO || "").toLowerCase();
+        const isInactivo = nombre.includes("inactivo");
+        if (isInactivo) {
+          return materialesSeleccionados.some(sel => String(sel.referencia) === String(m.REFERENCIA));
+        }
+        return true;
+      })
+      .map(m => ({
+        value: String(m.REFERENCIA),
+        label: `${m.ARTICULO} (${m.UNIDAD})`
+      }));
+  }, [materialesCatalogo, materialesSeleccionados]);
+
+
   // NUEVO: Ver estado de solicitud (readonly para Produccion)
   const [itemsSolicitados, setItemsSolicitados] = useState([]);
   const [showItemsSolicitados, setShowItemsSolicitados] = useState(false);
@@ -2999,10 +3018,7 @@ export default function Produccion() {
                       <td style={{ padding: '8px' }}>
                         <div style={{ position: 'relative', zIndex: 1000 - index }}>
                           <SearchableSelect
-                            options={materialesFiltrados.map(m => ({
-                              value: String(m.REFERENCIA),
-                              label: `${m.ARTICULO} (${m.UNIDAD})`
-                            }))}
+                            options={materialesOpciones}
                             value={String(item.referencia || "")}
                             onChange={(e) => handleMaterialChange(index, 'referencia', e.target.value)}
                             placeholder="Buscar insumo..."
