@@ -431,9 +431,34 @@ export default function Produccion() {
   }, []);
 
   async function loadMateriales() {
-    const { data, error } = await supabase.from(st("MateriasPrimas")).select(ss("*")).order("ARTICULO", { ascending: true });
-    if (error) console.error("Error cargando materias primas:", error);
-    else setMaterialesCatalogo(data || []);
+    // Supabase limita a 1000 filas por defecto. Cargamos en lotes hasta traer todo.
+    const PAGE_SIZE = 1000;
+    let allData = [];
+    let from = 0;
+    let hasMore = true;
+
+    while (hasMore) {
+      const { data, error } = await supabase
+        .from(st("MateriasPrimas"))
+        .select(ss("*"))
+        .order("ARTICULO", { ascending: true })
+        .range(from, from + PAGE_SIZE - 1);
+
+      if (error) {
+        console.error("Error cargando materias primas:", error);
+        break;
+      }
+
+      allData = allData.concat(data || []);
+
+      if (!data || data.length < PAGE_SIZE) {
+        hasMore = false;
+      } else {
+        from += PAGE_SIZE;
+      }
+    }
+
+    setMaterialesCatalogo(allData);
   }
 
   /* ===========================================================
