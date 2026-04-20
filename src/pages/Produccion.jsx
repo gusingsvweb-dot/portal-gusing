@@ -8,6 +8,7 @@ import { useAuth } from "../context/AuthContext";
 import "./Produccion.css";
 import CamposDinamicos from "../components/solicitudes/CamposDinamicos";
 import { notifyRoles, checkAndNotifyFlowCompletion } from "../api/notifications";
+import SearchableSelect from "../components/SearchableSelect";
 
 /* ===========================================================
    MAPA DE ESTADOS → SIGUIENTE ESTADO
@@ -2935,33 +2936,54 @@ export default function Produccion() {
               }
             </p>
 
-            <div style={{ marginBottom: '15px', position: 'relative' }}>
-              <input
-                type="text"
-                placeholder="🔍 Buscar materia prima (nombre o referencia)..."
-                value={busquedaMP}
-                onChange={(e) => setBusquedaMP(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  borderRadius: '8px',
-                  border: '1px solid #cbd5e1',
-                  fontSize: '14px',
-                  background: '#f8fafc',
-                  color: '#0f172a'
-                }}
-              />
-              {busquedaMP && (
-                <button
-                  onClick={() => setBusquedaMP("")}
-                  style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'none', cursor: 'pointer', color: '#64748b' }}
-                >
-                  ✕
-                </button>
-              )}
+            <div style={{ marginBottom: '10px', position: 'relative' }}>
+              <div style={{ position: 'relative' }}>
+                <span style={{
+                  position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)',
+                  color: '#94a3b8', fontSize: '16px', pointerEvents: 'none'
+                }}>🔍</span>
+                <input
+                  type="text"
+                  placeholder="Filtrar lista por nombre o referencia..."
+                  value={busquedaMP}
+                  onChange={(e) => setBusquedaMP(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 36px 10px 36px',
+                    borderRadius: '8px',
+                    border: busquedaMP ? '1.5px solid #6366f1' : '1px solid #cbd5e1',
+                    fontSize: '14px',
+                    background: busquedaMP ? '#f0f0ff' : '#f8fafc',
+                    color: '#0f172a',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                    transition: 'border 0.2s, background 0.2s'
+                  }}
+                />
+                {busquedaMP && (
+                  <button
+                    onClick={() => setBusquedaMP("")}
+                    style={{
+                      position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)',
+                      border: 'none', background: '#e2e8f0', borderRadius: '50%',
+                      width: '20px', height: '20px', cursor: 'pointer', color: '#475569',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: '11px', fontWeight: 'bold', lineHeight: 1
+                    }}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+              <div style={{ fontSize: '12px', color: '#64748b', marginTop: '5px', textAlign: 'right' }}>
+                {busquedaMP
+                  ? <span><strong style={{ color: '#6366f1' }}>{materialesFiltrados.filter(m => !m.ARTICULO?.toLowerCase().includes('inactivo')).length}</strong> resultados para «{busquedaMP}»</span>
+                  : <span>{materialesFiltrados.filter(m => !m.ARTICULO?.toLowerCase().includes('inactivo')).length} materias primas disponibles</span>
+                }
+              </div>
             </div>
 
-            <div style={{ maxHeight: '350px', overflowY: 'auto', marginBottom: '20px' }}>
+            <div style={{ marginBottom: '20px' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ textAlign: 'left', borderBottom: '1px solid #cbd5e1' }}>
@@ -2975,18 +2997,17 @@ export default function Produccion() {
                   {materialesSeleccionados.map((item, index) => (
                     <tr key={index} style={{ borderBottom: '1px solid #f1f5f9' }}>
                       <td style={{ padding: '8px' }}>
-                        <select
-                          value={item.referencia}
-                          onChange={(e) => handleMaterialChange(index, 'referencia', e.target.value)}
-                          style={{ width: '100%', padding: '5px' }}
-                        >
-                          <option value="">Seleccione...</option>
-                          {materialesFiltrados.map(m => (
-                            <option key={m.REFERENCIA} value={m.REFERENCIA}>
-                              {m.ARTICULO} ({m.UNIDAD})
-                            </option>
-                          ))}
-                        </select>
+                        <div style={{ position: 'relative', zIndex: 1000 - index }}>
+                          <SearchableSelect
+                            options={materialesFiltrados.map(m => ({
+                              value: String(m.REFERENCIA),
+                              label: `${m.ARTICULO} (${m.UNIDAD})`
+                            }))}
+                            value={String(item.referencia || "")}
+                            onChange={(e) => handleMaterialChange(index, 'referencia', e.target.value)}
+                            placeholder="Buscar insumo..."
+                          />
+                        </div>
                       </td>
                       <td style={{ padding: '8px' }}>
                         <input
