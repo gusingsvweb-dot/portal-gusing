@@ -66,8 +66,10 @@ export default function SearchableSelect({
         ? options.filter(opt => normalize(opt.label).includes(normSearch))
         : options;
 
-    // Limitar resultados visibles para no bloquear el render con 5000+ items
-    const visibleOptions = filteredOptions.slice(0, MAX_VISIBLE);
+    // Si no hay texto escrito, mostrar solo 20 items como sugerencia inicial
+    const MAX_WHEN_EMPTY = 20;
+    const limit = normSearch ? MAX_VISIBLE : MAX_WHEN_EMPTY;
+    const visibleOptions = filteredOptions.slice(0, limit);
     const hiddenCount = filteredOptions.length - visibleOptions.length;
 
     const handleSelect = useCallback((option) => {
@@ -89,11 +91,13 @@ export default function SearchableSelect({
     };
 
     const handleFocus = () => {
-        // Al enfocar, limpiar texto para que el usuario busque desde cero
-        if (selectedOption) {
-            setSearchTerm(""); // Deja el campo vacío para buscar
-        }
         setIsOpen(true);
+        // Seleccionar todo el texto para que el usuario pueda escribir directamente encima
+        setTimeout(() => {
+            if (inputRef.current) {
+                inputRef.current.select();
+            }
+        }, 0);
     };
 
     const handleBlur = () => {
