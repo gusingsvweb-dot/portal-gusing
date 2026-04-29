@@ -166,6 +166,7 @@ export default function Produccion() {
   const [materialesLoading, setMaterialesLoading] = useState(false);
   const [isAdditionalRequestMode, setIsAdditionalRequestMode] = useState(false); // NUEVO: flag para solicitud adicional
   const [busquedaMP, setBusquedaMP] = useState("");
+  const [solicitudGranel, setSolicitudGranel] = useState(""); // NUEVO: Granel
 
   const materialesFiltrados = useMemo(() => {
     const search = busquedaMP.toLowerCase().trim();
@@ -219,6 +220,7 @@ export default function Produccion() {
   const [showDevolucionModal, setShowDevolucionModal] = useState(false);
   const [devolucionItems, setDevolucionItems] = useState([]);
   const [devolucionLoading, setDevolucionLoading] = useState(false);
+  const [devolucionGranel, setDevolucionGranel] = useState(""); // NUEVO: Devolución a granel
 
   /* ===========================================================
      MODAL: DEVOLVER SOBRANTES A INVENTARIO
@@ -229,13 +231,14 @@ export default function Produccion() {
       devolver: 0
     }));
     setDevolucionItems(itemsParaDevolver);
+    setDevolucionGranel("");
     setShowDevolucionModal(true);
   }
 
   async function registrarDevolucionSobrantes() {
     const itemsAfectados = devolucionItems.filter(it => it.devolver > 0);
-    if (itemsAfectados.length === 0) {
-      alert("No has ingresado ninguna cantidad a devolver.");
+    if (itemsAfectados.length === 0 && !devolucionGranel.trim()) {
+      alert("No has ingresado ninguna cantidad a devolver ni observaciones a granel.");
       return;
     }
 
@@ -268,24 +271,36 @@ export default function Produccion() {
         resumen.push(`- ${it.articulo_nombre}: devolvió ${it.devolver} ${it.unidad} (Stock actual: ${nuevoStock})`);
       }
 
-      // 3. Crear observación en pedido
-      await supabase.from(st("observaciones_pedido")).insert({
-        pedido_id: selected.id,
-        usuario: usuarioActual?.usuario || "Producción",
-        observacion: `♻️ DEVOLUCIÓN DE SOBRANTES DE MP`
-      });
+      // 3. Crear observación en pedido para items de bd
+      if (itemsAfectados.length > 0) {
+        await supabase.from(st("observaciones_pedido")).insert({
+          pedido_id: selected.id,
+          usuario: usuarioActual?.usuario || "Producción",
+          observacion: `♻️ DEVOLUCIÓN DE SOBRANTES DE MP`
+        });
+      }
+
+      // 3.5. Crear observación para granel si aplica
+      if (devolucionGranel.trim()) {
+        await supabase.from(st("observaciones_pedido")).insert({
+          pedido_id: selected.id,
+          usuario: usuarioActual?.usuario || "Producción",
+          observacion: `♻️ DEVOLUCIÓN DE GRANEL: ${devolucionGranel.trim()}`
+        });
+      }
 
       // 4. Notificar a bodega
       await notifyRoles(
         ["bodega", "bodega_mp", "bodegapt"],
         "Sobrantes de MP Devueltos",
-        `Producción ha devuelto insumos sobrantes al inventario para el Pedido #${selected.id}.`,
+        `Producción ha devuelto insumos sobrantes (o granel) al inventario para el Pedido #${selected.id}.`,
         selected.id,
         "informacion"
       );
 
       alert("Devolución registrada correctamente en el inventario.");
       setShowDevolucionModal(false);
+      setDevolucionGranel("");
       await cargarItemsSolicitados(selected.id); // Refrescar tabla visual de listado
     } catch (err) {
       console.error("Error al registrar devolucion:", err);
@@ -799,6 +814,16 @@ export default function Produccion() {
       setShowMaterialModal(false);
       setIsAdditionalRequestMode(false); // Reset
       setMaterialesSeleccionados([{ referencia: "", cantidad: 1 }]);
+      
+      if (solicitudGranel.trim()) {
+        await supabase.from(st("observaciones_pedido")).insert([{
+          pedido_id: selected.id,
+          usuario: usuarioActual?.usuario || "Producción",
+          observacion: `📦 SOLICITUD A GRANEL ADICIONAL: ${solicitudGranel.trim()}`
+        }]);
+        setSolicitudGranel("");
+      }
+
       await reloadSelected();
       alert("Solicitud adicional enviada a Bodega.");
       return true;
@@ -850,6 +875,16 @@ export default function Produccion() {
       console.error("❌ [solicitarMateriasPrimas] Error:", error);
       setMaterialesLoading(false);
       return alert("Error solicitando materias primas.");
+    }
+
+    // Guardar solicitud de granel si hay texto
+    if (solicitudGranel.trim()) {
+      await supabase.from(st("observaciones_pedido")).insert([{
+        pedido_id: selected.id,
+        usuario: usuarioActual?.usuario || "Producción",
+        observacion: `📦 SOLICITUD A GRANEL: ${solicitudGranel.trim()}`
+      }]);
+      setSolicitudGranel("");
     }
 
     // 🔔 NOTIFICAR A BODEGA
@@ -3070,6 +3105,19 @@ export default function Produccion() {
               + Agregar otro insumo
             </button>
 
+            <div style={{ marginBottom: '25px', padding: '15px', background: '#f1f5f9', borderRadius: '8px' }}>
+              <label style={{ fontSize: '13px', fontWeight: 'bold', color: '#334155', display: 'block', marginBottom: '8px' }}>
+                Materia Prima a Granel (Opcional):
+              </label>
+              <textarea
+                value={solicitudGranel}
+                onChange={e => setSolicitudGranel(e.target.value)}
+                placeholder="Describe aquí cualquier materia prima a granel que necesites, fuera de la base de datos..."
+                rows={2}
+                style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', resize: 'vertical' }}
+              />
+            </div>
+
             <div className="cal-actions">
               <button
                 className="cal-btn cancel"
@@ -3084,7 +3132,7 @@ export default function Produccion() {
                   const success = await solicitarMateriasPrimas(true, true);
                   if (success !== false) setBusquedaMP("");
                 }}
-                disabled={materialesLoading || materialesSeleccionados.every(m => !m.referencia)}
+                disabled={materialesLoading || (materialesSeleccionados.every(m => !m.referencia) && !solicitudGranel.trim())}
               >
                 {materialesLoading ? "Enviando..." : "✔ Enviar solicitud"}
               </button>
@@ -3140,6 +3188,19 @@ export default function Produccion() {
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            <div style={{ marginBottom: '25px', padding: '15px', background: '#f1f5f9', borderRadius: '8px' }}>
+              <label style={{ fontSize: '13px', fontWeight: 'bold', color: '#334155', display: 'block', marginBottom: '8px' }}>
+                Sobrante a Granel (Opcional):
+              </label>
+              <textarea
+                value={devolucionGranel}
+                onChange={e => setDevolucionGranel(e.target.value)}
+                placeholder="Describe si devuelves algún material a granel..."
+                rows={2}
+                style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', resize: 'vertical' }}
+              />
             </div>
 
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
