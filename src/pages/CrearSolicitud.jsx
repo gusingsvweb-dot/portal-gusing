@@ -108,9 +108,9 @@ export default function CrearSolicitud() {
     }
 
     // 3. Insertar solicitud
-    const { error } = await supabase.from(st("solicitudes")).insert([
+    const { error: insertError } = await supabase.from(st("solicitudes")).insert([
       {
-        tipo_solicitud_id: finalTipoId,
+        tipo_solicitud_id: finalTipoId || null,
         prioridad_id: form.prioridad_id,
         descripcion: finalDesc,
         justificacion: form.justificacion,
@@ -125,9 +125,9 @@ export default function CrearSolicitud() {
 
     setLoading(false);
 
-    if (error) {
-      console.error(error);
-      return setMensaje("❌ Error al enviar la solicitud.");
+    if (insertError) {
+      console.error("Error detallado Supabase:", insertError);
+      return setMensaje(`❌ Error de Base de Datos: ${insertError.message} (Código: ${insertError.code})`);
     }
 
     setMensaje("✅ Solicitud enviada correctamente.");
