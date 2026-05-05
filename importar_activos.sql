@@ -36,6 +36,7 @@ ALTER TABLE public."activos"
   ADD COLUMN IF NOT EXISTS source_file_name    text,
   ADD COLUMN IF NOT EXISTS imported_by         uuid,
   ADD COLUMN IF NOT EXISTS imported_at         timestamptz,
+  ADD COLUMN IF NOT EXISTS estado              text DEFAULT 'Activo',
   ADD COLUMN IF NOT EXISTS updated_at          timestamptz DEFAULT now();
 
 -- Lo mismo para la variante NO_
@@ -62,6 +63,7 @@ ALTER TABLE public."NO_activos"
   ADD COLUMN IF NOT EXISTS source_file_name    text,
   ADD COLUMN IF NOT EXISTS imported_by         uuid,
   ADD COLUMN IF NOT EXISTS imported_at         timestamptz,
+  ADD COLUMN IF NOT EXISTS estado              text DEFAULT 'Activo',
   ADD COLUMN IF NOT EXISTS updated_at          timestamptz DEFAULT now();
 
 -- ──────────────────────────────────────────────────────────────────

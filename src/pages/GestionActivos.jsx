@@ -130,6 +130,7 @@ export default function GestionActivos() {
           </div>
           <div className="mant-actions-group">
             <button className="mant-btn-action secondary" onClick={() => navigate("/mantenimiento")}>← Tablero</button>
+            <button className="mant-btn-action secondary" onClick={() => navigate("/mantenimiento/importar-activos")}>📥 Importar Excel</button>
             <button className="mant-btn-action primary" onClick={() => { resetForm(); setShowForm(true); }}>+ Nuevo Activo</button>
           </div>
         </header>

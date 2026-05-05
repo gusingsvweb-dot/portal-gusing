@@ -60,6 +60,136 @@
   font-weight: 500;
 }
 
+ /* ── TABS ── */
+.pm-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 24px;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 2px;
+}
+
+.pm-tab {
+  background: none;
+  border: none;
+  padding: 10px 20px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+}
+
+.pm-tab:hover {
+  color: var(--mant-primary);
+}
+
+.pm-tab.active {
+  color: var(--mant-primary);
+  border-bottom-color: var(--mant-primary);
+}
+
+/* ── ANUAL TABLE ── */
+.anual-container {
+  background: white;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
+}
+
+.anual-filters {
+  padding: 16px 24px;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #f8fafc;
+}
+
+.anual-filters label {
+  font-weight: 700;
+  color: #475569;
+  font-size: 0.9rem;
+}
+
+.anual-table-wrapper {
+  overflow-x: auto;
+}
+
+.anual-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.anual-table th {
+  background: #f1f5f9;
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 800;
+  color: #475569;
+  border-bottom: 2px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.anual-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1e293b;
+}
+
+.anual-table tr:hover {
+  background: #f8faff;
+}
+
+.month-col {
+  text-align: center !important;
+  width: 50px;
+  border-left: 1px solid #f1f5f9;
+}
+
+.codigo-cell {
+  font-weight: 800;
+  color: var(--mant-primary);
+  white-space: nowrap;
+}
+
+.nombre-cell {
+  font-weight: 600;
+  min-width: 200px;
+}
+
+.tarea-cell {
+  color: #64748b;
+  font-size: 0.78rem;
+  max-width: 250px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scheduled-badge {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  background: #dcfce7;
+  color: #166534;
+  border-radius: 6px;
+  font-weight: 900;
+  font-size: 0.75rem;
+  border: 1px solid #bbf7d0;
+}
+
+.scheduled-badge.completado { background: #dcfce7; color: #166534; }
+.scheduled-badge.pendiente { background: #eff6ff; color: #1d4ed8; border-color: #dbeafe; }
+.scheduled-badge.vencido { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
+
 /* Grid */
 .pm-grid {
   display: grid;

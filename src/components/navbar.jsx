@@ -141,8 +141,6 @@ export default function Navbar() {
           { to: "/mantenimiento/activos", label: "Activos", icon: "🏢" },
           { to: "/mantenimiento/plan-maestro", label: "Plan Maestro", icon: "📅" },
           { to: "/mantenimiento/repuestos", label: "Repuestos", icon: "⚙️" },
-          { to: "/mantenimiento/importar-cronograma", label: "Importar Cronograma", icon: "📥" },
-          { to: "/mantenimiento/importar-activos",    label: "Importar Activos",   icon: "🏭" },
           { to: "/mantenimiento/proveedores", label: "Proveedores", icon: "🚚" },
           { to: "/kpis-mantenimiento", label: "KPIs", icon: "📈" },
         ],

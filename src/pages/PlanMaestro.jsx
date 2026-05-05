@@ -10,6 +10,9 @@ export default function PlanMaestro() {
   const navigate = useNavigate();
   const [planes, setPlanes] = useState([]);
   const [activos, setActivos] = useState([]);
+  const [cronogramaAnual, setCronogramaAnual] = useState([]);
+  const [activeTab, setActiveTab] = useState("auto"); // "auto" | "anual"
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -25,14 +28,25 @@ export default function PlanMaestro() {
 
   async function loadData() {
     setLoading(true);
-    const [{ data: pls }, { data: acts }] = await Promise.all([
-      supabase.from(st("planes_preventivos")).select(`*, activos(id, nombre, codigo, criticidad, area_id)`).order("proxima_fecha"),
-      supabase.from(st("activos")).select("id, nombre, criticidad").order("nombre"),
-    ]);
-    setPlanes(pls || []);
-    setActivos(acts || []);
-    setLoading(false);
+    try {
+      const [{ data: pls }, { data: acts }, { data: crono }] = await Promise.all([
+        supabase.from(st("planes_preventivos")).select(`*, activos(id, nombre, codigo, criticidad, area_id)`).order("proxima_fecha"),
+        supabase.from(st("activos")).select("id, nombre, criticidad").order("nombre"),
+        supabase.from(st("maintenance_schedules")).select(`*, maintenance_schedule_months(*)`).eq("year", selectedYear).order("equipment_code")
+      ]);
+      setPlanes(pls || []);
+      setActivos(acts || []);
+      setCronogramaAnual(crono || []);
+    } catch (err) {
+      console.error("Error cargando datos:", err);
+    } finally {
+      setLoading(false);
+    }
   }
+
+  useEffect(() => {
+    loadData();
+  }, [selectedYear]);
 
   const hoy = new Date().toISOString().split("T")[0];
 
@@ -121,12 +135,29 @@ export default function PlanMaestro() {
           </div>
           <div className="mant-actions-group">
             <button className="mant-btn-action secondary" onClick={() => navigate("/mantenimiento")}>← Tablero</button>
+            <button className="mant-btn-action secondary" onClick={() => navigate("/mantenimiento/importar-cronograma")}>📥 Importar Excel</button>
             <button className="mant-btn-action success" onClick={generateOrders} disabled={generating || stats.vencidos === 0}>
               {generating ? "Generando..." : `🚀 Procesar ${stats.vencidos} Pendiente${stats.vencidos !== 1 ? "s" : ""}`}
             </button>
             <button className="mant-btn-action primary" onClick={() => { resetForm(); setShowModal(true); }}>+ Programar</button>
           </div>
         </header>
+
+        {/* TABS SELECTOR */}
+        <div className="pm-tabs">
+          <button 
+            className={`pm-tab ${activeTab === "auto" ? "active" : ""}`} 
+            onClick={() => setActiveTab("auto")}
+          >
+            ⚙️ Motor Automático
+          </button>
+          <button 
+            className={`pm-tab ${activeTab === "anual" ? "active" : ""}`} 
+            onClick={() => setActiveTab("anual")}
+          >
+            📅 Cronograma Anual {selectedYear}
+          </button>
+        </div>
 
         {/* STATS */}
         <div className="pm-stats-row">
@@ -157,52 +188,140 @@ export default function PlanMaestro() {
         )}
 
         {loading ? (
-          <div className="mant-loading-state">Cargando cronograma...</div>
-        ) : planes.length === 0 ? (
-          <div className="empty-state" style={{ marginTop: "60px" }}>
-            <div className="empty-state-icon">📅</div>
-            <p>No hay planes preventivos programados</p>
-          </div>
+          <div className="mant-loading-state">Cargando datos...</div>
+        ) : activeTab === "auto" ? (
+          <>
+            {/* STATS (only for auto) */}
+            <div className="pm-stats-row">
+              <div className="pm-stat-card pm-vencidos">
+                <span className="pm-stat-num">{stats.vencidos}</span>
+                <span className="pm-stat-lbl">Vencidos</span>
+                {stats.vencidos > 0 && <span className="pm-stat-sub">Requieren acción inmediata</span>}
+              </div>
+              <div className="pm-stat-card pm-proximos">
+                <span className="pm-stat-num">{stats.proximos7}</span>
+                <span className="pm-stat-lbl">Próximos 7 días</span>
+              </div>
+              <div className="pm-stat-card pm-activos">
+                <span className="pm-stat-num">{stats.activos}</span>
+                <span className="pm-stat-lbl">Planes Activos</span>
+              </div>
+              <div className="pm-stat-card pm-total">
+                <span className="pm-stat-num">{stats.total}</span>
+                <span className="pm-stat-lbl">Total Programas</span>
+              </div>
+            </div>
+
+            {/* ALERTA VENCIDOS */}
+            {stats.vencidos > 0 && (
+              <div className="pm-alert-banner">
+                <span>⚠️ Hay <strong>{stats.vencidos} plan{stats.vencidos !== 1 ? "es" : ""}</strong> con fecha vencida. Use "Procesar Pendientes" para generar las órdenes de trabajo automáticamente.</span>
+              </div>
+            )}
+
+            {planes.length === 0 ? (
+              <div className="empty-state" style={{ marginTop: "40px" }}>
+                <div className="empty-state-icon">📅</div>
+                <p>No hay planes preventivos programados</p>
+              </div>
+            ) : (
+              <div className="pm-grid">
+                {planes.map(p => {
+                  const dias = diasRestantes(p.proxima_fecha);
+                  const isVencido = dias <= 0;
+                  const isProximo = dias > 0 && dias <= 7;
+                  return (
+                    <div key={p.id} className={`pm-card ${isVencido ? "pm-card-vencido" : isProximo ? "pm-card-proximo" : ""}`}>
+                      {isVencido && <div className="pm-vencido-stripe"></div>}
+                      <div className="pm-card-header">
+                        <span className="pm-freq-badge">CADA {p.frecuencia_dias} DÍAS</span>
+                        <span className={`v2-crit-badge crit-${p.activos?.criticidad?.toLowerCase() || "baja"}`}>
+                          {p.activos?.criticidad || "Baja"}
+                        </span>
+                      </div>
+                      <h4 className="pm-card-title">{p.activos?.nombre || "Activo eliminado"}</h4>
+                      <p className="pm-card-desc">{p.descripcion_tarea || "Sin descripción"}</p>
+                      <div className="pm-dates-box">
+                        <div className="pm-date-row">
+                          <span className="pm-date-lbl">Última ejecución</span>
+                          <span className="pm-date-val">{p.ultima_fecha || "—"}</span>
+                        </div>
+                        <div className="pm-date-row pm-next-row">
+                          <span className="pm-date-lbl">Próxima fecha</span>
+                          <span className={`pm-date-val ${isVencido ? "pm-date-vencida" : isProximo ? "pm-date-proximo" : "pm-date-ok"}`}>
+                            {p.proxima_fecha}
+                          </span>
+                        </div>
+                      </div>
+                      <div className={`pm-dias-chip ${isVencido ? "chip-vencido" : isProximo ? "chip-proximo" : "chip-ok"}`}>
+                        {isVencido ? `⚠️ Vencido hace ${Math.abs(dias)} día${dias !== -1 ? "s" : ""}` :
+                          `⏳ En ${dias} día${dias !== 1 ? "s" : ""}`}
+                      </div>
+                      <div className="pm-card-footer">
+                        <button className="mini-btn" onClick={() => openEdit(p)}>✏️ Editar</button>
+                        <button className="mini-btn" style={{ color: "#ef4444", borderColor: "#fecaca" }} onClick={() => deletePlan(p.id)}>🗑️</button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </>
         ) : (
-          <div className="pm-grid">
-            {planes.map(p => {
-              const dias = diasRestantes(p.proxima_fecha);
-              const isVencido = dias <= 0;
-              const isProximo = dias > 0 && dias <= 7;
-              return (
-                <div key={p.id} className={`pm-card ${isVencido ? "pm-card-vencido" : isProximo ? "pm-card-proximo" : ""}`}>
-                  {isVencido && <div className="pm-vencido-stripe"></div>}
-                  <div className="pm-card-header">
-                    <span className="pm-freq-badge">CADA {p.frecuencia_dias} DÍAS</span>
-                    <span className={`v2-crit-badge crit-${p.activos?.criticidad?.toLowerCase() || "baja"}`}>
-                      {p.activos?.criticidad || "Baja"}
-                    </span>
-                  </div>
-                  <h4 className="pm-card-title">{p.activos?.nombre || "Activo eliminado"}</h4>
-                  <p className="pm-card-desc">{p.descripcion_tarea || "Sin descripción"}</p>
-                  <div className="pm-dates-box">
-                    <div className="pm-date-row">
-                      <span className="pm-date-lbl">Última ejecución</span>
-                      <span className="pm-date-val">{p.ultima_fecha || "—"}</span>
-                    </div>
-                    <div className="pm-date-row pm-next-row">
-                      <span className="pm-date-lbl">Próxima fecha</span>
-                      <span className={`pm-date-val ${isVencido ? "pm-date-vencida" : isProximo ? "pm-date-proximo" : "pm-date-ok"}`}>
-                        {p.proxima_fecha}
-                      </span>
-                    </div>
-                  </div>
-                  <div className={`pm-dias-chip ${isVencido ? "chip-vencido" : isProximo ? "chip-proximo" : "chip-ok"}`}>
-                    {isVencido ? `⚠️ Vencido hace ${Math.abs(dias)} día${dias !== -1 ? "s" : ""}` :
-                      `⏳ En ${dias} día${dias !== 1 ? "s" : ""}`}
-                  </div>
-                  <div className="pm-card-footer">
-                    <button className="mini-btn" onClick={() => openEdit(p)}>✏️ Editar</button>
-                    <button className="mini-btn" style={{ color: "#ef4444", borderColor: "#fecaca" }} onClick={() => deletePlan(p.id)}>🗑️</button>
-                  </div>
-                </div>
-              );
-            })}
+          /* TAB CRONOGRAMA ANUAL */
+          <div className="anual-container">
+            <div className="anual-filters">
+              <label>Año:</label>
+              <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} className="v2-select" style={{ width: "100px" }}>
+                {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
+              </select>
+            </div>
+
+            {cronogramaAnual.length === 0 ? (
+              <div className="empty-state">
+                <div className="empty-state-icon">📊</div>
+                <p>No hay cronograma importado para el año {selectedYear}</p>
+                <button className="mant-btn-action secondary" onClick={() => navigate("/mantenimiento/importar-cronograma")}>
+                  📥 Importar Cronograma Excel
+                </button>
+              </div>
+            ) : (
+              <div className="anual-table-wrapper">
+                <table className="anual-table">
+                  <thead>
+                    <tr>
+                      <th>Código</th>
+                      <th>Equipo</th>
+                      <th>Tarea</th>
+                      {["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"].map(m => (
+                        <th key={m} className="month-col">{m}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {cronogramaAnual.map(item => (
+                      <tr key={item.id}>
+                        <td className="codigo-cell">{item.equipment_code}</td>
+                        <td className="nombre-cell">{item.equipment_name}</td>
+                        <td className="tarea-cell" title={item.task_description}>{item.task_description || "—"}</td>
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(m => {
+                          const scheduled = item.maintenance_schedule_months?.find(mon => mon.month_number === m);
+                          return (
+                            <td key={m} className="month-col">
+                              {scheduled && (
+                                <div className={`scheduled-badge ${scheduled.status.toLowerCase()}`} title={scheduled.status}>
+                                  X
+                                </div>
+                              )}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
 
