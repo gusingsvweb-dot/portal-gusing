@@ -32,7 +32,7 @@ export default function PlanMaestro() {
       const [{ data: pls }, { data: acts }, { data: crono }] = await Promise.all([
         supabase.from(st("planes_preventivos")).select(`*, activos(id, nombre, codigo, criticidad, area_id)`).order("proxima_fecha"),
         supabase.from(st("activos")).select("id, nombre, criticidad").order("nombre"),
-        supabase.from(st("maintenance_schedules")).select(`*, maintenance_schedule_months(*)`).eq("year", selectedYear).order("equipment_code")
+        supabase.from(st("maintenance_schedules")).select(`*, maintenance_schedule_months:${st("maintenance_schedule_months")}(*)`).eq("year", selectedYear).order("equipment_code")
       ]);
       setPlanes(pls || []);
       setActivos(acts || []);
