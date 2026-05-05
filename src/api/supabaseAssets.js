@@ -73,22 +73,27 @@ export async function saveAssetsToSupabase({
   // Obtenemos todos los nombres de procesos/áreas únicos del Excel
   const rawAreas = [...new Set(assets.map(a => a.process || a.area || a.location).filter(Boolean))];
   
-  // Obtener áreas existentes en la BD
-  const { data: dbAreas } = await supabase.from(st("areas")).select("id, nombre");
-  const areaMap = new Map(dbAreas?.map(a => [a.nombre.toUpperCase(), a.id]) || []);
+  // Obtener áreas existentes en la BD (usando st() para modo NO_)
+  const { data: dbAreas, error: fetchErr } = await supabase.from(st("areas")).select("id, nombre");
+  if (fetchErr) console.warn("Aviso: No se pudieron consultar las áreas existentes.", fetchErr.message);
+
+  const areaMap = new Map(dbAreas?.map(a => [a.nombre.trim().toUpperCase(), a.id]) || []);
 
   // Crear las áreas que no existan
   for (const areaName of rawAreas) {
-    const key = areaName.toUpperCase();
+    const key = areaName.trim().toUpperCase();
     if (!areaMap.has(key)) {
+      console.log(`Creando área nueva: ${areaName}`);
       const { data: newAr, error: arErr } = await supabase
         .from(st("areas"))
-        .insert([{ nombre: areaName }])
+        .insert([{ nombre: areaName.trim() }])
         .select("id")
         .single();
       
       if (!arErr && newAr) {
         areaMap.set(key, newAr.id);
+      } else if (arErr) {
+        console.error(`Error creando área "${areaName}":`, arErr.message);
       }
     }
   }
@@ -104,8 +109,8 @@ export async function saveAssetsToSupabase({
     }
 
     // Mapear el area_id basado en lo que detectamos
-    const areaName = process || area || location;
-    const areaId   = areaName ? areaMap.get(areaName.toUpperCase()) : null;
+    const areaNameRaw = process || area || location;
+    const areaId      = areaNameRaw ? areaMap.get(areaNameRaw.trim().toUpperCase()) : null;
 
     const payload = {
       ...cleanAsset,
