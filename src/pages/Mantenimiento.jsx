@@ -21,18 +21,19 @@ export default function Mantenimiento() {
   const [proveedorId, setProveedorId] = useState("");
   const [consumos, setConsumos] = useState([]);
   const [consumosGuardados, setConsumosGuardados] = useState([]);
+  const [prioridadId, setPrioridadId] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [filtro, setFiltro] = useState("");
   const [activeTab, setActiveTab] = useState("info");
+  const [allPrioridades, setAllPrioridades] = useState([]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     setError("");
     
     try {
-      // 1. Cargar todos los catálogos en paralelo (sin joins)
       const [
         { data: solRaw, error: solErr },
         { data: tiposRaw },
@@ -55,7 +56,8 @@ export default function Mantenimiento() {
 
       if (solErr) throw solErr;
 
-      // 2. Hidratar los datos manualmente (Mapas para velocidad)
+      setAllPrioridades(prioRaw || []);
+      
       const tMap = new Map(tiposRaw?.map(t => [t.id, t]));
       const pMap = new Map(prioRaw?.map(p => [p.id, p]));
       const eMap = new Map(estRaw?.map(e => [e.id, e]));
@@ -109,6 +111,7 @@ export default function Mantenimiento() {
   const openModal = async (s) => {
     setSelected(s);
     setProveedorId(s.proveedor_id || "");
+    setPrioridadId(s.prioridad_id || "");
     setAccion(s.accion_realizada || "");
     setConsumos([]);
     setError("");
@@ -128,6 +131,7 @@ export default function Mantenimiento() {
     setSelected(null);
     setAccion("");
     setProveedorId("");
+    setPrioridadId("");
     setConsumos([]);
     setConsumosGuardados([]);
     setError("");
@@ -176,6 +180,17 @@ export default function Mantenimiento() {
     setSaving(false);
     loadData();
     setSelected(prev => ({ ...prev, proveedor_id: proveedorId }));
+  };
+
+  const updatePrioridad = async () => {
+    if (!prioridadId || !selected) return;
+    setSaving(true);
+    await supabase.from(st("solicitudes")).update({ prioridad_id: prioridadId }).eq("id", selected.id);
+    setSaving(false);
+    loadData();
+    // Actualizar localmente para mostrar el cambio sin cerrar modal
+    const nuevaPrio = allPrioridades.find(p => String(p.id) === String(prioridadId));
+    setSelected(prev => ({ ...prev, prioridad_id: prioridadId, prioridades: nuevaPrio }));
   };
 
   const addConsumo = () => setConsumos(prev => [...prev, { repuesto_id: "", cantidad: 1 }]);
@@ -284,7 +299,34 @@ export default function Mantenimiento() {
                 <>
                   <div className="modal-info-grid">
                     <InfoBox label="Tipo" value={selected.tipos_solicitud?.nombre} />
-                    <InfoBox label="Prioridad" value={selected.prioridades?.nombre} />
+                    
+                    {/* Prioridad Editable */}
+                    <div className="info-item-box">
+                      <label>Prioridad</label>
+                      {selected.estado_id < 14 ? (
+                        <div style={{ display: "flex", gap: "5px" }}>
+                          <select 
+                            className="v2-select" 
+                            style={{ padding: "4px 8px", fontSize: "0.85rem" }}
+                            value={prioridadId} 
+                            onChange={e => setPrioridadId(e.target.value)}
+                          >
+                            {allPrioridades.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                          </select>
+                          <button 
+                            className="mant-btn-action success" 
+                            style={{ padding: "4px 10px", fontSize: "0.75rem" }}
+                            onClick={updatePrioridad} 
+                            disabled={saving || String(prioridadId) === String(selected.prioridad_id)}
+                          >
+                            {saving ? "..." : "Guardar"}
+                          </button>
+                        </div>
+                      ) : (
+                        <span>{selected.prioridades?.nombre}</span>
+                      )}
+                    </div>
+
                     <InfoBox label="Área Solicitante" value={selected.area_solicitante} />
                     <InfoBox label="Solicitante" value={selected.usuario_id} />
                     <InfoBox label="Activo Relacionado" value={selected.activos?.nombre || "N/A"} />
