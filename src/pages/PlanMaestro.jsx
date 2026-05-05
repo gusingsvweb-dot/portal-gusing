@@ -14,6 +14,7 @@ export default function PlanMaestro() {
   const [activeTab, setActiveTab] = useState("auto"); // "auto" | "anual"
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -108,6 +109,41 @@ export default function PlanMaestro() {
     alert(`✅ Se generaron ${creadas} órdenes de trabajo preventivo en el Kanban.`);
     loadData();
     setGenerating(false);
+  }
+
+  async function syncWithMotor() {
+    if (!cronogramaAnual.length) return;
+    if (!confirm("¿Deseas sincronizar los equipos del cronograma con el Motor Automático? Esto creará o actualizará los planes preventivos según la frecuencia del Excel.")) return;
+    
+    setSyncing(true);
+    try {
+      // Re-importar lógica de sincronización (usando la API que acabamos de actualizar)
+      const { saveScheduleToSupabase } = await import("../api/supabaseMaintenanceSchedule");
+      
+      // Mapear cronogramaAnual de vuelta al formato que espera el save
+      const rows = cronogramaAnual.map(c => ({
+        codigo_equipo:    c.equipment_code,
+        nombre_equipo:    c.equipment_name,
+        tarea_realizar:   c.task_description,
+        semana_programada: c.scheduled_week,
+        frecuencia_meses: c.frequency_months,
+        mes_base:         c.base_month,
+        meses_programados: [] // No necesitamos re-insertar meses
+      }));
+
+      // Usamos una versión "light" del save que solo sincroniza con planes_preventivos
+      // Para simplificar, simplemente llamaremos a una nueva función de API que crearé
+      const { syncAllSchedulesWithMotor } = await import("../api/supabaseMaintenanceSchedule");
+      await syncAllSchedulesWithMotor(selectedYear);
+      
+      alert("¡Sincronización completada! Ahora puedes ver los equipos en el Motor Automático.");
+      setActiveTab("auto");
+      loadData();
+    } catch (err) {
+      alert("Error al sincronizar: " + err.message);
+    } finally {
+      setSyncing(false);
+    }
   }
 
   function openEdit(plan) {
@@ -270,11 +306,24 @@ export default function PlanMaestro() {
         ) : (
           /* TAB CRONOGRAMA ANUAL */
           <div className="anual-container">
-            <div className="anual-filters">
-              <label>Año:</label>
-              <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} className="v2-select" style={{ width: "100px" }}>
-                {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
-              </select>
+            <div className="anual-filters" style={{ justifyContent: "space-between" }}>
+              <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                <label>Año:</label>
+                <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} className="v2-select" style={{ width: "100px" }}>
+                  {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
+                </select>
+              </div>
+              
+              {cronogramaAnual.length > 0 && (
+                <button 
+                  className="mant-btn-action success" 
+                  style={{ fontSize: "0.8rem", padding: "8px 16px" }}
+                  onClick={syncWithMotor}
+                  disabled={syncing}
+                >
+                  {syncing ? "Sincronizando..." : "🔄 Sincronizar con Motor Automático"}
+                </button>
+              )}
             </div>
 
             {cronogramaAnual.length === 0 ? (
