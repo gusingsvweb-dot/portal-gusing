@@ -190,6 +190,39 @@
 .scheduled-badge.pendiente { background: #eff6ff; color: #1d4ed8; border-color: #dbeafe; }
 .scheduled-badge.vencido { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
 
+/* ── LEGEND ── */
+.anual-legend {
+  display: flex;
+  gap: 20px;
+  padding: 12px 24px;
+  background: white;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.dot.p { background: #3b82f6; }
+.dot.c { background: #10b981; }
+.dot.v { background: #ef4444; }
+
+.month-col.has-plan.pendiente { background: #f0f7ff; }
+.month-col.has-plan.completado { background: #f0fdf4; }
+.month-col.has-plan.vencido { background: #fef2f2; }
+
 /* Grid */
 .pm-grid {
   display: grid;

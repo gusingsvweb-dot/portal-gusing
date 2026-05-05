@@ -134,11 +134,15 @@ export default function PlanMaestro() {
       // Usamos una versión "light" del save que solo sincroniza con planes_preventivos
       // Para simplificar, simplemente llamaremos a una nueva función de API que crearé
       const { syncAllSchedulesWithMotor } = await import("../api/supabaseMaintenanceSchedule");
-      await syncAllSchedulesWithMotor(selectedYear);
+      const result = await syncAllSchedulesWithMotor(selectedYear);
       
-      alert("¡Sincronización completada! Ahora puedes ver los equipos en el Motor Automático.");
-      setActiveTab("auto");
-      loadData();
+      if (result.matched === 0) {
+        alert("Atención: No se encontró ningún activo en la base de datos que coincida con los códigos del cronograma. Asegúrate de importar primero los activos.");
+      } else {
+        alert(`¡Sincronización completada!\n\n- Equipos vinculados: ${result.matched}\n- Planes creados/actualizados: ${result.updated}\n- No encontrados: ${result.missing}`);
+        setActiveTab("auto");
+        loadData();
+      }
     } catch (err) {
       alert("Error al sincronizar: " + err.message);
     } finally {
@@ -326,6 +330,14 @@ export default function PlanMaestro() {
               )}
             </div>
 
+            {cronogramaAnual.length > 0 && (
+              <div className="anual-legend">
+                <span className="legend-item"><span className="dot p"></span> Programado</span>
+                <span className="legend-item"><span className="dot c"></span> Completado</span>
+                <span className="legend-item"><span className="dot v"></span> Vencido</span>
+              </div>
+            )}
+
             {cronogramaAnual.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-state-icon">📊</div>
@@ -355,13 +367,16 @@ export default function PlanMaestro() {
                         <td className="tarea-cell" title={item.task_description}>{item.task_description || "—"}</td>
                         {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(m => {
                           const scheduled = item.maintenance_schedule_months?.find(mon => mon.month_number === m);
+                          if (!scheduled) return <td key={m} className="month-col empty"></td>;
+                          
+                          const statusClass = scheduled.status.toLowerCase();
+                          const statusIcon = statusClass === "completado" ? "✓" : statusClass === "vencido" ? "!" : "P";
+                          
                           return (
-                            <td key={m} className="month-col">
-                              {scheduled && (
-                                <div className={`scheduled-badge ${scheduled.status.toLowerCase()}`} title={scheduled.status}>
-                                  X
-                                </div>
-                              )}
+                            <td key={m} className={`month-col has-plan ${statusClass}`}>
+                              <div className={`scheduled-badge ${statusClass}`} title={`${scheduled.month_name}: ${scheduled.status}`}>
+                                {statusIcon}
+                              </div>
                             </td>
                           );
                         })}

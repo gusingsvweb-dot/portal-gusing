@@ -167,8 +167,9 @@ export async function getScheduleByYear(year) {
  * @param {number} year
  */
 export async function syncAllSchedulesWithMotor(year) {
+  const result = { matched: 0, updated: 0, missing: 0 };
   const schedules = await getScheduleByYear(year);
-  if (!schedules.length) return;
+  if (!schedules.length) return result;
 
   const allCodes = schedules.map(s => s.equipment_code);
   const { data: assetMapData } = await supabase
@@ -187,7 +188,12 @@ export async function syncAllSchedulesWithMotor(year) {
 
   for (const row of schedules) {
     const assetId = assetMap.get(row.equipment_code);
-    if (!assetId) continue;
+    if (!assetId) {
+      result.missing++;
+      continue;
+    }
+
+    result.matched++;
 
     // Calcular fecha base: día 15 del mes base del año seleccionado
     const monthIndex = MONTH_MAP[row.base_month] ?? 0;
@@ -202,12 +208,16 @@ export async function syncAllSchedulesWithMotor(year) {
     }
 
     // Upsert en planes_preventivos
-    await supabase.from(st("planes_preventivos")).upsert({
+    const { error: upsertErr } = await supabase.from(st("planes_preventivos")).upsert({
       activo_id:         assetId,
       frecuencia_dias:   frequencyMonths * 30,
       proxima_fecha:     nextDate.toISOString().split("T")[0],
       descripcion_tarea: row.task_description || "Mantenimiento preventivo programado",
       activo:            true
     }, { onConflict: "activo_id" });
+
+    if (!upsertErr) result.updated++;
   }
+
+  return result;
 }
