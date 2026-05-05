@@ -227,11 +227,12 @@ export function parseFRMN19(workbook) {
       nombre,
       asset_type:      "Equipo",
       tipo:            "Equipo",
-      criticidad:      "Media",        // Default para equipos de planta
+      criticidad:      "Media",
       process:         getByAliases(row, COL.proceso),
       plant:           getByAliases(row, COL.planta),
       level_num:       nivel ? (parseInt(nivel) || null) : null,
-      area:            getByAliases(row, COL.area),
+      area:            getByAliases(row, COL.area), // Mantenemos por compatibilidad
+      location:        getByAliases(row, COL.area), // Para FR-MN-19, area/ubicación es lo mismo
       sterile_area:    getByAliases(row, COL.area_esteril),
       estado:          normalizeStatus(getByAliases(row, COL.estado)) || "Activo",
       sac:             getByAliases(row, COL.sac),

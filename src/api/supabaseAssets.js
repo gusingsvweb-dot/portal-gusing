@@ -70,8 +70,8 @@ export async function saveAssetsToSupabase({
   const techByCode = new Map(techSpecs.map(t => [t.activo_id, t]));
 
   // ── Sincronizar Áreas ──────────────────────────────────────────────────────
-  // Obtenemos todos los nombres de procesos/áreas únicos del Excel
-  const rawAreas = [...new Set(assets.map(a => a.process || a.area || a.location).filter(Boolean))];
+  // Priorizamos 'location' (Ubicación) sobre 'process' según requerimiento
+  const rawAreas = [...new Set(assets.map(a => a.location || a.area || a.process).filter(Boolean))];
   
   // Obtener áreas existentes en la BD (usando st() para modo NO_)
   const { data: dbAreas, error: fetchErr } = await supabase.from(st("areas")).select("id, nombre");
@@ -108,8 +108,8 @@ export async function saveAssetsToSupabase({
       continue;
     }
 
-    // Mapear el area_id basado en lo que detectamos
-    const areaNameRaw = process || area || location;
+    // Mapear el area_id priorizando ubicación
+    const areaNameRaw = location || area || process;
     const areaId      = areaNameRaw ? areaMap.get(areaNameRaw.trim().toUpperCase()) : null;
 
     const payload = {
