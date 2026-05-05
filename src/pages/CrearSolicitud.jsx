@@ -201,11 +201,19 @@ export default function CrearSolicitud() {
             }
           >
             <option value="">Seleccione...</option>
-            {prioridades.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.nombre}
-              </option>
-            ))}
+            {prioridades
+              .filter(p => {
+                // Si es mantenimiento (Area ID 1), solo Bajo, Medio y Alto
+                if (Number(form.area_id) === 1) {
+                  return !["Muy Alto", "Critica", "Urgente"].includes(p.nombre);
+                }
+                return true;
+              })
+              .map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.nombre}
+                </option>
+              ))}
           </select>
 
           {/* Campos dinámicos según el área/tipo */}
@@ -236,7 +244,11 @@ export default function CrearSolicitud() {
             }
           />
 
-          {mensaje && <p className="crear-msg">{mensaje}</p>}
+          {mensaje && (
+            <p className="crear-msg" data-type={mensaje.includes("✅") ? "success" : "error"}>
+              {mensaje}
+            </p>
+          )}
 
           <button className="crear-btn" onClick={enviarSolicitud} disabled={loading}>
             {loading ? "Enviando..." : "Enviar Solicitud"}

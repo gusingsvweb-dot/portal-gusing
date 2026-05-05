@@ -8,7 +8,7 @@ export default function CamposDinamicos({ tipo, areaId, form, setForm }) {
     // Cargar activos si es área de Mantenimiento (Area ID 1)
     if (Number(areaId) === 1 || Number(tipo) === 2) {
       async function loadActivos() {
-        const { data } = await supabase.from(st("activos")).select("id, nombre, tipo").order("nombre");
+        const { data } = await supabase.from(st("activos")).select("id, nombre, tipo, codigo").order("nombre");
         setActivos(data || []);
       }
       loadActivos();
@@ -81,7 +81,7 @@ export default function CamposDinamicos({ tipo, areaId, form, setForm }) {
                   .filter((a) => a.tipo === form.maint_category)
                   .map((a) => (
                     <option key={a.id} value={a.id}>
-                      {a.nombre}
+                      {a.nombre} {a.codigo ? `(${a.codigo})` : ""}
                     </option>
                   ))}
               </select>
