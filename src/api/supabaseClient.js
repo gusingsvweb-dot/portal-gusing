@@ -33,7 +33,8 @@ export const ss = (selectString) => {
     'productos', 'clientes', 'estados', 'usuarios', 'areas',
     'prioridades', 'tipos_solicitud', 'pedido_etapas', 'pedidos_produccion',
     'observaciones_pedido', 'MateriasPrimas', 'flujos_forma', 'pedidos_bodega_items',
-    'notificaciones', 'tareas_produccion', 'pedido_etapas_liberaciones'
+    'notificaciones', 'tareas_produccion', 'pedido_etapas_liberaciones',
+    'activos', 'proveedores_mant'
   ];
 
   let result = selectString;
