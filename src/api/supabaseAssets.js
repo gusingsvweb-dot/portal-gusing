@@ -69,8 +69,33 @@ export async function saveAssetsToSupabase({
   const now    = new Date().toISOString();
   const techByCode = new Map(techSpecs.map(t => [t.activo_id, t]));
 
+  // ── Sincronizar Áreas ──────────────────────────────────────────────────────
+  // Obtenemos todos los nombres de procesos/áreas únicos del Excel
+  const rawAreas = [...new Set(assets.map(a => a.process || a.area || a.location).filter(Boolean))];
+  
+  // Obtener áreas existentes en la BD
+  const { data: dbAreas } = await supabase.from(st("areas")).select("id, nombre");
+  const areaMap = new Map(dbAreas?.map(a => [a.nombre.toUpperCase(), a.id]) || []);
+
+  // Crear las áreas que no existan
+  for (const areaName of rawAreas) {
+    const key = areaName.toUpperCase();
+    if (!areaMap.has(key)) {
+      const { data: newAr, error: arErr } = await supabase
+        .from(st("areas"))
+        .insert([{ nombre: areaName }])
+        .select("id")
+        .single();
+      
+      if (!arErr && newAr) {
+        areaMap.set(key, newAr.id);
+      }
+    }
+  }
+
+  // ── Procesar Activos ───────────────────────────────────────────────────────
   for (const asset of assets) {
-    const { _fila, ...cleanAsset } = asset; // quitar campo interno _fila
+    const { _fila, process, area, location, ...cleanAsset } = asset; 
     const isExisting = existingCodes.has(cleanAsset.codigo);
 
     if (isExisting && duplicateMode === "skip") {
@@ -78,8 +103,13 @@ export async function saveAssetsToSupabase({
       continue;
     }
 
+    // Mapear el area_id basado en lo que detectamos
+    const areaName = process || area || location;
+    const areaId   = areaName ? areaMap.get(areaName.toUpperCase()) : null;
+
     const payload = {
       ...cleanAsset,
+      area_id:          areaId,
       imported_at:      now,
       imported_by:      userId || null,
       source_file_name: fileName,
@@ -88,7 +118,6 @@ export async function saveAssetsToSupabase({
     let err;
 
     if (isExisting && duplicateMode === "update") {
-      // UPDATE — no sobreescribir campos vacíos con null si ya tienen valor
       const { error } = await supabase
         .from(st(T_ACTIVOS))
         .update(payload)
@@ -96,7 +125,6 @@ export async function saveAssetsToSupabase({
       err = error;
       if (!error) result.updated++;
     } else {
-      // INSERT
       const { error } = await supabase
         .from(st(T_ACTIVOS))
         .insert(payload);
@@ -112,7 +140,6 @@ export async function saveAssetsToSupabase({
     // Guardar specs técnicas si existen
     const spec = techByCode.get(cleanAsset.codigo);
     if (spec) {
-      // Verificar si ya existe el spec
       const { data: existing } = await supabase
         .from(st(T_TECH_SPECS))
         .select("id")
