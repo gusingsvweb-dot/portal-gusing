@@ -199,34 +199,6 @@ export default function PlanMaestro() {
           </button>
         </div>
 
-        {/* STATS */}
-        <div className="pm-stats-row">
-          <div className="pm-stat-card pm-vencidos">
-            <span className="pm-stat-num">{stats.vencidos}</span>
-            <span className="pm-stat-lbl">Vencidos</span>
-            {stats.vencidos > 0 && <span className="pm-stat-sub">Requieren acción inmediata</span>}
-          </div>
-          <div className="pm-stat-card pm-proximos">
-            <span className="pm-stat-num">{stats.proximos7}</span>
-            <span className="pm-stat-lbl">Próximos 7 días</span>
-          </div>
-          <div className="pm-stat-card pm-activos">
-            <span className="pm-stat-num">{stats.activos}</span>
-            <span className="pm-stat-lbl">Planes Activos</span>
-          </div>
-          <div className="pm-stat-card pm-total">
-            <span className="pm-stat-num">{stats.total}</span>
-            <span className="pm-stat-lbl">Total Programas</span>
-          </div>
-        </div>
-
-        {/* ALERTA VENCIDOS */}
-        {stats.vencidos > 0 && (
-          <div className="pm-alert-banner">
-            <span>⚠️ Hay <strong>{stats.vencidos} plan{stats.vencidos !== 1 ? "es" : ""}</strong> con fecha vencida. Use "Procesar Pendientes" para generar las órdenes de trabajo automáticamente.</span>
-          </div>
-        )}
-
         {loading ? (
           <div className="mant-loading-state">Cargando datos...</div>
         ) : activeTab === "auto" ? (
