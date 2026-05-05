@@ -39,10 +39,23 @@ export const ss = (selectString) => {
 
   let result = selectString;
   relationships.forEach(rel => {
-    // Busca el nombre de la relación seguido de ( o !
-    // Ejemplo: productos ( o pedidos_bodega_items!inner(
-    const regex = new RegExp("\\b(" + rel + ")\\b(?=\\s*[\\(!])", "g");
-    result = result.replace(regex, "$1:NO_$1");
+    // Busca el nombre de la relación, ya sea solo o con un alias previo (ej: destino:areas)
+    // El regex busca el nombre de la tabla precedido por : o por un espacio/inicio de string,
+    // y seguido de ( o !
+    const regex = new RegExp("(\\b" + rel + ")\\b(?=\\s*[\\(!])", "g");
+    
+    // Si ya tiene un alias (ej: area_destino:areas), reemplazamos solo la tabla
+    // Si no lo tiene, creamos el alias para que el frontend reciba el nombre original
+    result = result.replace(regex, (match, p1, offset) => {
+      const charBefore = result[offset - 1];
+      if (charBefore === ':') {
+        // Caso 'alias:tabla' -> 'alias:NO_tabla'
+        return `NO_${p1}`;
+      } else {
+        // Caso 'tabla' -> 'tabla:NO_tabla'
+        return `${p1}:NO_${p1}`;
+      }
+    });
   });
 
   return result;
