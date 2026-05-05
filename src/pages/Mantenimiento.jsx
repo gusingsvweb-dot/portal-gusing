@@ -29,36 +29,57 @@ export default function Mantenimiento() {
 
   const loadData = useCallback(async () => {
     setLoading(true);
-    setError(""); // Limpiar errores previos
+    setError("");
     
     try {
-      const selectStr = ss(`*, tipos_solicitud(nombre), prioridades(nombre), estados(nombre), area_destino:areas(nombre), activos(nombre, tipo, codigo, criticidad), proveedor:proveedores_mant(nombre)`);
-      console.log("Consultando tablero con:", selectStr);
-
-      const { data: sol, error: solErr } = await supabase
-        .from(st("solicitudes"))
-        .select(selectStr)
-        .eq("area_id", 1)
-        .order("id", { ascending: false });
-
-      if (solErr) {
-        console.error("Error cargando solicitudes:", solErr);
-        setError(`Error al cargar órdenes: ${solErr.message} (${solErr.code})`);
-      } else {
-        setSolicitudes(sol || []);
-      }
-
-      const [{ data: prov }, { data: reps }] = await Promise.all([
-        supabase.from(st("proveedores_mant")).select("*").order("nombre"),
-        supabase.from(st("repuestos")).select("*").order("nombre"),
+      // 1. Cargar todos los catálogos en paralelo (sin joins)
+      const [
+        { data: solRaw, error: solErr },
+        { data: tiposRaw },
+        { data: prioRaw },
+        { data: estRaw },
+        { data: arsRaw },
+        { data: actRaw },
+        { data: provRaw },
+        { data: repsRaw }
+      ] = await Promise.all([
+        supabase.from(st("solicitudes")).select("*").eq("area_id", 1).order("id", { ascending: false }),
+        supabase.from(st("tipos_solicitud")).select("*"),
+        supabase.from(st("prioridades")).select("*"),
+        supabase.from(st("estados")).select("*"),
+        supabase.from(st("areas")).select("*"),
+        supabase.from(st("activos")).select("*"),
+        supabase.from(st("proveedores_mant")).select("*"),
+        supabase.from(st("repuestos")).select("*")
       ]);
-      
-      setProveedores(prov || []);
-      setAllRepuestos(reps || []);
+
+      if (solErr) throw solErr;
+
+      // 2. Hidratar los datos manualmente (Mapas para velocidad)
+      const tMap = new Map(tiposRaw?.map(t => [t.id, t]));
+      const pMap = new Map(prioRaw?.map(p => [p.id, p]));
+      const eMap = new Map(estRaw?.map(e => [e.id, e]));
+      const aMap = new Map(arsRaw?.map(a => [a.id, a]));
+      const actMap = new Map(actRaw?.map(a => [a.id, a]));
+      const provMap = new Map(provRaw?.map(p => [p.id, p]));
+
+      const hydrated = (solRaw || []).map(s => ({
+        ...s,
+        tipos_solicitud: tMap.get(s.tipo_solicitud_id),
+        prioridades: pMap.get(s.prioridad_id),
+        estados: eMap.get(s.estado_id),
+        area_destino: aMap.get(s.area_id),
+        activos: actMap.get(s.activo_id),
+        proveedor: provMap.get(s.proveedor_id)
+      }));
+
+      setSolicitudes(hydrated);
+      setProveedores(provRaw || []);
+      setAllRepuestos(repsRaw || []);
 
     } catch (err) {
-      console.error("Error inesperado en loadData:", err);
-      setError("Ocurrió un error inesperado al conectar con el servidor.");
+      console.error("Error en loadData:", err);
+      setError(`Error al cargar datos: ${err.message}`);
     } finally {
       setLoading(false);
     }
