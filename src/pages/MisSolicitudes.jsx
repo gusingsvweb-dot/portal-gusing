@@ -23,22 +23,42 @@ export default function MisSolicitudes() {
   async function loadSolicitudes() {
     if (!usuarioActual?.usuario) return;
 
-    const { data, error } = await supabase
-      .from(st("solicitudes"))
-      .select(ss(`
-        *,
-        tipos_solicitud ( nombre ),
-        prioridades ( nombre ),
-        estados ( nombre ),
-        areas:area_id ( nombre )
-      `))
-      .eq("usuario_id", usuarioActual.usuario)
-      .order("id", { ascending: false });
+    try {
+      // 1. Cargar datos base y catálogos en paralelo (sin joins)
+      const [
+        { data: solRaw, error: solErr },
+        { data: tiposRaw },
+        { data: prioRaw },
+        { data: estRaw },
+        { data: arsRaw }
+      ] = await Promise.all([
+        supabase.from(st("solicitudes")).select("*").eq("usuario_id", usuarioActual.usuario).order("id", { ascending: false }),
+        supabase.from(st("tipos_solicitud")).select("*"),
+        supabase.from(st("prioridades")).select("*"),
+        supabase.from(st("estados")).select("*"),
+        supabase.from(st("areas")).select("*")
+      ]);
 
-    if (!error) {
-      setSolicitudes(data || []);
-    } else {
-      console.error("Error cargando solicitudes:", error);
+      if (solErr) throw solErr;
+
+      // 2. Hidratar manualmente
+      const tMap = new Map(tiposRaw?.map(t => [t.id, t]));
+      const pMap = new Map(prioRaw?.map(p => [p.id, p]));
+      const eMap = new Map(estRaw?.map(e => [e.id, e]));
+      const aMap = new Map(arsRaw?.map(a => [a.id, a]));
+
+      const hydrated = (solRaw || []).map(s => ({
+        ...s,
+        tipos_solicitud: tMap.get(s.tipo_solicitud_id),
+        prioridades: pMap.get(s.prioridad_id),
+        estados: eMap.get(s.estado_id),
+        areas: aMap.get(s.area_id)
+      }));
+
+      setSolicitudes(hydrated);
+
+    } catch (err) {
+      console.error("Error cargando solicitudes:", err);
     }
   }
 
