@@ -311,7 +311,10 @@ export default function Mantenimiento() {
                             value={prioridadId} 
                             onChange={e => setPrioridadId(e.target.value)}
                           >
-                            {allPrioridades.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                            {allPrioridades
+                              .filter(p => p.nombre !== "Muy Alto")
+                              .map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)
+                            }
                           </select>
                           <button 
                             className="mant-btn-action success" 
