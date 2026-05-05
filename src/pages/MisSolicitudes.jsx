@@ -12,8 +12,7 @@ export default function MisSolicitudes() {
   const [activeTab, setActiveTab] = useState("Todas");
   const [filtro, setFiltro] = useState("");
 
-  // Calificación
-  const [calificacion, setCalificacion] = useState("");
+  const [puntos, setPuntos] = useState(0);
   const [comentario, setComentario] = useState("");
   const [error, setError] = useState("");
 
@@ -127,8 +126,8 @@ export default function MisSolicitudes() {
   async function enviarCalificacion() {
     if (!selected) return;
 
-    if (!calificacion.trim()) {
-      setError("Debes escribir una calificación/comentario.");
+    if (puntos === 0) {
+      setError("Por favor, selecciona una calificación (estrellas).");
       return;
     }
 
@@ -136,7 +135,7 @@ export default function MisSolicitudes() {
       .from(st("solicitudes"))
       .update({
         estado_id: 15, // Calificado
-        calificacion,
+        calificacion: puntos.toString(),
         comentario,
       })
       .eq("id", selected.id);
@@ -146,7 +145,7 @@ export default function MisSolicitudes() {
       return;
     }
 
-    setCalificacion("");
+    setPuntos(0);
     setComentario("");
     setSelected(null);
     loadSolicitudes();
@@ -296,21 +295,37 @@ export default function MisSolicitudes() {
               {selected.estado_id === 14 && (
                 <div className="ms-rating-box">
                   <div className="ms-rating-title">⭐ Calificar Servicio</div>
-                  <p>Ayúdanos a mejorar contándonos tu experiencia con esta solicitud.</p>
+                  <p>Ayúdanos a mejorar calificando la atención de esta solicitud:</p>
+
+                  <div className="ms-stars-row" style={{ display: "flex", gap: "10px", margin: "15px 0", fontSize: "2rem", cursor: "pointer" }}>
+                    {[1, 2, 3, 4, 5].map((num) => (
+                      <span 
+                        key={num} 
+                        style={{ color: num <= puntos ? "#f59e0b" : "#e2e8f0", transition: "all 0.2s" }}
+                        onClick={() => setPuntos(num)}
+                      >
+                        ★
+                      </span>
+                    ))}
+                  </div>
 
                   <div className="ms-input-area">
                     <textarea
                       className="ms-filter"
                       rows="3"
-                      value={calificacion}
-                      placeholder="Escribe tu opinión aquí..."
-                      onChange={(e) => setCalificacion(e.target.value)}
-                      style={{ background: '#fff' }}
+                      value={comentario}
+                      placeholder="Comentario adicional (opcional)..."
+                      onChange={(e) => setComentario(e.target.value)}
+                      style={{ background: '#fff', border: '1px solid #e2e8f0', width: '100%', padding: '10px', borderRadius: '8px' }}
                     />
-                    <button className="ms-submit-btn" onClick={enviarCalificacion}>
+                    <button 
+                      className="ms-submit-btn" 
+                      onClick={enviarCalificacion}
+                      style={{ marginTop: '10px', background: '#1e40af', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}
+                    >
                       Enviar Calificación
                     </button>
-                    {error && <p style={{ color: '#ef4444', fontWeight: 'bold' }}>{error}</p>}
+                    {error && <p style={{ color: '#ef4444', fontWeight: 'bold', marginTop: '10px' }}>{error}</p>}
                   </div>
                 </div>
               )}

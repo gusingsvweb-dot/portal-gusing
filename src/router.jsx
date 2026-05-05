@@ -29,12 +29,12 @@ import AutorizarDespachos from "./pages/AutorizarDespachos";
 import GarantiaCalidad from "./pages/GarantiaCalidad";
 import BodegaMP from "./pages/BodegaMP";
 import BodegaPT from "./pages/BodegaPT";
-import GestionActivos from "./pages/GestionActivos.jsx";
+import GestionEquipos from "./pages/GestionEquipos.jsx";
 import GestionProveedoresMant from "./pages/GestionProveedoresMant.jsx";
 import PlanMaestro from "./pages/PlanMaestro.jsx";
 import GestionRepuestos from "./pages/GestionRepuestos.jsx";
 import ImportarCronograma from "./pages/ImportarCronograma.jsx";
-import ImportarActivosExcel from "./pages/ImportarActivosExcel.jsx";
+import ImportarEquiposExcel from "./pages/ImportarEquiposExcel.jsx";
 
 
 export default function AppRouter() {
@@ -298,10 +298,10 @@ export default function AppRouter() {
       />
 
       <Route
-        path="/mantenimiento/activos"
+        path="/mantenimiento/equipos"
         element={
           ["mantenimiento", "gerencia"].includes(usuarioActual?.rol)
-            ? <GestionActivos />
+            ? <GestionEquipos />
             : <Navigate to="/" />
         }
       />
@@ -343,10 +343,10 @@ export default function AppRouter() {
       />
 
       <Route
-        path="/mantenimiento/importar-activos"
+        path="/mantenimiento/importar-equipos"
         element={
           ["mantenimiento", "gerencia"].includes(usuarioActual?.rol)
-            ? <ImportarActivosExcel />
+            ? <ImportarEquiposExcel />
             : <Navigate to="/" />
         }
       />

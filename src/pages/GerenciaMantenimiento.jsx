@@ -74,8 +74,8 @@ export default function GerenciaMantenimiento() {
                         <p className="mant-subtitle">Panel de control y auditoría</p>
                     </div>
                     <div style={{ display: "flex", gap: "10px" }}>
-                        <button className="mant-btn primary" onClick={() => navigate("/mantenimiento/activos")}>
-                            🏢 Activos
+                        <button className="mant-btn primary" onClick={() => navigate("/mantenimiento/equipos")}>
+                            🏢 Equipos
                         </button>
                         <button className="mant-btn primary" onClick={() => navigate("/mantenimiento/proveedores")}>
                             🚚 Proveedores
@@ -131,7 +131,7 @@ export default function GerenciaMantenimiento() {
                                 <InfoBox label="Prioridad" value={selected.prioridades?.nombre} />
                                 <InfoBox label="Solicitante" value={selected.usuario_id} />
                                 <InfoBox label="Área" value={selected.area_solicitante} />
-                                <InfoBox label="Activo" value={selected.activos?.nombre || "N/A"} />
+                                <InfoBox label="Equipo" value={selected.activos?.nombre || "N/A"} />
                                 <InfoBox label="Proveedor" value={selected.proveedor?.nombre || "No asignado"} />
                             </div>
 

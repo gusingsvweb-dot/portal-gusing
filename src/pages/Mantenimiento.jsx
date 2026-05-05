@@ -4,6 +4,7 @@ import Footer from "../components/Footer";
 import { supabase, st, ss } from "../api/supabaseClient";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { notifyUser } from "../api/notifications";
 import "./Mantenimiento.css";
 
 const NEXT_STATE = { 1: 13, 13: 14, 14: 15, 15: 15 };
@@ -26,8 +27,19 @@ export default function Mantenimiento() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [filtro, setFiltro] = useState("");
+  const [filtroTecnico, setFiltroTecnico] = useState("todos");
   const [activeTab, setActiveTab] = useState("info");
   const [allPrioridades, setAllPrioridades] = useState([]);
+  const [showManualForm, setShowManualForm] = useState(false);
+  const [manualForm, setManualForm] = useState({
+    tipo_solicitud_id: "",
+    prioridad_id: "",
+    descripcion: "",
+    activo_id: "",
+    tecnico_asignado: ""
+  });
+
+  const TECNICOS = ["Carlos R.", "Julián M.", "Andrés G."];
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -97,16 +109,24 @@ export default function Mantenimiento() {
   }), [solicitudes]);
 
   const filtered = useMemo(() => {
-    if (!filtro.trim()) return solicitudes;
     const q = filtro.toLowerCase();
-    return solicitudes.filter(s =>
-      s.descripcion?.toLowerCase().includes(q) ||
-      s.tipos_solicitud?.nombre?.toLowerCase().includes(q) ||
-      s.activos?.nombre?.toLowerCase().includes(q) ||
-      s.area_solicitante?.toLowerCase().includes(q) ||
-      String(s.consecutivo)?.includes(q)
-    );
-  }, [solicitudes, filtro]);
+    let res = solicitudes;
+    
+    if (filtroTecnico !== "todos") {
+      res = res.filter(s => s.tecnico_asignado === filtroTecnico);
+    }
+
+    if (q) {
+      res = res.filter(s =>
+        s.descripcion?.toLowerCase().includes(q) ||
+        s.tipos_solicitud?.nombre?.toLowerCase().includes(q) ||
+        s.activos?.nombre?.toLowerCase().includes(q) ||
+        s.area_solicitante?.toLowerCase().includes(q) ||
+        String(s.consecutivo)?.includes(q)
+      );
+    }
+    return res;
+  }, [solicitudes, filtro, filtroTecnico]);
 
   const openModal = async (s) => {
     setSelected(s);
@@ -115,7 +135,13 @@ export default function Mantenimiento() {
     setAccion(s.accion_realizada || "");
     setConsumos([]);
     setError("");
-    setActiveTab("info");
+    
+    // Si ya está en proceso, abrir directamente la pestaña de Acción
+    if (s.estado_id === 13) {
+      setActiveTab("accion");
+    } else {
+      setActiveTab("info");
+    }
     if ([14, 15].includes(s.estado_id)) {
       const { data } = await supabase
         .from(st("consumos"))
@@ -169,6 +195,16 @@ export default function Mantenimiento() {
 
     const { error: err } = await supabase.from(st("solicitudes")).update(update).eq("id", selected.id);
     if (err) { alert("Error: " + err.message); setSaving(false); return; }
+
+    if (next === 14 && selected.usuario_id) {
+      await notifyUser(
+        selected.usuario_id,
+        "✅ Orden de Mantenimiento Finalizada",
+        `La solicitud M-${selected.consecutivo} para ${selected.activos?.nombre || "equipo"} ha sido finalizada. Por favor, califica el servicio.`,
+        selected.id
+      );
+    }
+
     closeModal();
     loadData();
   };
@@ -191,6 +227,50 @@ export default function Mantenimiento() {
     // Actualizar localmente para mostrar el cambio sin cerrar modal
     const nuevaPrio = allPrioridades.find(p => String(p.id) === String(prioridadId));
     setSelected(prev => ({ ...prev, prioridad_id: prioridadId, prioridades: nuevaPrio }));
+  };
+
+  const updateTecnico = async (tecnico) => {
+    if (!selected) return;
+    setSaving(true);
+    await supabase.from(st("solicitudes")).update({ tecnico_asignado: tecnico }).eq("id", selected.id);
+    setSaving(false);
+    loadData();
+    setSelected(prev => ({ ...prev, tecnico_asignado: tecnico }));
+  };
+
+  const saveManual = async () => {
+    if (!manualForm.activo_id || !manualForm.descripcion || !manualForm.prioridad_id) {
+      setError("Completa todos los campos obligatorios.");
+      return;
+    }
+    setSaving(true);
+    
+    // Consecutivo
+    let nextConsecutivo = 1;
+    const { data: maxData } = await supabase
+      .from(st("solicitudes"))
+      .select("consecutivo")
+      .eq("area_id", 1)
+      .order("consecutivo", { ascending: false })
+      .limit(1);
+    if (maxData?.length > 0) nextConsecutivo = (maxData[0].consecutivo || 0) + 1;
+
+    const { error: err } = await supabase.from(st("solicitudes")).insert([{
+      ...manualForm,
+      area_id: 1, // Mantenimiento
+      estado_id: 1, // Pendiente
+      consecutivo: nextConsecutivo,
+      usuario_id: "ADMIN_MANT",
+      area_solicitante: "MANTENIMIENTO"
+    }]);
+
+    if (err) { alert("Error: " + err.message); }
+    else {
+      setShowManualForm(false);
+      setManualForm({ tipo_solicitud_id: "", prioridad_id: "", descripcion: "", activo_id: "", tecnico_asignado: "" });
+      loadData();
+    }
+    setSaving(false);
   };
 
   const addConsumo = () => setConsumos(prev => [...prev, { repuesto_id: "", cantidad: 1 }]);
@@ -216,15 +296,19 @@ export default function Mantenimiento() {
         <header className="mant-header-section">
           <div>
             <h2 className="mant-title">Tablero de Mantenimiento</h2>
-            <p className="mant-subtitle">Gestión centralizada de órdenes y activos — {new Date().toLocaleDateString("es-CO", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</p>
+            <p className="mant-subtitle">Gestión centralizada de órdenes y equipos — {new Date().toLocaleDateString("es-CO", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</p>
+          </div>
+          <div className="mant-hero-img-container">
+            <img src="/Users/juanfelipegarzontocora/.gemini/antigravity/brain/f07fe63c-bdad-4415-ada0-6501c89fd8e4/mantenimiento_premium_hero_1778021052361_1778023707721.png" alt="Mantenimiento" className="mant-hero-mini-img" />
           </div>
           <div className="mant-nav-pills">
             <button className="nav-pill active" onClick={() => navigate("/mantenimiento")}>Órdenes</button>
-            <button className="nav-pill" onClick={() => navigate("/mantenimiento/activos")}>Activos</button>
+            <button className="nav-pill" onClick={() => navigate("/mantenimiento/activos")}>Equipos</button>
             <button className="nav-pill" onClick={() => navigate("/mantenimiento/plan-maestro")}>Plan Maestro</button>
             <button className="nav-pill" onClick={() => navigate("/mantenimiento/repuestos")}>Repuestos</button>
             <button className="nav-pill" onClick={() => navigate("/mantenimiento/proveedores")}>Proveedores</button>
             <button className="nav-pill kpi-pill" onClick={() => navigate("/kpis-mantenimiento")}>KPIs</button>
+            <button className="nav-pill" onClick={() => setShowManualForm(true)}>+ Intervención Manual</button>
           </div>
         </header>
 
@@ -249,11 +333,20 @@ export default function Mantenimiento() {
             <span className="search-icon">🔍</span>
             <input
               className="mant-search-input"
-              placeholder="Buscar por tipo, activo, área, consecutivo..."
+              placeholder="Buscar por tipo, equipo, área, consecutivo..."
               value={filtro}
               onChange={e => setFiltro(e.target.value)}
             />
             {filtro && <button className="search-clear" onClick={() => setFiltro("")}>✖</button>}
+          </div>
+
+          <div className="mant-filter-tec">
+            <label>Filtrar por Técnico:</label>
+            <select className="v2-select" value={filtroTecnico} onChange={e => setFiltroTecnico(e.target.value)}>
+              <option value="todos">Todos los técnicos</option>
+              {TECNICOS.map(t => <option key={t} value={t}>{t}</option>)}
+              <option value="">Sin asignar</option>
+            </select>
           </div>
           {filtro && <span className="filter-count">{filtered.length} resultado{filtered.length !== 1 ? "s" : ""}</span>}
         </div>
@@ -288,11 +381,12 @@ export default function Mantenimiento() {
 
             {/* Tabs */}
             <div className="modal-tabs">
-              <button className={`modal-tab ${activeTab === "info" ? "active" : ""}`} onClick={() => setActiveTab("info")}>Información</button>
-              {selected.estado_id >= 13 && <button className={`modal-tab ${activeTab === "accion" ? "active" : ""}`} onClick={() => setActiveTab("accion")}>Acción & Repuestos</button>}
-              {[14,15].includes(selected.estado_id) && <button className={`modal-tab ${activeTab === "consumos" ? "active" : ""}`} onClick={() => setActiveTab("consumos")}>Consumos</button>}
-            </div>
-
+            <button className={`m-tab ${activeTab === "info" ? "active" : ""}`} onClick={() => setActiveTab("info")}>Información</button>
+            <button className={`m-tab ${activeTab === "accion" ? "active" : ""}`} onClick={() => setActiveTab("accion")}>Resolución</button>
+            {[14, 15].includes(selected.estado_id) && (
+              <button className={`m-tab ${activeTab === "consumos" ? "active" : ""}`} onClick={() => setActiveTab("consumos")}>Repuestos</button>
+            )}
+          </div>
             <div className="modal-box-body">
               {/* TAB: INFO */}
               {activeTab === "info" && (
@@ -332,10 +426,23 @@ export default function Mantenimiento() {
 
                     <InfoBox label="Área Solicitante" value={selected.area_solicitante} />
                     <InfoBox label="Solicitante" value={selected.usuario_id} />
-                    <InfoBox label="Activo Relacionado" value={selected.activos?.nombre || "N/A"} />
+                    <InfoBox label="Equipo" value={selected.activos?.nombre || "N/A"} />
                     <InfoBox label="Fecha Apertura" value={new Date(selected.created_at).toLocaleString("es-CO")} />
                     {selected.fecha_cierre && <InfoBox label="Fecha Cierre" value={new Date(selected.fecha_cierre).toLocaleString("es-CO")} />}
                     {selected.proveedor && <InfoBox label="Proveedor" value={selected.proveedor.nombre} />}
+                    
+                    <div className="info-item-box">
+                      <label>Técnico Interno Asignado</label>
+                      <select 
+                        className="v2-select" 
+                        value={selected.tecnico_asignado || ""} 
+                        onChange={e => updateTecnico(e.target.value)}
+                        disabled={selected.estado_id >= 14}
+                      >
+                        <option value="">Sin asignar...</option>
+                        {TECNICOS.map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                    </div>
                   </div>
                   <div className="modal-section">
                     <span className="modal-section-label">Descripción del Problema</span>
@@ -439,6 +546,11 @@ export default function Mantenimiento() {
                   )}
                 </div>
               )}
+              {selected.estado_id === 15 && (
+                <div style={{ padding: "20px", background: "#ecfdf5", borderRadius: "12px", color: "#047857", textAlign: "center", fontWeight: "600", marginTop: "20px" }}>
+                  ✔ Orden Cerrada y Calificada.
+                </div>
+              )}
             </div>
 
             {/* Modal Footer */}
@@ -451,8 +563,65 @@ export default function Mantenimiento() {
               )}
             </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {/* MANUAL INTERVENTION MODAL */}
+        {showManualForm && (
+          <div className="mant-modal-overlay-v2" onClick={() => setShowManualForm(false)}>
+            <div className="mant-modal-content-centered" onClick={e => e.stopPropagation()}>
+              <div className="modal-v2-header">
+                <h3>🛠️ Registro de Intervención Manual</h3>
+                <button className="close-btn-v2" onClick={() => setShowManualForm(false)}>✖</button>
+              </div>
+              <div className="modal-v2-body">
+                <div className="v2-form-group">
+                  <label>Equipo Relacionado *</label>
+                  <select className="v2-select" value={manualForm.activo_id} onChange={e => setManualForm({ ...manualForm, activo_id: e.target.value })}>
+                    <option value="">Seleccione equipo...</option>
+                    {solicitudes.reduce((acc, s) => {
+                      if (s.activos && !acc.find(a => a.id === s.activo_id)) acc.push(s.activos);
+                      return acc;
+                    }, []).map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+                  </select>
+                </div>
+                <div className="v2-form-row">
+                  <div className="v2-form-group">
+                    <label>Tipo de Solicitud</label>
+                    <select className="v2-select" value={manualForm.tipo_solicitud_id} onChange={e => setManualForm({ ...manualForm, tipo_solicitud_id: e.target.value })}>
+                      <option value="">Seleccione tipo...</option>
+                      <option value="2">Mantenimiento Correctivo</option>
+                      <option value="5">Mantenimiento Preventivo</option>
+                    </select>
+                  </div>
+                  <div className="v2-form-group">
+                    <label>Prioridad *</label>
+                    <select className="v2-select" value={manualForm.prioridad_id} onChange={e => setManualForm({ ...manualForm, prioridad_id: e.target.value })}>
+                      <option value="">Seleccione...</option>
+                      {allPrioridades.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="v2-form-group">
+                  <label>Asignar a Técnico</label>
+                  <select className="v2-select" value={manualForm.tecnico_asignado} onChange={e => setManualForm({ ...manualForm, tecnico_asignado: e.target.value })}>
+                    <option value="">Sin asignar...</option>
+                    {TECNICOS.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+                <div className="v2-form-group">
+                  <label>Descripción del Trabajo *</label>
+                  <textarea className="v2-input" rows={3} value={manualForm.descripcion} onChange={e => setManualForm({ ...manualForm, descripcion: e.target.value })} />
+                </div>
+              </div>
+              <div className="modal-v2-footer">
+                <button className="v2-btn-secondary" onClick={() => setShowManualForm(false)}>Cancelar</button>
+                <button className="v2-btn-primary" onClick={saveManual} disabled={saving}>Registrar Orden</button>
+              </div>
+            </div>
+          </div>
+        )}
+        )}
+      </div>
 
       <Footer />
     </>

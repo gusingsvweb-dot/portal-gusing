@@ -19,10 +19,10 @@ export default function CrearSolicitud() {
     tipo_solicitud_id: "",
     prioridad_id: "",
     descripcion: "",
-    justificacion: "",
     activo_id: "", 
     maint_category: "", // Nuevo para jerarquía
     maint_type: "",      // Nuevo para jerarquía
+    fecha_sugerida: "",  // Nuevo para instalaciones
   });
 
   const [loading, setLoading] = useState(false);
@@ -67,7 +67,7 @@ export default function CrearSolicitud() {
     // Validación obligatoria de jerarquía para Mantenimiento (Area ID 1)
     if (Number(form.area_id) === 1) {
       if (!form.maint_category || !form.maint_type || !form.activo_id) {
-        return setMensaje("⚠️ Para mantenimiento debes seleccionar Categoría, Tipo y Activo.");
+        return setMensaje("⚠️ Para mantenimiento debes seleccionar Categoría, Tipo y Equipo.");
       }
     } else if (!form.tipo_solicitud_id) {
       // Para otras áreas, el tipo estándar es obligatorio
@@ -104,7 +104,8 @@ export default function CrearSolicitud() {
       if (mapped) finalTipoId = mapped.id;
       
       // Enriquecer descripción
-      finalDesc = `[${form.maint_category.toUpperCase()} - ${form.maint_type.toUpperCase()}] \n${form.descripcion}`;
+      const extraFecha = form.fecha_sugerida ? `\n[FECHA SUGERIDA: ${form.fecha_sugerida}]` : "";
+      finalDesc = `[${form.maint_category.toUpperCase()} - ${form.maint_type.toUpperCase()}]${extraFecha}\n${form.descripcion}`;
     }
 
     // 3. Insertar solicitud
@@ -113,7 +114,7 @@ export default function CrearSolicitud() {
         tipo_solicitud_id: finalTipoId || null,
         prioridad_id: form.prioridad_id,
         descripcion: finalDesc,
-        justificacion: form.justificacion,
+        justificacion: "N/A",
         usuario_id: usuarioActual?.usuario,
         area_solicitante: usuarioActual?.areadetrabajo,
         estado_id: 1, // Pendiente
@@ -138,8 +139,8 @@ export default function CrearSolicitud() {
       tipo_solicitud_id: "",
       prioridad_id: "",
       descripcion: "",
-      justificacion: "",
       activo_id: "",
+      fecha_sugerida: "",
     });
   }
 
@@ -229,19 +230,10 @@ export default function CrearSolicitud() {
           {/* Descripción */}
           <label>Descripción general *</label>
           <textarea
-            rows="3"
+            rows="5"
             value={form.descripcion}
             onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
-          />
-
-          {/* Justificación */}
-          <label>Justificación (opcional)</label>
-          <textarea
-            rows="2"
-            value={form.justificacion}
-            onChange={(e) =>
-              setForm({ ...form, justificacion: e.target.value })
-            }
+            placeholder="Describe el problema o necesidad detalladamente..."
           />
 
           {mensaje && (

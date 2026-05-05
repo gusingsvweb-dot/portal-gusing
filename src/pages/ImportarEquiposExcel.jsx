@@ -10,7 +10,7 @@ import {
 } from "../api/supabaseAssets";
 import "./Mantenimiento.css";
 import "./ImportarCronograma.css";   // re-usa ic-* base styles
-import "./ImportarActivosExcel.css"; // estilos propios ia-*
+import "./ImportarEquiposExcel.css"; // estilos propios ia-*
 
 // ─── Helpers visuales ─────────────────────────────────────────────────────────
 
@@ -40,7 +40,7 @@ function StatusBadge({ status }) {
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 
-export default function ImportarActivosExcel() {
+export default function ImportarEquiposExcel() {
   const navigate = useNavigate();
   const { usuarioActual } = useAuth();
   const fileInputRef = useRef(null);
@@ -199,13 +199,13 @@ export default function ImportarActivosExcel() {
         {/* Header */}
         <div className="ic-header">
           <div>
-            <h2 className="ic-title">🏭 Importar Listado Maestro de Activos</h2>
+            <h2 className="ic-title">🏭 Importar Listado Maestro de Equipos</h2>
             <p className="ic-subtitle">
               Compatible con FR-MN-19 (equipos de planta) y FR-MN-05 (equipos de oficina)
             </p>
           </div>
-          <button className="ic-secondary-btn" onClick={() => navigate("/mantenimiento/activos")}>
-            ← Gestión de Activos
+          <button className="ic-secondary-btn" onClick={() => navigate("/mantenimiento/equipos")}>
+            ← Gestión de Equipos
           </button>
         </div>
 
@@ -377,7 +377,7 @@ export default function ImportarActivosExcel() {
                 {/* Modo de duplicados */}
                 {dupAssets.length > 0 && (
                   <div className="ic-card">
-                    <h3 className="ic-card-title">🔄 ¿Qué hacer con los {dupAssets.length} activos ya existentes?</h3>
+                    <h3 className="ic-card-title">🔄 ¿Qué hacer con los {dupAssets.length} equipos ya existentes?</h3>
                     <div className="ia-dup-options">
                       {[
                         { val: "skip",   icon: "⏭️", label: "Omitir duplicados",  sub: "Los activos ya existentes no se tocarán. Solo se importarán los nuevos." },
@@ -409,7 +409,7 @@ export default function ImportarActivosExcel() {
                   {/* Filtros de la tabla */}
                   <div style={{ padding: "16px 24px", borderBottom: "1px solid #f1f5f9", display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
                     <h3 className="ic-card-title" style={{ margin: 0, flex: 1 }}>
-                      👁️ Vista previa — {filteredAssets.length} de {assets.length} activos
+                      👁️ Vista previa — {filteredAssets.length} de {assets.length} equipos
                     </h3>
                     <div className="mant-search-wrap" style={{ maxWidth: 240 }}>
                       <span className="search-icon">🔍</span>
@@ -503,7 +503,7 @@ export default function ImportarActivosExcel() {
                 {saving && (
                   <div className="ic-card">
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                      <span style={{ fontWeight: 700, color: "#1e293b" }}>Guardando activos en base de datos...</span>
+                      <span style={{ fontWeight: 700, color: "#1e293b" }}>Guardando equipos en base de datos...</span>
                       <span style={{ color: "#64748b", fontSize: "0.85rem" }}>{saveProgress}%</span>
                     </div>
                     <div className="ic-progress-wrap">
@@ -517,8 +517,8 @@ export default function ImportarActivosExcel() {
                   <div className="ic-footer-actions">
                     <div className="ic-footer-info">
                       {duplicateMode === "skip"
-                        ? <><strong>{newAssets.length}</strong> activos nuevos serán importados. <strong>{dupAssets.length}</strong> duplicados omitidos.</>
-                        : <><strong>{assets.length}</strong> activos serán procesados (<strong>{newAssets.length}</strong> nuevos + <strong>{dupAssets.length}</strong> actualizados).</>
+                        ? <><strong>{newAssets.length}</strong> equipos nuevos serán importados. <strong>{dupAssets.length}</strong> duplicados omitidos.</>
+                        : <><strong>{assets.length}</strong> equipos serán procesados (<strong>{newAssets.length}</strong> nuevos + <strong>{dupAssets.length}</strong> actualizados).</>
                       }
                     </div>
                     <div style={{ display: "flex", gap: 12 }}>
@@ -528,7 +528,7 @@ export default function ImportarActivosExcel() {
                         onClick={handleSave}
                         disabled={saving || (duplicateMode === "skip" && newAssets.length === 0)}
                       >
-                        💾 Guardar activos
+                        💾 Guardar equipos
                       </button>
                     </div>
                   </div>
@@ -546,7 +546,7 @@ export default function ImportarActivosExcel() {
               <div>
                 <strong>¡Importación completada!</strong>
                 <div style={{ marginTop: 8, fontSize: "0.875rem", lineHeight: 1.8 }}>
-                  • <strong>{saveResult.inserted}</strong> activo(s) insertados<br />
+                  • <strong>{saveResult.inserted}</strong> equipo(s) insertados<br />
                   • <strong>{saveResult.updated}</strong> actualizado(s)<br />
                   • <strong>{saveResult.skipped}</strong> omitido(s) por duplicado<br />
                   {saveResult.errors.length > 0 && (
@@ -566,8 +566,8 @@ export default function ImportarActivosExcel() {
             )}
 
             <div style={{ display: "flex", gap: 12, marginTop: 20, flexWrap: "wrap" }}>
-              <button className="ic-save-btn" onClick={() => navigate("/mantenimiento/activos")}>
-                🏭 Ver Activos
+              <button className="ic-save-btn" onClick={() => navigate("/mantenimiento/equipos")}>
+                🏭 Ver Equipos
               </button>
               <button
                 className="ic-secondary-btn"

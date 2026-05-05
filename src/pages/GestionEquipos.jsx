@@ -4,19 +4,19 @@ import { supabase, st } from "../api/supabaseClient";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
 import "./Mantenimiento.css";
-import "./GestionActivos.css";
+import "./GestionEquipos.css";
 
 const TIPO_ICON = { Equipo: "⚙️", "Instalación": "🏗️", Computador: "💻" };
 
-export default function GestionActivos() {
+export default function GestionEquipos() {
   const navigate = useNavigate();
-  const [activos, setActivos] = useState([]);
+  const [activos, setEquipos] = useState([]);
   const [areas, setAreas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [showAreaForm, setShowAreaForm] = useState(false);
   const [newAreaName, setNewAreaName] = useState("");
-  const [selectedActivo, setSelectedActivo] = useState(null);
+  const [selectedEquipo, setSelectedEquipo] = useState(null);
   const [rutina, setRutina] = useState([]);
   const [rutinaLoading, setRutinaLoading] = useState(false);
   const [filtroText, setFiltroText] = useState("");
@@ -35,7 +35,7 @@ export default function GestionActivos() {
       supabase.from(st("activos")).select("*").order("nombre"),
       supabase.from(st("areas")).select("*").order("nombre"),
     ]);
-    setActivos(act || []);
+    setEquipos(act || []);
     setAreas(ars || []);
     setLoading(false);
   }
@@ -67,7 +67,7 @@ export default function GestionActivos() {
     setShowForm(true);
   }
 
-  async function saveActivo() {
+  async function saveEquipo() {
     if (!form.nombre || !form.area_id) return alert("Nombre y Área son obligatorios");
     setSaving(true);
     const { error } = await supabase.from(st("activos")).upsert([form]);
@@ -80,7 +80,7 @@ export default function GestionActivos() {
     setSaving(false);
   }
 
-  async function deleteActivo(id, e) {
+  async function deleteEquipo(id, e) {
     e.stopPropagation();
     if (!confirm("¿Eliminar este activo? Esta acción no se puede deshacer.")) return;
     const { error } = await supabase.from(st("activos")).delete().eq("id", id);
@@ -129,7 +129,7 @@ export default function GestionActivos() {
   }
 
   async function loadRutina(activo) {
-    setSelectedActivo(activo);
+    setSelectedEquipo(activo);
     setRutinaLoading(true);
     setRutina([]);
     const { data } = await supabase
@@ -140,6 +140,74 @@ export default function GestionActivos() {
       .order("fecha_cierre", { ascending: false });
     setRutina(data || []);
     setRutinaLoading(false);
+  }
+
+  function printHojaRutina() {
+    if (!selectedEquipo) return;
+    const printWindow = window.open("", "_blank");
+    const html = `
+      <html>
+        <head>
+          <title>Hoja de Rutina - ${selectedEquipo.nombre}</title>
+          <style>
+            body { font-family: sans-serif; padding: 40px; color: #333; }
+            .header { display: flex; justify-content: space-between; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
+            .title { font-size: 24px; font-weight: bold; }
+            .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 30px; background: #f9f9f9; padding: 15px; border-radius: 8px; }
+            .info-item { font-size: 14px; }
+            .info-item strong { color: #555; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th { background: #f2f2f2; text-align: left; padding: 12px; border: 1px solid #ddd; font-size: 13px; }
+            td { padding: 12px; border: 1px solid #ddd; font-size: 13px; vertical-align: top; }
+            .footer { margin-top: 50px; font-size: 12px; color: #777; text-align: center; border-top: 1px solid #ddd; padding-top: 10px; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="title">HOJA DE RUTINA Y MANTENIMIENTO</div>
+            <div style="text-align: right">
+              <div>Código: ${selectedEquipo.codigo || "N/A"}</div>
+              <div>Fecha: ${new Date().toLocaleDateString()}</div>
+            </div>
+          </div>
+          <div class="info-grid">
+            <div class="info-item"><strong>EQUIPO:</strong> ${selectedEquipo.nombre}</div>
+            <div class="info-item"><strong>TIPO:</strong> ${selectedEquipo.tipo}</div>
+            <div class="info-item"><strong>UBICACIÓN:</strong> ${areas.find(a => a.id === selectedEquipo.area_id)?.nombre || "N/A"}</div>
+            <div class="info-item"><strong>CRITICIDAD:</strong> ${selectedEquipo.criticidad}</div>
+          </div>
+          <h3>HISTORIAL DE INTERVENCIONES</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>FECHA</th>
+                <th>OT</th>
+                <th>TIPO</th>
+                <th>DESCRIPCIÓN / PROBLEMA</th>
+                <th>ACCIÓN REALIZADA</th>
+                <th>RESPONSABLE</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rutina.map(r => `
+                <tr>
+                  <td>${new Date(r.fecha_cierre).toLocaleDateString()}</td>
+                  <td>M-${r.consecutivo}</td>
+                  <td>${r.tipos_solicitud?.nombre}</td>
+                  <td>${r.descripcion}</td>
+                  <td>${r.accion_realizada}</td>
+                  <td>${r.usuario_id}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+          <div class="footer">Documento generado automáticamente por Sistema de Gestión de Mantenimiento GMP</div>
+          <script>window.print(); setTimeout(() => window.close(), 500);</script>
+        </body>
+      </html>
+    `;
+    printWindow.document.write(html);
+    printWindow.document.close();
   }
 
   function resetForm() {
@@ -154,21 +222,21 @@ export default function GestionActivos() {
       <div className="mant-container">
         <header className="mant-header-section">
           <div>
-            <h2 className="mant-title">Gestión de Activos</h2>
-            <p className="mant-subtitle">Inventario centralizado de infraestructura y equipos — {activos.length} activos registrados</p>
+            <h2 className="mant-title">Gestión de Equipos</h2>
+            <p className="mant-subtitle">Inventario centralizado de infraestructura y equipos — {activos.length} equipos registrados</p>
           </div>
           <div className="mant-actions-group">
             <button className="mant-btn-action secondary" onClick={() => navigate("/mantenimiento")}>← Tablero</button>
             <button className="mant-btn-action secondary" style={{ color: "#ef4444", borderColor: "#fecaca" }} onClick={deleteAllAssets}>🗑️ Borrar Todo</button>
             <button className="mant-btn-action secondary" onClick={() => navigate("/mantenimiento/importar-activos")}>📥 Importar Excel</button>
-            <button className="mant-btn-action primary" onClick={() => { resetForm(); setShowForm(true); }}>+ Nuevo Activo</button>
+            <button className="mant-btn-action primary" onClick={() => { resetForm(); setShowForm(true); }}>+ Nuevo Equipo</button>
           </div>
         </header>
 
         {/* STATS ROW */}
         <div className="activos-stats-row">
           <div className="activo-stat" onClick={() => setFiltroCrit("todos")} style={{ "--a": filtroCrit === "todos" ? "var(--mant-primary)" : "#94a3b8" }}>
-            <span className="as-val">{stats.total}</span><span className="as-lbl">Total Activos</span>
+            <span className="as-val">{stats.total}</span><span className="as-lbl">Total Equipos</span>
           </div>
           <div className="activo-stat crit-alta" onClick={() => setFiltroCrit(filtroCrit === "Alta" ? "todos" : "Alta")} style={{ "--a": "#ef4444" }}>
             <span className="as-val">{stats.alta}</span><span className="as-lbl">Criticidad Alta</span>
@@ -201,7 +269,7 @@ export default function GestionActivos() {
         ) : filtered.length === 0 ? (
           <div className="empty-state" style={{ marginTop: "60px" }}>
             <div className="empty-state-icon">🏭</div>
-            <p>No se encontraron activos con ese filtro</p>
+            <p>No se encontraron equipos con ese filtro</p>
           </div>
         ) : (
           <div className="assets-grid-premium">
@@ -224,7 +292,7 @@ export default function GestionActivos() {
                     <button className="mini-btn" onClick={e => { e.stopPropagation(); loadRutina(a); }}>📋 Historial</button>
                     <div style={{ display: "flex", gap: "6px" }}>
                       <button className="mini-btn" style={{ color: "var(--mant-primary)", borderColor: "#bfdbfe" }} onClick={e => openEdit(a, e)}>✏️ Editar</button>
-                      <button className="mini-btn" style={{ color: "#ef4444", borderColor: "#fecaca" }} onClick={e => deleteActivo(a.id, e)}>🗑️</button>
+                      <button className="mini-btn" style={{ color: "#ef4444", borderColor: "#fecaca" }} onClick={e => deleteEquipo(a.id, e)}>🗑️</button>
                     </div>
                   </div>
                 </div>
@@ -238,12 +306,12 @@ export default function GestionActivos() {
           <div className="mant-modal-overlay-v2" onClick={() => { setShowForm(false); resetForm(); }}>
             <div className="mant-modal-content-centered" onClick={e => e.stopPropagation()}>
               <div className="modal-v2-header">
-                <h3>{form.id ? "✏️ Editar Activo" : "✨ Nuevo Activo"}</h3>
+                <h3>{form.id ? "✏️ Editar Equipo" : "✨ Nuevo Equipo"}</h3>
                 <button className="close-btn-v2" onClick={() => { setShowForm(false); resetForm(); }}>✖</button>
               </div>
               <div className="modal-v2-body">
                 <div className="v2-form-group">
-                  <label>Nombre del Activo <span className="req">*</span></label>
+                  <label>Nombre del Equipo <span className="req">*</span></label>
                   <input className="v2-input" type="text" value={form.nombre}
                     onChange={e => setForm({ ...form, nombre: e.target.value })}
                     placeholder="Ej: Aire Acondicionado Central 1" />
@@ -301,8 +369,8 @@ export default function GestionActivos() {
               </div>
               <div className="modal-v2-footer">
                 <button className="v2-btn-secondary" onClick={() => { setShowForm(false); resetForm(); }}>Cancelar</button>
-                <button className="v2-btn-primary" onClick={saveActivo} disabled={saving}>
-                  {saving ? "Guardando..." : form.id ? "Actualizar Activo" : "Registrar Activo"}
+                <button className="v2-btn-primary" onClick={saveEquipo} disabled={saving}>
+                  {saving ? "Guardando..." : form.id ? "Actualizar Equipo" : "Registrar Equipo"}
                 </button>
               </div>
             </div>
@@ -310,22 +378,27 @@ export default function GestionActivos() {
         )}
 
         {/* RUTINA MODAL */}
-        {selectedActivo && (
-          <div className="mant-modal-overlay-v2" onClick={() => setSelectedActivo(null)}>
+        {selectedEquipo && (
+          <div className="mant-modal-overlay-v2" onClick={() => setSelectedEquipo(null)}>
             <div className="mant-modal-content-centered wide-v2" onClick={e => e.stopPropagation()}>
               <div className="modal-v2-header">
                 <div className="v2-header-title">
-                  <span className="icon-v2-header">{TIPO_ICON[selectedActivo.tipo] || "🔩"}</span>
+                  <span className="icon-v2-header">{TIPO_ICON[selectedEquipo.tipo] || "🔩"}</span>
                   <div>
                     <h3>Hoja de Rutina</h3>
-                    <p>{selectedActivo.nombre} | {selectedActivo.codigo || "Sin código"} |&nbsp;
-                      <span className={`v2-crit-badge crit-${selectedActivo.criticidad?.toLowerCase() || "baja"}`}>
-                        {selectedActivo.criticidad || "Baja"}
+                    <p>{selectedEquipo.nombre} | {selectedEquipo.codigo || "Sin código"} |&nbsp;
+                      <span className={`v2-crit-badge crit-${selectedEquipo.criticidad?.toLowerCase() || "baja"}`}>
+                        {selectedEquipo.criticidad || "Baja"}
                       </span>
                     </p>
                   </div>
                 </div>
-                <button className="close-btn-v2" onClick={() => setSelectedActivo(null)}>✖</button>
+                <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                  <button className="v2-btn-primary" style={{ padding: "8px 16px", fontSize: "0.85rem" }} onClick={printHojaRutina}>
+                    🖨️ Generar PDF / Imprimir
+                  </button>
+                  <button className="close-btn-v2" onClick={() => setSelectedEquipo(null)}>✖</button>
+                </div>
               </div>
               <div className="scroll-v2">
                 <h4 className="v2-subtitle">Historial de Intervenciones</h4>
@@ -334,7 +407,7 @@ export default function GestionActivos() {
                 ) : rutina.length === 0 ? (
                   <div className="v2-empty-state">
                     <div className="v2-empty-icon">📭</div>
-                    <p>Este activo aún no tiene intervenciones registradas.</p>
+                    <p>Este equipo aún no tiene intervenciones registradas.</p>
                   </div>
                 ) : (
                   <div className="v2-timeline">

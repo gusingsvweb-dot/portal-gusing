@@ -27,19 +27,22 @@ export default function KpisMantenimiento() {
   const navigate = useNavigate();
   const [solicitudes, setSolicitudes] = useState([]);
   const [planes, setPlanes] = useState([]);
+  const [repuestosBajoStock, setRepuestosBajoStock] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
-      const [{ data: sol }, { data: pls }] = await Promise.all([
+      const [{ data: sol }, { data: pls }, { data: rep }] = await Promise.all([
         supabase.from(st("solicitudes")).select(ss(`
           id, estado_id, prioridad_id, area_solicitante, created_at, fecha_cierre,
           tipo_solicitud_id, estados(nombre), prioridades(nombre), activos(criticidad, nombre)
         `)).eq("area_id", 1),
         supabase.from(st("planes_preventivos")).select("id, activo"),
+        supabase.from(st("repuestos_mant")).select("nombre, stock").lt("stock", 5)
       ]);
       setSolicitudes(sol || []);
       setPlanes(pls || []);
+      setRepuestosBajoStock(rep || []);
       setLoading(false);
     }
     load();
@@ -56,7 +59,7 @@ export default function KpisMantenimiento() {
     const ratio = total > 0 ? Math.round((preventivos / total) * 100) : 0;
 
     const porCriticidad = solicitudes.reduce((acc, s) => {
-      const c = s.activos?.criticidad || "Sin activo";
+      const c = s.activos?.criticidad || "Sin equipo";
       acc[c] = (acc[c] || 0) + 1;
       return acc;
     }, {});
@@ -137,7 +140,7 @@ export default function KpisMantenimiento() {
           <KpiCard icon="📅" title="Preventivos" value={stats.preventivos} sub={`${stats.ratio}% del total`} color="#10b981" />
           <KpiCard icon="🚨" title="Correctivos" value={stats.correctivos} sub={`${100 - stats.ratio}% del total`} color="#f59e0b" />
           <KpiCard icon="✅" title="Finalizados" value={stats.finalizados} sub="Con cierre registrado" color="#3b82f6" />
-          <KpiCard icon="📋" title="Planes Activos" value={stats.planesActivos} sub="Preventivos programados" color="#7c3aed" />
+          <KpiCard icon="📦" title="Bajo Stock" value={repuestosBajoStock.length} sub="Repuestos < 5 unidades" color="#f97316" />
         </div>
 
         {/* RATIO BAR */}
@@ -192,9 +195,24 @@ export default function KpisMantenimiento() {
           </div>
         </div>
 
+        {/* BAJO STOCK ALERT */}
+        {repuestosBajoStock.length > 0 && (
+          <div className="kpi-chart-box kpi-alert-card" style={{ marginBottom: "24px", borderLeft: "4px solid #f97316" }}>
+            <h3 className="kpi-chart-title" style={{ color: "#c2410c" }}>⚠️ Alerta de Repuestos (Bajo Stock)</h3>
+            <div className="kpi-stock-list">
+              {repuestosBajoStock.map((r, i) => (
+                <div key={i} className="kpi-stock-item">
+                  <span className="stock-name">{r.nombre}</span>
+                  <span className="stock-val">{r.stock} unid.</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* CRITICIDAD TABLE */}
         <div className="kpi-chart-box" style={{ marginTop: "24px" }}>
-          <h3 className="kpi-chart-title">Detalle por Criticidad de Activo</h3>
+          <h3 className="kpi-chart-title">Detalle por Criticidad de Equipo</h3>
           <table className="kpi-table">
             <thead>
               <tr><th>Criticidad</th><th>Solicitudes</th><th>% del Total</th><th>Distribución</th></tr>

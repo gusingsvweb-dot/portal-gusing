@@ -25,6 +25,9 @@ export default function PlanMaestro() {
     descripcion_tarea: "", activo: true
   });
 
+  const [filtroTexto, setFiltroTexto] = useState("");
+  const [filtroEstado, setFiltroEstado] = useState("todos");
+
   useEffect(() => { loadData(); }, []);
 
   async function loadData() {
@@ -251,7 +254,7 @@ export default function PlanMaestro() {
                           {p.activos?.criticidad || "Baja"}
                         </span>
                       </div>
-                      <h4 className="pm-card-title">{p.activos?.nombre || "Activo eliminado"}</h4>
+                      <h4 className="pm-card-title">{p.activos?.nombre || "Equipo eliminado"}</h4>
                       <p className="pm-card-desc">{p.descripcion_tarea || "Sin descripción"}</p>
                       <div className="pm-dates-box">
                         <div className="pm-date-row">
@@ -287,6 +290,29 @@ export default function PlanMaestro() {
                 <label>Año:</label>
                 <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} className="v2-select" style={{ width: "100px" }}>
                   {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
+                </select>
+              </div>
+
+              <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                <div className="mant-search-wrap" style={{ width: "250px" }}>
+                  <span className="search-icon">🔍</span>
+                  <input 
+                    className="mant-search-input" 
+                    placeholder="Buscar equipo o tarea..." 
+                    value={filtroTexto} 
+                    onChange={e => setFiltroTexto(e.target.value)} 
+                  />
+                </div>
+                <select 
+                  className="v2-select" 
+                  style={{ width: "150px" }} 
+                  value={filtroEstado} 
+                  onChange={e => setFiltroEstado(e.target.value)}
+                >
+                  <option value="todos">Todos los estados</option>
+                  <option value="completado">Completados ✓</option>
+                  <option value="pendiente">Pendientes P</option>
+                  <option value="vencido">Vencidos !</option>
                 </select>
               </div>
               
@@ -332,7 +358,18 @@ export default function PlanMaestro() {
                     </tr>
                   </thead>
                   <tbody>
-                    {cronogramaAnual.map(item => (
+                    {cronogramaAnual
+                      .filter(item => {
+                        const matchText = (item.equipment_name?.toLowerCase().includes(filtroTexto.toLowerCase()) || 
+                                           item.equipment_code?.toLowerCase().includes(filtroTexto.toLowerCase()) ||
+                                           item.task_description?.toLowerCase().includes(filtroTexto.toLowerCase()));
+                        
+                        if (filtroEstado === "todos") return matchText;
+                        
+                        const hasStatus = item.maintenance_schedule_months?.some(m => m.status.toLowerCase() === filtroEstado.toLowerCase());
+                        return matchText && hasStatus;
+                      })
+                      .map(item => (
                       <tr key={item.id}>
                         <td className="codigo-cell">{item.equipment_code}</td>
                         <td className="nombre-cell">{item.equipment_name}</td>
@@ -371,9 +408,9 @@ export default function PlanMaestro() {
               </div>
               <div className="modal-v2-body">
                 <div className="v2-form-group">
-                  <label>Activo a Programar <span className="req">*</span></label>
+                  <label>Equipo a Programar <span className="req">*</span></label>
                   <select className="v2-select" value={form.activo_id} onChange={e => setForm({ ...form, activo_id: e.target.value })}>
-                    <option value="">Seleccione activo...</option>
+                    <option value="">Seleccione equipo...</option>
                     {activos.map(a => (
                       <option key={a.id} value={a.id}>{a.nombre} — {a.criticidad}</option>
                     ))}

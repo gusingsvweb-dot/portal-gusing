@@ -5,13 +5,13 @@ export default function CamposDinamicos({ tipo, areaId, form, setForm }) {
   const [activos, setActivos] = useState([]);
 
   useEffect(() => {
-    // Cargar activos si es área de Mantenimiento (Area ID 1)
+    // Cargar equipos si es área de Mantenimiento (Area ID 1)
     if (Number(areaId) === 1 || Number(tipo) === 2) {
-      async function loadActivos() {
+      async function loadEquipos() {
         const { data } = await supabase.from(st("activos")).select("id, nombre, tipo, codigo").order("nombre");
         setActivos(data || []);
       }
-      loadActivos();
+      loadEquipos();
     }
   }, [tipo, areaId]);
 
@@ -35,7 +35,7 @@ export default function CamposDinamicos({ tipo, areaId, form, setForm }) {
             </label>
             <select
               value={form.maint_category || ""}
-              onChange={(e) => setForm({ ...form, maint_category: e.target.value, activo_id: "" })}
+              onChange={(e) => setForm({ ...form, maint_category: e.target.value, activo_id: "", fecha_sugerida: "" })}
               style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1" }}
             >
               <option value="">Seleccione categoría...</option>
@@ -64,11 +64,11 @@ export default function CamposDinamicos({ tipo, areaId, form, setForm }) {
             </div>
           )}
 
-          {/* 3. ACTIVO (Filtrado por Categoría) */}
+          {/* 3. EQUIPO (Filtrado por Categoría) */}
           {form.maint_category && form.maint_type && (
             <div className="dynamic-maint-fields" style={{ animation: "fadeIn 0.3s ease" }}>
               <label style={{ display: "block", marginBottom: "6px", fontWeight: "700", fontSize: "0.85rem", color: "#1e40af" }}>
-                3. Vincular Activo Específico (Obligatorio) ⚙️
+                3. Vincular Equipo / Instalación Específica (Obligatorio) ⚙️
               </label>
               <select
                 value={form.activo_id || ""}
@@ -86,8 +86,23 @@ export default function CamposDinamicos({ tipo, areaId, form, setForm }) {
                   ))}
               </select>
               <p style={{ fontSize: "0.75rem", color: "#64748b", marginTop: "5px" }}>
-                * Mostrando solo activos de la categoría: {form.maint_category}
+                * Mostrando solo equipos de la categoría: {form.maint_category}
               </p>
+            </div>
+          )}
+
+          {/* 4. FECHA SUGERIDA (Solo para Instalaciones) */}
+          {form.maint_category === "Instalación" && (
+            <div style={{ animation: "fadeIn 0.3s ease" }}>
+              <label style={{ display: "block", marginBottom: "6px", fontWeight: "700", fontSize: "0.85rem", color: "#1e40af" }}>
+                4. ¿Para cuándo se requiere la intervención? (Programación sugerida) 📅
+              </label>
+              <input 
+                type="date"
+                value={form.fecha_sugerida || ""}
+                onChange={(e) => setForm({ ...form, fecha_sugerida: e.target.value })}
+                style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1" }}
+              />
             </div>
           )}
         </div>

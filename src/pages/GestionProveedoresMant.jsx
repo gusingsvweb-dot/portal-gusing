@@ -12,6 +12,12 @@ export default function GestionProveedoresMant() {
   const [showForm, setShowForm] = useState(false);
   const [filtroText, setFiltroText] = useState("");
   const [saving, setSaving] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [history, setHistory] = useState([]);
+  const [selectedProv, setSelectedProv] = useState(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [showCustomEsp, setShowCustomEsp] = useState(false);
+  const [customEsp, setCustomEsp] = useState("");
 
   const [form, setForm] = useState({
     nombre: "", especialidad: "", contacto: "", telefono: "", email: ""
@@ -57,7 +63,22 @@ export default function GestionProveedoresMant() {
     setForm({ nombre: "", especialidad: "", contacto: "", telefono: "", email: "" });
   }
 
-  function openEdit(p) { setForm({ ...p }); setShowForm(true); }
+  function openEdit(p) { setForm({ ...p }); setShowForm(true); setShowCustomEsp(false); }
+
+  async function openHistory(p, e) {
+    e.stopPropagation();
+    setSelectedProv(p);
+    setShowHistory(true);
+    setHistoryLoading(true);
+    const { data } = await supabase
+      .from(st("solicitudes"))
+      .select(`id, consecutivo, descripcion, fecha_cierre, activos(nombre)`)
+      .eq("proveedor_id", p.id)
+      .not("fecha_cierre", "is", null)
+      .order("fecha_cierre", { ascending: false });
+    setHistory(data || []);
+    setHistoryLoading(false);
+  }
 
   const ESPECIALIDAD_COLOR = {
     "Eléctrico": { bg: "#eff6ff", color: "#2563eb" },
@@ -129,6 +150,8 @@ export default function GestionProveedoresMant() {
                     )}
                   </div>
                   <div className="card-v2-footer">
+                    <button className="mini-btn" style={{ color: "#10b981", borderColor: "#d1fae5" }}
+                      onClick={e => openHistory(p, e)}>📋 Historial</button>
                     <button className="mini-btn" style={{ color: "var(--mant-primary)", borderColor: "#bfdbfe" }}
                       onClick={e => { e.stopPropagation(); openEdit(p); }}>✏️ Editar</button>
                     <button className="mini-btn" style={{ color: "#ef4444", borderColor: "#fecaca" }}
@@ -158,8 +181,11 @@ export default function GestionProveedoresMant() {
                 <div className="v2-form-row">
                   <div className="v2-form-group">
                     <label>Especialidad</label>
-                    <select className="v2-select" value={form.especialidad}
-                      onChange={e => setForm({ ...form, especialidad: e.target.value })}>
+                    <select className="v2-select" value={showCustomEsp ? "CUSTOM" : form.especialidad}
+                      onChange={e => {
+                        if (e.target.value === "CUSTOM") setShowCustomEsp(true);
+                        else { setShowCustomEsp(false); setForm({ ...form, especialidad: e.target.value }); }
+                      }}>
                       <option value="">Seleccione...</option>
                       <option>Eléctrico</option>
                       <option>Refrigeración</option>
@@ -169,7 +195,15 @@ export default function GestionProveedoresMant() {
                       <option>Plomería</option>
                       <option>Cómputo / TI</option>
                       <option>General</option>
+                      <option value="CUSTOM">+ Añadir especialidad...</option>
                     </select>
+                    {showCustomEsp && (
+                      <div className="v2-inline-form" style={{ marginTop: "8px" }}>
+                        <input className="v2-input-mini" placeholder="Nombre especialidad..." 
+                          value={customEsp} onChange={e => setCustomEsp(e.target.value)} />
+                        <button className="v2-save-mini" onClick={() => { setForm({...form, especialidad: customEsp}); setShowCustomEsp(false); }}>OK</button>
+                      </div>
+                    )}
                   </div>
                   <div className="v2-form-group">
                     <label>Persona de Contacto</label>
@@ -203,6 +237,36 @@ export default function GestionProveedoresMant() {
                 <button className="v2-btn-primary" onClick={saveProveedor} disabled={saving}>
                   {saving ? "Guardando..." : form.id ? "Actualizar" : "Guardar Proveedor"}
                 </button>
+              </div>
+            </div>
+          </div>
+        {/* HISTORY MODAL */}
+        {showHistory && (
+          <div className="mant-modal-overlay-v2" onClick={() => setShowHistory(false)}>
+            <div className="mant-modal-content-centered wide-v2" onClick={e => e.stopPropagation()}>
+              <div className="modal-v2-header">
+                <h3>📜 Historial: {selectedProv?.nombre}</h3>
+                <button className="close-btn-v2" onClick={() => setShowHistory(false)}>✖</button>
+              </div>
+              <div className="modal-v2-body scroll-v2" style={{ maxHeight: "70vh" }}>
+                {historyLoading ? <p>Cargando historial...</p> : 
+                 history.length === 0 ? <p>No hay intervenciones registradas para este proveedor.</p> : (
+                  <table className="anual-table">
+                    <thead>
+                      <tr><th>Fecha</th><th>OT</th><th>Equipo</th><th>Descripción</th></tr>
+                    </thead>
+                    <tbody>
+                      {history.map(h => (
+                        <tr key={h.id}>
+                          <td>{new Date(h.fecha_cierre).toLocaleDateString()}</td>
+                          <td>M-{h.consecutivo}</td>
+                          <td>{h.activos?.nombre}</td>
+                          <td style={{ fontSize: "0.85rem" }}>{h.descripcion}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
               </div>
             </div>
           </div>

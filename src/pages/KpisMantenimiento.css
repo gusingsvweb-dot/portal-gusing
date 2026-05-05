@@ -237,3 +237,36 @@
   .kpi-mant-charts-grid { grid-template-columns: 1fr; }
   .kpi-chart-wide { grid-column: 1; }
 }
+
+.kpi-stock-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.kpi-stock-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 12px;
+}
+
+.stock-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #c2410c;
+}
+
+.stock-val {
+  font-size: 0.85rem;
+  font-weight: 900;
+  color: #ea580c;
+  background: white;
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid #fdba74;
+}
