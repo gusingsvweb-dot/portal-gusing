@@ -88,6 +88,35 @@ export default function GestionActivos() {
     else loadData();
   }
 
+  async function deleteAllAssets() {
+    const total = activos.length;
+    if (total === 0) return alert("No hay activos para eliminar.");
+    
+    if (!confirm(`⚠️ ATENCIÓN: Estás a punto de eliminar los ${total} activos registrados.\n\nEsto también borrará todas sus órdenes de trabajo, solicitudes y planes preventivos asociados.\n\n¿Deseas continuar?`)) return;
+    if (!confirm("🚨 ¿ESTÁS ABSOLUTAMENTE SEGURO? Esta acción es irreversible y borrará TODO el historial de estos activos.")) return;
+
+    setLoading(true);
+    try {
+      // 1. Borrar planes preventivos
+      await supabase.from(st("planes_preventivos")).delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      
+      // 2. Borrar solicitudes y órdenes (asumiendo que st() maneja el prefijo NO_)
+      await supabase.from(st("solicitudes")).delete().neq("id", "0");
+      
+      // 3. Borrar finalmente los activos
+      const { error } = await supabase.from(st("activos")).delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      
+      if (error) throw error;
+      
+      alert("Se han eliminado todos los activos y su historial correctamente.");
+      loadData();
+    } catch (err) {
+      alert("Error al eliminar todo: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function saveNewArea() {
     if (!newAreaName.trim()) return;
     const { data, error } = await supabase.from(st("areas")).insert([{ nombre: newAreaName.trim() }]).select();
@@ -130,6 +159,7 @@ export default function GestionActivos() {
           </div>
           <div className="mant-actions-group">
             <button className="mant-btn-action secondary" onClick={() => navigate("/mantenimiento")}>← Tablero</button>
+            <button className="mant-btn-action secondary" style={{ color: "#ef4444", borderColor: "#fecaca" }} onClick={deleteAllAssets}>🗑️ Borrar Todo</button>
             <button className="mant-btn-action secondary" onClick={() => navigate("/mantenimiento/importar-activos")}>📥 Importar Excel</button>
             <button className="mant-btn-action primary" onClick={() => { resetForm(); setShowForm(true); }}>+ Nuevo Activo</button>
           </div>
