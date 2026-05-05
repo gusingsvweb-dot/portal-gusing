@@ -34,6 +34,7 @@ import GestionProveedoresMant from "./pages/GestionProveedoresMant.jsx";
 import PlanMaestro from "./pages/PlanMaestro.jsx";
 import GestionRepuestos from "./pages/GestionRepuestos.jsx";
 import ImportarCronograma from "./pages/ImportarCronograma.jsx";
+import ImportarActivosExcel from "./pages/ImportarActivosExcel.jsx";
 
 
 export default function AppRouter() {
@@ -337,6 +338,15 @@ export default function AppRouter() {
         element={
           ["mantenimiento", "gerencia"].includes(usuarioActual?.rol)
             ? <ImportarCronograma />
+            : <Navigate to="/" />
+        }
+      />
+
+      <Route
+        path="/mantenimiento/importar-activos"
+        element={
+          ["mantenimiento", "gerencia"].includes(usuarioActual?.rol)
+            ? <ImportarActivosExcel />
             : <Navigate to="/" />
         }
       />
