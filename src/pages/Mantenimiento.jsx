@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
 import { supabase, st, ss } from "../api/supabaseClient";
@@ -6,334 +6,354 @@ import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import "./Mantenimiento.css";
 
+const NEXT_STATE = { 1: 13, 13: 14, 14: 15, 15: 15 };
+const PRIORITY_LABEL = { 1: "Baja", 2: "Media", 3: "Alta" };
+const PRIORITY_CLASS = { 1: "priority-low", 2: "priority-medium", 3: "priority-high" };
+
 export default function Mantenimiento() {
   const navigate = useNavigate();
   const { usuarioActual } = useAuth();
   const [solicitudes, setSolicitudes] = useState([]);
   const [proveedores, setProveedores] = useState([]);
+  const [allRepuestos, setAllRepuestos] = useState([]);
   const [selected, setSelected] = useState(null);
   const [accion, setAccion] = useState("");
   const [proveedorId, setProveedorId] = useState("");
+  const [consumos, setConsumos] = useState([]);
+  const [consumosGuardados, setConsumosGuardados] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
-  const [allRepuestos, setAllRepuestos] = useState([]);
-  const [consumos, setConsumos] = useState([]); // [{id, repuesto_id, cantidad}]
+  const [saving, setSaving] = useState(false);
+  const [filtro, setFiltro] = useState("");
+  const [activeTab, setActiveTab] = useState("info");
 
-  // ============================
-  // CARGAR DATOS
-  // ============================
-  async function loadData() {
+  const loadData = useCallback(async () => {
     setLoading(true);
-    // 1. Cargar Solicitudes con Joins
-    const { data: sol, error: errSol } = await supabase
-      .from(st("solicitudes"))
-      .select(ss(`
-        *,
-        tipos_solicitud ( nombre ),
-        prioridades ( nombre ),
-        estados ( nombre ),
-        area_destino:areas ( nombre ),
-        activos ( nombre, tipo, codigo ),
-        proveedor:proveedores_mant ( nombre )
-      `))
-      .eq("area_id", 1) // SOLO MANTENIMIENTO
-      .order("id", { ascending: false });
-
-    // 2. Cargar Proveedores
-    const { data: prov } = await supabase.from(st("proveedores_mant")).select("*").order("nombre");
-
-    // 3. Cargar Repuestos para el selector
-    const { data: reps } = await supabase.from(st("repuestos")).select("*").order("nombre");
-
-    if (!errSol) setSolicitudes(sol || []);
+    const [{ data: sol }, { data: prov }, { data: reps }] = await Promise.all([
+      supabase
+        .from(st("solicitudes"))
+        .select(ss(`*, tipos_solicitud(nombre), prioridades(nombre), estados(nombre), area_destino:areas(nombre), activos(nombre, tipo, codigo, criticidad), proveedor:proveedores_mant(nombre)`))
+        .eq("area_id", 1)
+        .order("id", { ascending: false }),
+      supabase.from(st("proveedores_mant")).select("*").order("nombre"),
+      supabase.from(st("repuestos")).select("*").order("nombre"),
+    ]);
+    setSolicitudes(sol || []);
     setProveedores(prov || []);
     setAllRepuestos(reps || []);
     setLoading(false);
-  }
-
-  useEffect(() => {
-    loadData();
   }, []);
 
-  // ============================
-  // STATS CALCULATIONS
-  // ============================
-  const stats = useMemo(() => {
-    return {
-      total: solicitudes.length,
-      pendientes: solicitudes.filter(s => s.estado_id === 1).length,
-      proceso: solicitudes.filter(s => s.estado_id === 13).length,
-      finalizados: solicitudes.filter(s => [14, 15].includes(s.estado_id)).length
-    };
-  }, [solicitudes]);
+  useEffect(() => { loadData(); }, [loadData]);
 
-  // ============================
-  // AVANZAR ESTADO
-  // ============================
-  async function avanzarEstado() {
-    if (!selected) return;
+  const stats = useMemo(() => ({
+    total: solicitudes.length,
+    pendientes: solicitudes.filter(s => s.estado_id === 1).length,
+    proceso: solicitudes.filter(s => s.estado_id === 13).length,
+    finalizados: solicitudes.filter(s => [14, 15].includes(s.estado_id)).length,
+  }), [solicitudes]);
 
-    const current = selected.estado_id;
-    const next = {
-      1: 13,  // Pendiente → En proceso
-      13: 14, // En proceso → Finalizado
-      14: 15, // Finalizado → Calificado
-      15: 15
-    }[current];
+  const filtered = useMemo(() => {
+    if (!filtro.trim()) return solicitudes;
+    const q = filtro.toLowerCase();
+    return solicitudes.filter(s =>
+      s.descripcion?.toLowerCase().includes(q) ||
+      s.tipos_solicitud?.nombre?.toLowerCase().includes(q) ||
+      s.activos?.nombre?.toLowerCase().includes(q) ||
+      s.area_solicitante?.toLowerCase().includes(q) ||
+      String(s.consecutivo)?.includes(q)
+    );
+  }, [solicitudes, filtro]);
 
-    const update = { estado_id: next };
-
-    // Si pasa a PROCESO → puede asignar proveedor
-    if (next === 13 && proveedorId) {
-      update.proveedor_id = proveedorId;
+  const openModal = async (s) => {
+    setSelected(s);
+    setProveedorId(s.proveedor_id || "");
+    setAccion(s.accion_realizada || "");
+    setConsumos([]);
+    setError("");
+    setActiveTab("info");
+    if ([14, 15].includes(s.estado_id)) {
+      const { data } = await supabase
+        .from(st("consumos"))
+        .select(`*, repuesto:repuestos(nombre, unidad)`)
+        .eq("solicitud_id", s.id);
+      setConsumosGuardados(data || []);
+    } else {
+      setConsumosGuardados([]);
     }
-
-    // Si finaliza → requiere acción
-    if (next === 14) {
-      if (!accion.trim()) {
-        setError("Debes registrar la acción realizada para finalizar.");
-        return;
-      }
-      update.accion_realizada = accion;
-      update.fecha_cierre = new Date().toISOString();
-
-      // Guardar consumos de repuestos
-      if (consumos.length > 0) {
-        for (const item of consumos) {
-          if (item.repuesto_id && item.cantidad > 0) {
-            // Log de consumo
-            await supabase.from(st("consumos")).insert([{
-              solicitud_id: selected.id,
-              repuesto_id: item.repuesto_id,
-              cantidad: item.cantidad
-            }]);
-            // Decrementar stock
-            await supabase.rpc('decrement_repuesto_stock', { 
-              row_id: item.repuesto_id, 
-              amount: item.cantidad 
-            });
-          }
-        }
-      }
-    }
-
-    const { error } = await supabase
-      .from(st("solicitudes"))
-      .update(update)
-      .eq("id", selected.id);
-
-    if (error) {
-      alert("Error guardando: " + error.message);
-      return;
-    }
-
-    closeModal();
-    loadData();
-  }
+  };
 
   const closeModal = () => {
     setSelected(null);
     setAccion("");
     setProveedorId("");
     setConsumos([]);
+    setConsumosGuardados([]);
     setError("");
+    setSaving(false);
   };
 
-  const openModal = (s) => {
-    setSelected(s);
-    setProveedorId(s.proveedor_id || "");
-    setAccion(s.accion_realizada || "");
+  const avanzarEstado = async () => {
+    if (!selected) return;
+    const next = NEXT_STATE[selected.estado_id];
+    const update = { estado_id: next };
+
+    if (next === 13 && proveedorId) update.proveedor_id = proveedorId;
+
+    if (next === 14) {
+      if (!accion.trim()) { setError("Debes registrar la acción realizada para finalizar."); return; }
+      update.accion_realizada = accion;
+      update.fecha_cierre = new Date().toISOString();
+    }
+
+    setSaving(true);
+    if (next === 14 && consumos.length > 0) {
+      for (const item of consumos) {
+        if (item.repuesto_id && item.cantidad > 0) {
+          const rep = allRepuestos.find(r => String(r.id) === String(item.repuesto_id));
+          await supabase.from(st("consumos")).insert([{
+            solicitud_id: selected.id,
+            repuesto_id: item.repuesto_id,
+            cantidad: item.cantidad,
+            costo_en_momento: rep?.costo || 0,
+          }]);
+          await supabase.rpc("decrement_repuesto_stock", { row_id: item.repuesto_id, amount: item.cantidad });
+        }
+      }
+    }
+
+    const { error: err } = await supabase.from(st("solicitudes")).update(update).eq("id", selected.id);
+    if (err) { alert("Error: " + err.message); setSaving(false); return; }
+    closeModal();
+    loadData();
   };
 
-  if (loading) return <div className="mant-container"><h3>Actualizando tablero...</h3></div>;
+  const updateProveedor = async () => {
+    if (!proveedorId || !selected) return;
+    setSaving(true);
+    await supabase.from(st("solicitudes")).update({ proveedor_id: proveedorId }).eq("id", selected.id);
+    setSaving(false);
+    loadData();
+    setSelected(prev => ({ ...prev, proveedor_id: proveedorId }));
+  };
+
+  const addConsumo = () => setConsumos(prev => [...prev, { repuesto_id: "", cantidad: 1 }]);
+  const removeConsumo = (i) => setConsumos(prev => prev.filter((_, idx) => idx !== i));
+  const updateConsumo = (i, field, val) => setConsumos(prev => {
+    const copy = [...prev];
+    copy[i] = { ...copy[i], [field]: val };
+    return copy;
+  });
+
+  if (loading) return (
+    <><Navbar />
+    <div className="mant-container"><div className="mant-skeleton-board">
+      {[0,1,2].map(i => <div key={i} className="mant-skeleton-col"><div className="mant-skeleton-header"></div>{[0,1,2].map(j => <div key={j} className="mant-skeleton-card"></div>)}</div>)}
+    </div></div><Footer /></>
+  );
 
   return (
     <>
       <Navbar />
-
       <div className="mant-container">
+        {/* HEADER */}
         <header className="mant-header-section">
           <div>
-            <h2 className="mant-title">🔧 Mantenimiento Professional</h2>
-            <p className="mant-subtitle">Gestión centralizada de activos y servicios</p>
+            <h2 className="mant-title">Tablero de Mantenimiento</h2>
+            <p className="mant-subtitle">Gestión centralizada de órdenes y activos — {new Date().toLocaleDateString("es-CO", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</p>
           </div>
-          <div className="mant-actions-group" style={{ display: "flex", gap: "10px" }}>
-            <button className="mant-btn primary" onClick={() => navigate("/mantenimiento/activos")}>
-              🏢 Activos
-            </button>
-            <button className="mant-btn" style={{ background: "#7c3aed", color: "white" }} onClick={() => navigate("/mantenimiento/plan-maestro")}>
-              📅 Plan Maestro
-            </button>
-            <button className="mant-btn" style={{ background: "#f59e0b", color: "white" }} onClick={() => navigate("/mantenimiento/repuestos")}>
-              ⚙️ Repuestos
-            </button>
-            <button className="mant-btn primary" onClick={() => navigate("/mantenimiento/proveedores")}>
-              🚚 Proveedores
-            </button>
-            <button className="mant-btn secondary" onClick={() => navigate("/kpis-mantenimiento")}>
-              📊 Ver KPIs
-            </button>
+          <div className="mant-nav-pills">
+            <button className="nav-pill active" onClick={() => navigate("/mantenimiento")}>Órdenes</button>
+            <button className="nav-pill" onClick={() => navigate("/mantenimiento/activos")}>Activos</button>
+            <button className="nav-pill" onClick={() => navigate("/mantenimiento/plan-maestro")}>Plan Maestro</button>
+            <button className="nav-pill" onClick={() => navigate("/mantenimiento/repuestos")}>Repuestos</button>
+            <button className="nav-pill" onClick={() => navigate("/mantenimiento/proveedores")}>Proveedores</button>
+            <button className="nav-pill kpi-pill" onClick={() => navigate("/kpis-mantenimiento")}>KPIs</button>
           </div>
         </header>
 
         {/* STAT CARDS */}
         <div className="mant-stats-row">
-          <StatCard label="Total" value={stats.total} />
-          <StatCard label="Pendientes" value={stats.pendientes} />
-          <StatCard label="En Proceso" value={stats.proceso} />
-          <StatCard label="Finalizados" value={stats.finalizados} />
+          <StatCard label="Total Órdenes" value={stats.total} icon="🔧" accent="#6366f1" />
+          <StatCard label="Pendientes" value={stats.pendientes} icon="⏳" accent="#f59e0b" />
+          <StatCard label="En Proceso" value={stats.proceso} icon="⚙️" accent="#3b82f6" />
+          <StatCard label="Finalizadas" value={stats.finalizados} icon="✅" accent="#10b981" />
         </div>
 
+        {/* FILTER BAR */}
+        <div className="mant-filter-bar">
+          <div className="mant-search-wrap">
+            <span className="search-icon">🔍</span>
+            <input
+              className="mant-search-input"
+              placeholder="Buscar por tipo, activo, área, consecutivo..."
+              value={filtro}
+              onChange={e => setFiltro(e.target.value)}
+            />
+            {filtro && <button className="search-clear" onClick={() => setFiltro("")}>✖</button>}
+          </div>
+          {filtro && <span className="filter-count">{filtered.length} resultado{filtered.length !== 1 ? "s" : ""}</span>}
+        </div>
+
+        {/* KANBAN BOARD */}
         <div className="mant-board">
-          <Column 
-            title="Pendientes" 
-            type="pending" 
-            items={solicitudes.filter(s => s.estado_id === 1)} 
-            onCardClick={openModal} 
-          />
-          <Column 
-            title="En Proceso" 
-            type="process" 
-            items={solicitudes.filter(s => s.estado_id === 13)} 
-            onCardClick={openModal} 
-          />
-          <Column 
-            title="Finalizados" 
-            type="done" 
-            items={solicitudes.filter(s => [14, 15].includes(s.estado_id))} 
-            onCardClick={openModal} 
-          />
+          <KanbanColumn title="Pendientes" type="pending" icon="⏳"
+            items={filtered.filter(s => s.estado_id === 1)} onCardClick={openModal} />
+          <KanbanColumn title="En Proceso" type="process" icon="⚙️"
+            items={filtered.filter(s => s.estado_id === 13)} onCardClick={openModal} />
+          <KanbanColumn title="Finalizadas" type="done" icon="✅"
+            items={filtered.filter(s => [14, 15].includes(s.estado_id))} onCardClick={openModal} />
         </div>
       </div>
 
-      {/* MODAL DETALLE */}
+      {/* MODAL */}
       {selected && (
         <div className="mant-modal-overlay" onClick={closeModal}>
-          <div className="mant-modal-content" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <span className="status-badge-premium" style={{ 
-                  background: selected.estado_id === 1 ? "var(--status-pending)" : 
-                             selected.estado_id === 13 ? "var(--status-process)" : "var(--status-done)",
-                  color: "white"
-                }}>
+          <div className="mant-modal-box" onClick={e => e.stopPropagation()}>
+            {/* Modal Header */}
+            <div className="modal-box-header">
+              <div className="modal-box-title-group">
+                <span className={`modal-status-chip chip-${selected.estado_id === 1 ? "pending" : selected.estado_id === 13 ? "process" : "done"}`}>
                   {selected.estados?.nombre}
                 </span>
-                <h3>{selected.consecutivo ? `M-${selected.consecutivo}` : `#${selected.id}`}</h3>
+                <h3 className="modal-box-title">
+                  {selected.consecutivo ? `M-${selected.consecutivo}` : `#${selected.id}`}
+                </h3>
               </div>
-              <button className="close-btn" onClick={closeModal}>✖</button>
+              <button className="modal-close-btn" onClick={closeModal}>✖</button>
             </div>
 
-            <div className="modal-body">
-              <div className="info-grid-premium">
-                <InfoBox label="Tipo" value={selected.tipos_solicitud?.nombre} />
-                <InfoBox label="Prioridad" value={selected.prioridades?.nombre} />
-                <InfoBox label="Solicitante" value={selected.usuario_id} />
-                <InfoBox label="Área" value={selected.area_solicitante} />
-                <InfoBox label="Activo Relacionado" value={selected.activos?.nombre || "N/A"} />
-                <InfoBox label="Fecha" value={new Date(selected.created_at).toLocaleDateString()} />
-              </div>
+            {/* Tabs */}
+            <div className="modal-tabs">
+              <button className={`modal-tab ${activeTab === "info" ? "active" : ""}`} onClick={() => setActiveTab("info")}>Información</button>
+              {selected.estado_id >= 13 && <button className={`modal-tab ${activeTab === "accion" ? "active" : ""}`} onClick={() => setActiveTab("accion")}>Acción & Repuestos</button>}
+              {[14,15].includes(selected.estado_id) && <button className={`modal-tab ${activeTab === "consumos" ? "active" : ""}`} onClick={() => setActiveTab("consumos")}>Consumos</button>}
+            </div>
 
-              <div className="desc-section">
-                <span className="section-label">📝 Descripción</span>
-                <div className="text-box-premium">{selected.descripcion}</div>
-              </div>
-
-              {/* ASIGNACIÓN DE PROVEEDOR (Solo en Pendiente o Proceso) */}
-              {(selected.estado_id === 1 || selected.estado_id === 13) && (
-                <div className="desc-section">
-                  <span className="section-label">🚚 Asignar Proveedor</span>
-                  <select 
-                    className="mant-select" 
-                    value={proveedorId} 
-                    onChange={e => setProveedorId(e.target.value)}
-                    style={{ width: "100%", padding: "10px", borderRadius: "10px", border: "1px solid var(--mant-border)" }}
-                  >
-                    <option value="">Seleccione proveedor...</option>
-                    {proveedores.map(p => <option key={p.id} value={p.id}>{p.nombre} ({p.especialidad})</option>)}
-                  </select>
-                </div>
-              )}
-
-              {/* ACCIÓN REALIZADA */}
-              {(selected.estado_id === 13 || selected.estado_id >= 14) && (
-                <div className="desc-section">
-                  <span className="section-label">⚙️ Acción Realizada</span>
-                  {selected.estado_id === 13 ? (
-                    <textarea
-                      className="mant-textarea"
-                      value={accion}
-                      onChange={(e) => setAccion(e.target.value)}
-                      placeholder="Describe detalladamente el trabajo realizado..."
-                    />
-                  ) : (
-                    <div className="text-box-premium" style={{ background: "hsla(142, 71%, 95%, 1)", borderColor: "var(--status-done)" }}>
-                      {selected.accion_realizada}
+            <div className="modal-box-body">
+              {/* TAB: INFO */}
+              {activeTab === "info" && (
+                <>
+                  <div className="modal-info-grid">
+                    <InfoBox label="Tipo" value={selected.tipos_solicitud?.nombre} />
+                    <InfoBox label="Prioridad" value={selected.prioridades?.nombre} />
+                    <InfoBox label="Área Solicitante" value={selected.area_solicitante} />
+                    <InfoBox label="Solicitante" value={selected.usuario_id} />
+                    <InfoBox label="Activo Relacionado" value={selected.activos?.nombre || "N/A"} />
+                    <InfoBox label="Fecha Apertura" value={new Date(selected.created_at).toLocaleString("es-CO")} />
+                    {selected.fecha_cierre && <InfoBox label="Fecha Cierre" value={new Date(selected.fecha_cierre).toLocaleString("es-CO")} />}
+                    {selected.proveedor && <InfoBox label="Proveedor" value={selected.proveedor.nombre} />}
+                  </div>
+                  <div className="modal-section">
+                    <span className="modal-section-label">Descripción del Problema</span>
+                    <div className="modal-text-box">{selected.descripcion}</div>
+                  </div>
+                  {/* Asignar proveedor inline */}
+                  {(selected.estado_id === 1 || selected.estado_id === 13) && (
+                    <div className="modal-section">
+                      <span className="modal-section-label">Asignar Proveedor Externo</span>
+                      <div style={{ display: "flex", gap: "10px" }}>
+                        <select className="v2-select" value={proveedorId} onChange={e => setProveedorId(e.target.value)} style={{ flex: 1 }}>
+                          <option value="">Sin asignar...</option>
+                          {proveedores.map(p => <option key={p.id} value={p.id}>{p.nombre} — {p.especialidad}</option>)}
+                        </select>
+                        <button className="mant-btn-action success" onClick={updateProveedor} disabled={saving || !proveedorId}>
+                          {saving ? "..." : "Guardar"}
+                        </button>
+                      </div>
                     </div>
                   )}
-                  {error && <p className="error-msg">{error}</p>}
-                </div>
+                </>
               )}
 
-              {/* GESTIÓN DE CONSUMOS (Solo en Proceso o Finalizado) */}
-              {(selected.estado_id === 13 || selected.estado_id >= 14) && (
-                <div className="desc-section" style={{ marginTop: "20px", borderTop: "1px solid #efefef", paddingTop: "20px" }}>
-                  <span className="section-label">📦 Repuestos Utilizados</span>
-                  {selected.estado_id === 13 ? (
-                    <div>
-                      {consumos.map((c, idx) => (
-                        <div key={idx} style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
-                          <select 
-                            className="mant-select" 
-                            style={{ flex: 2 }}
-                            value={c.repuesto_id}
-                            onChange={(e) => {
-                              const newC = [...consumos];
-                              newC[idx].repuesto_id = e.target.value;
-                              setConsumos(newC);
-                            }}
-                          >
-                            <option value="">Seleccione repuesto...</option>
-                            {allRepuestos.map(r => <option key={r.id} value={r.id}>{r.nombre} (Stock: {r.stock})</option>)}
-                          </select>
-                          <input 
-                            type="number" 
-                            className="mant-input" 
-                            style={{ flex: 1, padding: "8px", borderRadius: "8px", border: "1px solid #ddd" }}
-                            placeholder="Cant"
-                            value={c.cantidad}
-                            onChange={(e) => {
-                              const newC = [...consumos];
-                              newC[idx].cantidad = parseFloat(e.target.value);
-                              setConsumos(newC);
-                            }}
-                          />
-                          <button onClick={() => setConsumos(consumos.filter((_, i) => i !== idx))} style={{ background: "none", border: "none", color: "red", cursor: "pointer" }}>✖</button>
-                        </div>
-                      ))}
-                      <button 
-                        className="mini-btn" 
-                        style={{ background: "#f1f5f9", color: "#475569", marginTop: "10px" }}
-                        onClick={() => setConsumos([...consumos, { repuesto_id: "", cantidad: 0 }])}
-                      >
-                        + Añadir Repuesto
-                      </button>
+              {/* TAB: ACCIÓN & REPUESTOS */}
+              {activeTab === "accion" && (
+                <>
+                  <div className="modal-section">
+                    <span className="modal-section-label">Acción Realizada por el Técnico</span>
+                    {selected.estado_id === 13 ? (
+                      <textarea
+                        className="modal-textarea"
+                        rows={5}
+                        value={accion}
+                        onChange={e => setAccion(e.target.value)}
+                        placeholder="Describe detalladamente el trabajo realizado, partes reemplazadas, calibraciones, observaciones..."
+                      />
+                    ) : (
+                      <div className="modal-text-box resolved">{selected.accion_realizada}</div>
+                    )}
+                    {error && <p className="modal-error">{error}</p>}
+                  </div>
+
+                  {/* Repuestos consumidos */}
+                  {selected.estado_id === 13 && (
+                    <div className="modal-section">
+                      <span className="modal-section-label">Repuestos / Insumos Utilizados</span>
+                      <div className="consumos-list">
+                        {consumos.map((c, i) => (
+                          <div key={i} className="consumo-row">
+                            <select className="v2-select" style={{ flex: 2 }} value={c.repuesto_id}
+                              onChange={e => updateConsumo(i, "repuesto_id", e.target.value)}>
+                              <option value="">Seleccione insumo...</option>
+                              {allRepuestos.map(r => (
+                                <option key={r.id} value={r.id}>
+                                  {r.nombre} (Stock: {r.stock} {r.unidad})
+                                </option>
+                              ))}
+                            </select>
+                            <input type="number" min="0.01" step="0.01" className="v2-input consumo-qty"
+                              value={c.cantidad} placeholder="Cant."
+                              onChange={e => updateConsumo(i, "cantidad", parseFloat(e.target.value) || 0)} />
+                            <button className="consumo-remove" onClick={() => removeConsumo(i)}>✖</button>
+                          </div>
+                        ))}
+                        <button className="mant-btn-action secondary" style={{ marginTop: "8px" }} onClick={addConsumo}>
+                          + Añadir Repuesto
+                        </button>
+                      </div>
                     </div>
+                  )}
+                </>
+              )}
+
+              {/* TAB: CONSUMOS GUARDADOS */}
+              {activeTab === "consumos" && (
+                <div className="modal-section">
+                  <span className="modal-section-label">Repuestos Consumidos</span>
+                  {consumosGuardados.length === 0 ? (
+                    <p style={{ color: "#94a3b8", fontSize: "0.9rem" }}>No se registraron consumos en esta orden.</p>
                   ) : (
-                    <div className="repuestos-consumidos-list">
-                      {/* Aquí se cargarían los consumos reales desde la base de datos si fuera necesario */}
-                      <p style={{ fontSize: "0.8rem", color: "#64748b" }}>Consulta la hoja de ruta para detalles de costos y repuestos.</p>
-                    </div>
+                    <table className="consumos-table">
+                      <thead>
+                        <tr><th>Insumo</th><th>Cantidad</th><th>Unidad</th><th>Costo Unit.</th><th>Subtotal</th></tr>
+                      </thead>
+                      <tbody>
+                        {consumosGuardados.map(c => (
+                          <tr key={c.id}>
+                            <td>{c.repuesto?.nombre}</td>
+                            <td>{c.cantidad}</td>
+                            <td>{c.repuesto?.unidad}</td>
+                            <td>${Number(c.costo_en_momento || 0).toLocaleString()}</td>
+                            <td><strong>${(Number(c.costo_en_momento || 0) * c.cantidad).toLocaleString()}</strong></td>
+                          </tr>
+                        ))}
+                        <tr className="consumos-total">
+                          <td colSpan={4}><strong>TOTAL COSTO</strong></td>
+                          <td><strong>${consumosGuardados.reduce((sum, c) => sum + (Number(c.costo_en_momento || 0) * c.cantidad), 0).toLocaleString()}</strong></td>
+                        </tr>
+                      </tbody>
+                    </table>
                   )}
                 </div>
               )}
             </div>
 
-            <div className="modal-footer">
-              <button className="mant-btn secondary" onClick={closeModal} style={{ marginRight: "10px" }}>Cerrar</button>
+            {/* Modal Footer */}
+            <div className="modal-box-footer">
+              <button className="mant-btn-action secondary" onClick={closeModal}>Cerrar</button>
               {selected.estado_id < 14 && (
-                <button className="mant-btn primary" onClick={avanzarEstado}>
-                  {selected.estado_id === 1 ? "Iniciar Trabajo" : "Completar y Guardar en Hoja de Rutina"}
+                <button className="mant-btn-action primary" onClick={avanzarEstado} disabled={saving}>
+                  {saving ? "Guardando..." : selected.estado_id === 1 ? "Iniciar Trabajo →" : "Finalizar y Cerrar Orden ✓"}
                 </button>
               )}
             </div>
@@ -346,81 +366,70 @@ export default function Mantenimiento() {
   );
 }
 
-// Subcomponentes
-function StatCard({ label, value }) {
+function StatCard({ label, value, icon, accent }) {
   return (
-    <div className="mant-stat-card">
-      <span className="stat-label">{label}</span>
-      <span className="stat-value">{value}</span>
+    <div className="mant-stat-card" style={{ "--stat-accent": accent }}>
+      <div className="stat-card-icon">{icon}</div>
+      <div className="stat-card-body">
+        <span className="stat-card-value">{value}</span>
+        <span className="stat-card-label">{label}</span>
+      </div>
+      <div className="stat-card-bar"></div>
     </div>
   );
 }
 
-function Column({ title, type, items, onCardClick }) {
+function KanbanColumn({ title, type, icon, items, onCardClick }) {
   return (
     <div className="mant-column">
-      <div className={`col-header ${type}`}>
-        <h3>{title}</h3>
+      <div className={`col-header col-${type}`}>
+        <div className="col-header-left">
+          <span className="col-icon">{icon}</span>
+          <h3>{title}</h3>
+        </div>
         <span className="count-badge">{items.length}</span>
       </div>
       <div className="mant-list-area">
-        {items.map(s => (
-          <ProfessionalCard key={s.id} data={s} onClick={() => onCardClick(s)} />
-        ))}
-        {items.length === 0 && (
+        {items.length === 0 ? (
           <div className="empty-state">
-             <div className="empty-state-icon">📂</div>
-             <p>Sin solicitudes</p>
+            <div className="empty-state-icon">📭</div>
+            <p>Sin solicitudes aquí</p>
           </div>
-        )}
+        ) : items.map(s => <KanbanCard key={s.id} data={s} onClick={() => onCardClick(s)} />)}
       </div>
     </div>
   );
 }
 
-function ProfessionalCard({ data, onClick }) {
-  const priorityClass = data.prioridad_id === 3 ? "priority-high" : data.prioridad_id === 2 ? "priority-medium" : "priority-low";
-  
-  // Extraer tags si existen [CATEGORIA - TIPO]
-  const tagMatch = data.descripcion?.match(/^\[(.*?) - (.*?)\]/);
+function KanbanCard({ data, onClick }) {
+  const priorityClass = PRIORITY_CLASS[data.prioridad_id] || "priority-low";
+  const tagMatch = data.descripcion?.match(/^\[([^\]]+)\]/);
   const displayDesc = tagMatch ? data.descripcion.replace(tagMatch[0], "").trim() : data.descripcion;
-  const categoryTag = tagMatch ? tagMatch[1] : null;
-  const typeTag = tagMatch ? tagMatch[2] : null;
+  const isUrgent = data.prioridad_id === 3;
 
   return (
-    <div className={`mant-card ${priorityClass}`} onClick={onClick}>
+    <div className={`mant-card ${priorityClass} ${isUrgent ? "card-urgent" : ""}`} onClick={onClick}>
       <div className="card-top">
-        <span className="card-tag tag-id">{data.consecutivo ? `M-${data.consecutivo}` : `#${data.id}`}</span>
-        <span className="card-tag" style={{ background: "#f8fafc", color: "#64748b" }}>{data.prioridades?.nombre}</span>
+        <span className="card-id-tag">{data.consecutivo ? `M-${data.consecutivo}` : `#${data.id}`}</span>
+        <span className={`card-prio-badge prio-${data.prioridad_id}`}>{data.prioridades?.nombre || PRIORITY_LABEL[data.prioridad_id]}</span>
       </div>
-      
-      {categoryTag && (
-        <div style={{ display: "flex", gap: "5px", marginBottom: "8px" }}>
-          <span className="card-tag" style={{ background: "var(--mant-bg)", color: "var(--mant-primary)", fontSize: "0.65rem" }}>
-            {categoryTag}
-          </span>
-          <span className="card-tag" style={{ background: "white", border: "1px solid var(--mant-border)", color: "#475569", fontSize: "0.65rem" }}>
-            {typeTag}
-          </span>
-        </div>
-      )}
 
-      <h4>{data.tipos_solicitud?.nombre}</h4>
-      <p style={{ fontSize: "0.8rem", color: "#64748b", margin: "5px 0", display: "-webkit-box", WebkitLineClamp: "2", WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-        {displayDesc}
-      </p>
+      <h4 className="card-type">{data.tipos_solicitud?.nombre}</h4>
+      <p className="card-desc">{displayDesc}</p>
 
-      <div className="card-info-item">👤 {data.area_solicitante}</div>
-      {data.activos && (
-        <div className="card-asset-tag">
-          <span>⚙️ {data.activos.nombre}</span>
-        </div>
-      )}
+      <div className="card-meta">
+        <span className="card-meta-item">👤 {data.area_solicitante || "—"}</span>
+        {data.activos && <span className="card-meta-item">⚙️ {data.activos.nombre}</span>}
+      </div>
+
       {data.proveedor && (
-        <div className="card-info-item" style={{ marginTop: "8px", fontWeight: "600", color: "var(--mant-primary)" }}>
-          🚚 {data.proveedor.nombre}
-        </div>
+        <div className="card-proveedor-tag">🚚 {data.proveedor.nombre}</div>
       )}
+
+      <div className="card-footer">
+        <span className="card-date">{new Date(data.created_at).toLocaleDateString("es-CO")}</span>
+        {data.activos?.criticidad === "Alta" && <span className="crit-mini-badge">CRÍTICO</span>}
+      </div>
     </div>
   );
 }
@@ -429,7 +438,7 @@ function InfoBox({ label, value }) {
   return (
     <div className="info-item-box">
       <label>{label}</label>
-      <span>{value || "---"}</span>
+      <span>{value || "—"}</span>
     </div>
   );
 }
