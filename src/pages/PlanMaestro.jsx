@@ -5,7 +5,6 @@ import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
 import "./Mantenimiento.css";
 import "./PlanMaestro.css";
-import "./PlanMaestro.css";
 
 export default function PlanMaestro() {
   const navigate = useNavigate();
