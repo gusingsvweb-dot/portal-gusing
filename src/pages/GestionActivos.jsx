@@ -97,15 +97,14 @@ export default function GestionActivos() {
 
     setLoading(true);
     try {
-      // 1. Borrar planes preventivos (UUID)
-      await supabase.from(st("planes_preventivos")).delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      // 1. Borrar planes preventivos
+      await supabase.from(st("planes_preventivos")).delete().not("id", "is", null);
       
-      // 2. Borrar solicitudes y órdenes (BigInt / Numeric)
-      // Usamos .gt("id", 0) que funciona para tipos numéricos
-      await supabase.from(st("solicitudes")).delete().gt("id", 0);
+      // 2. Borrar solicitudes y órdenes
+      await supabase.from(st("solicitudes")).delete().not("id", "is", null);
       
-      // 3. Borrar finalmente los activos (UUID)
-      const { error } = await supabase.from(st("activos")).delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      // 3. Borrar finalmente los activos
+      const { error } = await supabase.from(st("activos")).delete().not("id", "is", null);
       
       if (error) throw error;
       
