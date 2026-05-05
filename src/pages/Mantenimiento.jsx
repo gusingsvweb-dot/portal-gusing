@@ -29,19 +29,39 @@ export default function Mantenimiento() {
 
   const loadData = useCallback(async () => {
     setLoading(true);
-    const [{ data: sol }, { data: prov }, { data: reps }] = await Promise.all([
-      supabase
+    setError(""); // Limpiar errores previos
+    
+    try {
+      const selectStr = ss(`*, tipos_solicitud(nombre), prioridades(nombre), estados(nombre), area_destino:areas(nombre), activos(nombre, tipo, codigo, criticidad), proveedor:proveedores_mant(nombre)`);
+      console.log("Consultando tablero con:", selectStr);
+
+      const { data: sol, error: solErr } = await supabase
         .from(st("solicitudes"))
-        .select(ss(`*, tipos_solicitud(nombre), prioridades(nombre), estados(nombre), area_destino:areas(nombre), activos(nombre, tipo, codigo, criticidad), proveedor:proveedores_mant(nombre)`))
+        .select(selectStr)
         .eq("area_id", 1)
-        .order("id", { ascending: false }),
-      supabase.from(st("proveedores_mant")).select("*").order("nombre"),
-      supabase.from(st("repuestos")).select("*").order("nombre"),
-    ]);
-    setSolicitudes(sol || []);
-    setProveedores(prov || []);
-    setAllRepuestos(reps || []);
-    setLoading(false);
+        .order("id", { ascending: false });
+
+      if (solErr) {
+        console.error("Error cargando solicitudes:", solErr);
+        setError(`Error al cargar órdenes: ${solErr.message} (${solErr.code})`);
+      } else {
+        setSolicitudes(sol || []);
+      }
+
+      const [{ data: prov }, { data: reps }] = await Promise.all([
+        supabase.from(st("proveedores_mant")).select("*").order("nombre"),
+        supabase.from(st("repuestos")).select("*").order("nombre"),
+      ]);
+      
+      setProveedores(prov || []);
+      setAllRepuestos(reps || []);
+
+    } catch (err) {
+      console.error("Error inesperado en loadData:", err);
+      setError("Ocurrió un error inesperado al conectar con el servidor.");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
@@ -171,6 +191,13 @@ export default function Mantenimiento() {
             <button className="nav-pill kpi-pill" onClick={() => navigate("/kpis-mantenimiento")}>KPIs</button>
           </div>
         </header>
+
+        {/* ERROR MESSAGE */}
+        {error && (
+          <div className="mant-error-banner">
+            ⚠️ {error}
+          </div>
+        )}
 
         {/* STAT CARDS */}
         <div className="mant-stats-row">
