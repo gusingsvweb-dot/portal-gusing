@@ -194,74 +194,76 @@ export default function GestionProveedoresMant() {
                      <option value="Externo">🚚 Proveedor Externo</option>
                    </select>
                  </div>
-                  <div className="v2-form-group">
-                    <label>Nombre de la Empresa / Técnico <span className="req">*</span></label>
-                    <input className="v2-input" type="text" value={form.nombre}
-                      onChange={e => setForm({ ...form, nombre: e.target.value })}
-                      placeholder="Ej: Técnicos Unidos S.A.S" />
-                  </div>
-                </div>
-                <div className="v2-form-row">
-                  <div className="v2-form-group">
-                    <label>Especialidad</label>
-                    <select className="v2-select" value={showCustomEsp ? "CUSTOM" : form.especialidad}
-                      onChange={e => {
-                        if (e.target.value === "CUSTOM") setShowCustomEsp(true);
-                        else { setShowCustomEsp(false); setForm({ ...form, especialidad: e.target.value }); }
-                      }}>
-                      <option value="">Seleccione...</option>
-                      <option>Eléctrico</option>
-                      <option>Refrigeración</option>
-                      <option>Mecánico</option>
-                      <option>HVAC</option>
-                      <option>Instrumentación</option>
-                      <option>Plomería</option>
-                      <option>Cómputo / TI</option>
-                      <option>General</option>
-                      <option value="CUSTOM">+ Añadir especialidad...</option>
-                    </select>
-                    {showCustomEsp && (
-                      <div className="v2-inline-form" style={{ marginTop: "8px" }}>
-                        <input className="v2-input-mini" placeholder="Nombre especialidad..." 
-                          value={customEsp} onChange={e => setCustomEsp(e.target.value)} />
-                        <button className="v2-save-mini" onClick={() => { setForm({...form, especialidad: customEsp}); setShowCustomEsp(false); }}>OK</button>
-                      </div>
-                    )}
-                  </div>
-                  <div className="v2-form-group">
-                    <label>Persona de Contacto</label>
-                    <input className="v2-input" type="text" value={form.contacto}
-                      onChange={e => setForm({ ...form, contacto: e.target.value })}
-                      placeholder="Nombre del encargado" />
-                  </div>
-                </div>
-                <div className="v2-form-row">
-                  <div className="v2-form-group">
-                    <label>Teléfono</label>
-                    <input className="v2-input" type="tel" value={form.telefono}
-                      onChange={e => setForm({ ...form, telefono: e.target.value })}
-                      placeholder="+57 300 000 0000" />
-                  </div>
-                  <div className="v2-form-group">
-                    <label>Email {form.tipo === "Interno" && <span className="req">*</span>}</label>
-                    <input className="v2-input" type="email" value={form.email}
-                      onChange={e => setForm({ ...form, email: e.target.value })}
-                      placeholder="contacto@empresa.com" />
-                  </div>
-                </div>
 
-                {form.tipo === "Interno" && !form.id && (
-                  <div className="v2-form-group" style={{ background: "#f0fdf4", padding: "12px", borderRadius: "8px", border: "1px solid #bbf7d0" }}>
-                    <label style={{ color: "#166534", fontWeight: "bold" }}>🔑 Contraseña de Acceso</label>
-                    <input className="v2-input" type="password" value={form.contrasena}
-                      onChange={e => setForm({ ...form, contrasena: e.target.value })}
-                      placeholder="Asigna una clave para el técnico" />
-                    <p style={{ fontSize: "0.75rem", color: "#166534", marginTop: "5px" }}>
-                      Se creará un perfil de usuario automático con rol <strong>tecnicomantenimiento</strong>.
-                    </p>
-                  </div>
-                )}
-              </div>
+                 <div className="v2-form-group">
+                   <label>Nombre de la Empresa / Técnico <span className="req">*</span></label>
+                   <input className="v2-input" type="text" value={form.nombre}
+                     onChange={e => setForm({ ...form, nombre: e.target.value })}
+                     placeholder="Ej: Técnicos Unidos S.A.S" />
+                 </div>
+
+                 <div className="v2-form-row">
+                   <div className="v2-form-group">
+                     <label>Especialidad</label>
+                     <select className="v2-select" value={showCustomEsp ? "CUSTOM" : form.especialidad}
+                       onChange={e => {
+                         if (e.target.value === "CUSTOM") setShowCustomEsp(true);
+                         else { setShowCustomEsp(false); setForm({ ...form, especialidad: e.target.value }); }
+                       }}>
+                       <option value="">Seleccione...</option>
+                       <option>Eléctrico</option>
+                       <option>Refrigeración</option>
+                       <option>Mecánico</option>
+                       <option>HVAC</option>
+                       <option>Instrumentación</option>
+                       <option>Plomería</option>
+                       <option>Cómputo / TI</option>
+                       <option>General</option>
+                       <option value="CUSTOM">+ Añadir especialidad...</option>
+                     </select>
+                     {showCustomEsp && (
+                       <div className="v2-inline-form" style={{ marginTop: "8px" }}>
+                         <input className="v2-input-mini" placeholder="Nombre especialidad..." 
+                           value={customEsp} onChange={e => setCustomEsp(e.target.value)} />
+                         <button className="v2-save-mini" onClick={() => { setForm({...form, especialidad: customEsp}); setShowCustomEsp(false); }}>OK</button>
+                       </div>
+                     )}
+                   </div>
+                   <div className="v2-form-group">
+                     <label>Persona de Contacto</label>
+                     <input className="v2-input" type="text" value={form.contacto}
+                       onChange={e => setForm({ ...form, contacto: e.target.value })}
+                       placeholder="Nombre del encargado" />
+                   </div>
+                 </div>
+
+                 <div className="v2-form-row">
+                   <div className="v2-form-group">
+                     <label>Teléfono</label>
+                     <input className="v2-input" type="tel" value={form.telefono}
+                       onChange={e => setForm({ ...form, telefono: e.target.value })}
+                       placeholder="+57 300 000 0000" />
+                   </div>
+                   <div className="v2-form-group">
+                     <label>Email {form.tipo === "Interno" && <span className="req">*</span>}</label>
+                     <input className="v2-input" type="email" value={form.email}
+                       onChange={e => setForm({ ...form, email: e.target.value })}
+                       placeholder="contacto@empresa.com" />
+                   </div>
+                 </div>
+
+                 {form.tipo === "Interno" && !form.id && (
+                   <div className="v2-form-group" style={{ background: "#f0fdf4", padding: "12px", borderRadius: "8px", border: "1px solid #bbf7d0" }}>
+                     <label style={{ color: "#166534", fontWeight: "bold" }}>🔑 Contraseña de Acceso</label>
+                     <input className="v2-input" type="password" value={form.contrasena}
+                       onChange={e => setForm({ ...form, contrasena: e.target.value })}
+                       placeholder="Asigna una clave para el técnico" />
+                     <p style={{ fontSize: "0.75rem", color: "#166534", marginTop: "5px" }}>
+                       Se creará un perfil de usuario automático con rol <strong>tecnicomantenimiento</strong>.
+                     </p>
+                   </div>
+                 )}
+               </div>
               <div className="modal-v2-footer">
                 {form.id && (
                   <button className="v2-btn-danger" onClick={e => deleteProveedor(form.id, e)}>
