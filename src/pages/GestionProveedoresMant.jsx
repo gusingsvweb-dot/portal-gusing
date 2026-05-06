@@ -207,10 +207,18 @@ export default function GestionProveedoresMant() {
                      <label>Especialidad</label>
                      <select className="v2-select" value={showCustomEsp ? "CUSTOM" : form.especialidad}
                        onChange={e => {
-                         if (e.target.value === "CUSTOM") setShowCustomEsp(true);
-                         else { setShowCustomEsp(false); setForm({ ...form, especialidad: e.target.value }); }
+                         if (e.target.value === "CUSTOM") {
+                           setShowCustomEsp(true);
+                         } else {
+                           setShowCustomEsp(false);
+                           setForm({ ...form, especialidad: e.target.value });
+                         }
                        }}>
                        <option value="">Seleccione...</option>
+                       {/* Si hay una especialidad que no está en la lista fija, la mostramos como opción seleccionada */}
+                       {form.especialidad && !["Eléctrico", "Refrigeración", "Mecánico", "HVAC", "Instrumentación", "Plomería", "Cómputo / TI", "General"].includes(form.especialidad) && (
+                         <option value={form.especialidad}>{form.especialidad}</option>
+                       )}
                        <option>Eléctrico</option>
                        <option>Refrigeración</option>
                        <option>Mecánico</option>
@@ -223,9 +231,10 @@ export default function GestionProveedoresMant() {
                      </select>
                      {showCustomEsp && (
                        <div className="v2-inline-form" style={{ marginTop: "8px" }}>
-                         <input className="v2-input-mini" placeholder="Nombre especialidad..." 
-                           value={customEsp} onChange={e => setCustomEsp(e.target.value)} />
-                         <button className="v2-save-mini" onClick={() => { setForm({...form, especialidad: customEsp}); setShowCustomEsp(false); }}>OK</button>
+                         <input className="v2-input-mini" placeholder="Nombre especialidad..." autoFocus
+                           value={customEsp} onChange={e => setCustomEsp(e.target.value)} 
+                           onKeyDown={e => { if(e.key === 'Enter') { e.preventDefault(); setForm({...form, especialidad: customEsp}); setShowCustomEsp(false); } }} />
+                         <button className="v2-save-mini" onClick={(e) => { e.preventDefault(); setForm({...form, especialidad: customEsp}); setShowCustomEsp(false); }}>OK</button>
                        </div>
                      )}
                    </div>
