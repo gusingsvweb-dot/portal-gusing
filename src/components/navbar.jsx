@@ -141,7 +141,7 @@ export default function Navbar() {
           { to: "/mantenimiento/equipos", label: "Equipos", icon: "🏢" },
           { to: "/mantenimiento/plan-maestro", label: "Plan Maestro", icon: "📅" },
           { to: "/mantenimiento/repuestos", label: "Repuestos", icon: "⚙️" },
-          { to: "/mantenimiento/proveedores", label: "Proveedores", icon: "🚚" },
+          { to: "/mantenimiento/proveedores", label: "Personal Técnico", icon: "👷" },
           { to: "/kpis-mantenimiento", label: "KPIs", icon: "📈" },
         ],
       },

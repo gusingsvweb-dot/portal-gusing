@@ -101,8 +101,8 @@ export default function GestionProveedoresMant() {
       <div className="mant-container">
         <header className="mant-header-section">
           <div>
-            <h2 className="mant-title">Proveedores de Mantenimiento</h2>
-            <p className="mant-subtitle">Directorio de técnicos y servicios externos — {proveedores.length} registrados</p>
+            <h2 className="mant-title">Directorio de Personal Técnico</h2>
+            <p className="mant-subtitle">Técnicos internos y proveedores externos — {proveedores.length} registrados</p>
           </div>
           <div className="mant-actions-group">
             <button className="mant-btn-action secondary" onClick={() => navigate("/mantenimiento")}>← Tablero</button>
