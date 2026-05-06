@@ -299,7 +299,7 @@ export default function Mantenimiento() {
             <p className="mant-subtitle">Gestión centralizada de órdenes y equipos — {new Date().toLocaleDateString("es-CO", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</p>
           </div>
           <div className="mant-hero-img-container">
-            <img src="/Users/juanfelipegarzontocora/.gemini/antigravity/brain/f07fe63c-bdad-4415-ada0-6501c89fd8e4/mantenimiento_premium_hero_1778021052361_1778023707721.png" alt="Mantenimiento" className="mant-hero-mini-img" />
+            <img src="/mantenimiento_hero.png" alt="Mantenimiento" className="mant-hero-mini-img" />
           </div>
           <div className="mant-nav-pills">
             <button className="nav-pill active" onClick={() => navigate("/mantenimiento")}>Órdenes</button>
