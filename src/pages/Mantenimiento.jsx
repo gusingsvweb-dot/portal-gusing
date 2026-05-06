@@ -563,7 +563,8 @@ export default function Mantenimiento() {
               )}
             </div>
           </div>
-        )}
+        </div>
+      )}
 
         {/* MANUAL INTERVENTION MODAL */}
         {showManualForm && (
@@ -620,8 +621,6 @@ export default function Mantenimiento() {
             </div>
           </div>
         )}
-        )}
-      </div>
 
       <Footer />
     </>
