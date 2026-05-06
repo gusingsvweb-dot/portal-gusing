@@ -24,7 +24,15 @@ export default function GestionEquipos() {
   const [saving, setSaving] = useState(false);
 
   const [form, setForm] = useState({
-    nombre: "", tipo: "Equipo", area_id: "", codigo: "", descripcion: "", criticidad: "Baja"
+    nombre: "", tipo: "Equipo", area_id: "", codigo: "", descripcion: "", criticidad: "Baja", manual_url: ""
+  });
+  const [file, setFile] = useState(null);
+  const [showManualInt, setShowManualInt] = useState(false);
+  const [manualIntForm, setManualIntForm] = useState({ 
+    fecha: new Date().toISOString().split("T")[0], 
+    descripcion: "", 
+    accion: "", 
+    tecnico: "" 
   });
 
   useEffect(() => { loadData(); }, []);
@@ -70,12 +78,70 @@ export default function GestionEquipos() {
   async function saveEquipo() {
     if (!form.nombre || !form.area_id) return alert("Nombre y Área son obligatorios");
     setSaving(true);
-    const { error } = await supabase.from(st("activos")).upsert([form]);
+    
+    let currentUrl = form.manual_url;
+    if (file) {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random()}.${fileExt}`;
+      const filePath = `manuales/${fileName}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('manuales_equipos')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        alert("Error subiendo manual: " + uploadError.message);
+      } else {
+        const { data: urlData } = supabase.storage
+          .from('manuales_equipos')
+          .getPublicUrl(filePath);
+        currentUrl = urlData.publicUrl;
+      }
+    }
+
+    const { error } = await supabase.from(st("activos")).upsert([{ ...form, manual_url: currentUrl }]);
     if (error) alert("Error: " + error.message);
     else {
       setShowForm(false);
       resetForm();
       loadData();
+    }
+    setSaving(false);
+  }
+
+  async function saveManualIntervention() {
+    if (!manualIntForm.descripcion || !manualIntForm.accion) return alert("Completa descripción y acción");
+    setSaving(true);
+    
+    // Consecutivo manual (para no chocar con las automáticas)
+    const { data: maxData } = await supabase
+      .from(st("solicitudes"))
+      .select("consecutivo")
+      .eq("area_id", 1)
+      .order("consecutivo", { ascending: false })
+      .limit(1);
+    
+    const nextConsecutivo = (maxData?.[0]?.consecutivo || 0) + 1;
+
+    const { error } = await supabase.from(st("solicitudes")).insert([{
+      activo_id: selectedEquipo.id,
+      tipo_solicitud_id: 2, // Correctivo por defecto para manuales
+      descripcion: `(MANUAL) ${manualIntForm.descripcion}`,
+      accion_realizada: manualIntForm.accion,
+      usuario_id: manualIntForm.tecnico || "TÉCNICO EXTERNO",
+      estado_id: 15, // Cerrado
+      area_id: 1,
+      consecutivo: nextConsecutivo,
+      fecha_cierre: new Date(manualIntForm.fecha).toISOString(),
+      created_at: new Date(manualIntForm.fecha).toISOString(),
+      area_solicitante: "MANTENIMIENTO"
+    }]);
+
+    if (error) alert("Error: " + error.message);
+    else {
+      setShowManualInt(false);
+      setManualIntForm({ fecha: new Date().toISOString().split("T")[0], descripcion: "", accion: "", tecnico: "" });
+      openRutina(selectedEquipo);
     }
     setSaving(false);
   }
@@ -211,7 +277,8 @@ export default function GestionEquipos() {
   }
 
   function resetForm() {
-    setForm({ nombre: "", tipo: "Equipo", area_id: "", codigo: "", descripcion: "", criticidad: "Baja" });
+    setForm({ nombre: "", tipo: "Equipo", area_id: "", codigo: "", descripcion: "", criticidad: "Baja", manual_url: "" });
+    setFile(null);
     setShowAreaForm(false);
     setNewAreaName("");
   }
@@ -360,12 +427,23 @@ export default function GestionEquipos() {
                       onChange={e => setForm({ ...form, codigo: e.target.value })} placeholder="TAG-001" />
                   </div>
                 </div>
-                <div className="v2-form-group">
-                  <label>Descripción / Observaciones</label>
-                  <textarea className="v2-input" rows={3} value={form.descripcion}
-                    onChange={e => setForm({ ...form, descripcion: e.target.value })}
-                    placeholder="Características técnicas, ubicación exacta, notas importantes..." />
-                </div>
+                  <div className="v2-form-group">
+                    <label>Manual / Hoja de Vida (PDF)</label>
+                    <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                      <input className="v2-input" type="file" accept=".pdf" onChange={e => setFile(e.target.files[0])} />
+                      {form.manual_url && (
+                        <a href={form.manual_url} target="_blank" rel="noreferrer" className="v2-btn-secondary" style={{ textDecoration: "none", fontSize: "0.75rem", padding: "8px" }}>
+                          📄 Ver Actual
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                  <div className="v2-form-group">
+                    <label>Descripción / Observaciones</label>
+                    <textarea className="v2-input" rows={2} value={form.descripcion}
+                      onChange={e => setForm({ ...form, descripcion: e.target.value })}
+                      placeholder="Características técnicas, ubicación exacta, notas importantes..." />
+                  </div>
               </div>
               <div className="modal-v2-footer">
                 <button className="v2-btn-secondary" onClick={() => { setShowForm(false); resetForm(); }}>Cancelar</button>
@@ -393,49 +471,96 @@ export default function GestionEquipos() {
                     </p>
                   </div>
                 </div>
-                <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                  <button className="v2-btn-primary" style={{ padding: "8px 16px", fontSize: "0.85rem" }} onClick={printHojaRutina}>
-                    🖨️ Generar PDF / Imprimir
-                  </button>
-                  <button className="close-btn-v2" onClick={() => setSelectedEquipo(null)}>✖</button>
-                </div>
+                 <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                   {selectedEquipo.manual_url && (
+                     <a href={selectedEquipo.manual_url} target="_blank" rel="noreferrer" className="v2-btn-secondary" style={{ textDecoration: "none", fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "5px" }}>
+                       📄 Ver Manual
+                     </a>
+                   )}
+                   <button className="v2-btn-primary" style={{ padding: "8px 16px", fontSize: "0.85rem" }} onClick={printHojaRutina}>
+                     🖨️ Generar PDF / Imprimir
+                   </button>
+                   <button className="close-btn-v2" onClick={() => setSelectedEquipo(null)}>✖</button>
+                 </div>
               </div>
               <div className="scroll-v2">
-                <h4 className="v2-subtitle">Historial de Intervenciones</h4>
-                {rutinaLoading ? (
-                  <div className="mant-loading-state">Cargando historial...</div>
-                ) : rutina.length === 0 ? (
-                  <div className="v2-empty-state">
-                    <div className="v2-empty-icon">📭</div>
-                    <p>Este equipo aún no tiene intervenciones registradas.</p>
-                  </div>
-                ) : (
-                  <div className="v2-timeline">
-                    {rutina.map(item => (
-                      <div key={item.id} className="v2-timeline-item">
-                        <div className="v2-tl-marker"></div>
-                        <div className="v2-tl-date">
-                          <span className="v2-date-main">{new Date(item.fecha_cierre).toLocaleDateString("es-CO")}</span>
-                          <span className="v2-date-sub">{new Date(item.fecha_cierre).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                 {rutinaLoading ? (
+                   <div className="mant-loading-state">Cargando historial...</div>
+                 ) : (
+                   <>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px" }}>
+                      <h4 className="v2-subtitle" style={{ margin: 0 }}>Historial de Intervenciones</h4>
+                      <button className="v2-btn-primary" style={{ fontSize: "0.75rem", padding: "6px 12px" }} onClick={() => setShowManualInt(true)}>
+                        + Añadir Intervención Manual
+                      </button>
+                    </div>
+
+                    {showManualInt && (
+                      <div className="v2-inline-manual-form" style={{ background: "#f8fafc", padding: "15px", borderRadius: "12px", border: "1px solid #e2e8f0", marginBottom: "20px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px" }}>
+                          <strong>Nueva Intervención Manual</strong>
+                          <button className="close-btn-v2" onClick={() => setShowManualInt(false)}>✖</button>
                         </div>
-                        <div className="v2-tl-card">
-                          <div className="v2-tl-header">
-                            <span className="v2-tl-consec">M-{item.consecutivo}</span>
-                            <span className="v2-tl-type">{item.tipos_solicitud?.nombre}</span>
+                        <div className="v2-form-row">
+                          <div className="v2-form-group">
+                            <label>Fecha</label>
+                            <input type="date" className="v2-input" value={manualIntForm.fecha} onChange={e => setManualIntForm({...manualIntForm, fecha: e.target.value})} />
                           </div>
-                          <div className="v2-tl-body">
-                            <p className="v2-tl-orig"><strong>Problema:</strong> {item.descripcion}</p>
-                            <div className="v2-tl-action">
-                              <strong>Acción realizada:</strong>
-                              <p>{item.accion_realizada}</p>
-                            </div>
+                          <div className="v2-form-group">
+                            <label>Técnico Responsable</label>
+                            <input type="text" className="v2-input" placeholder="Nombre..." value={manualIntForm.tecnico} onChange={e => setManualIntForm({...manualIntForm, tecnico: e.target.value})} />
                           </div>
-                          <div className="v2-tl-footer">👨‍🔧 Responsable: {item.usuario_id}</div>
+                        </div>
+                        <div className="v2-form-group">
+                          <label>Descripción del Problema</label>
+                          <input type="text" className="v2-input" value={manualIntForm.descripcion} onChange={e => setManualIntForm({...manualIntForm, descripcion: e.target.value})} />
+                        </div>
+                        <div className="v2-form-group">
+                          <label>Acción Realizada</label>
+                          <textarea className="v2-input" rows={2} value={manualIntForm.accion} onChange={e => setManualIntForm({...manualIntForm, accion: e.target.value})} />
+                        </div>
+                        <div style={{ textAlign: "right" }}>
+                          <button className="v2-btn-primary" onClick={saveManualIntervention} disabled={saving}>
+                            {saving ? "Guardando..." : "Registrar en Historial"}
+                          </button>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                )}
+                    )}
+
+                    {rutina.length === 0 ? (
+                      <div className="v2-empty-state">
+                        <div className="v2-empty-icon">📭</div>
+                        <p>Este equipo aún no tiene intervenciones registradas.</p>
+                      </div>
+                    ) : (
+                      <div className="v2-timeline">
+                        {rutina.map(item => (
+                          <div key={item.id} className="v2-timeline-item">
+                            <div className="v2-tl-marker"></div>
+                            <div className="v2-tl-date">
+                              <span className="v2-date-main">{new Date(item.fecha_cierre).toLocaleDateString("es-CO")}</span>
+                              <span className="v2-date-sub">{new Date(item.fecha_cierre).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                            </div>
+                            <div className="v2-tl-card">
+                              <div className="v2-tl-header">
+                                <span className="v2-tl-consec">M-{item.consecutivo}</span>
+                                <span className="v2-tl-type">{item.tipos_solicitud?.nombre || "Manual"}</span>
+                              </div>
+                              <div className="v2-tl-body">
+                                <p className="v2-tl-orig"><strong>Problema:</strong> {item.descripcion}</p>
+                                <div className="v2-tl-action">
+                                  <strong>Acción realizada:</strong>
+                                  <p>{item.accion_realizada}</p>
+                                </div>
+                              </div>
+                              <div className="v2-tl-footer">👨‍🔧 Responsable: {item.usuario_id}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                   </>
+                 )}
               </div>
             </div>
           </div>
