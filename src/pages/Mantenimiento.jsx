@@ -303,7 +303,7 @@ export default function Mantenimiento() {
           </div>
           <div className="mant-nav-pills">
             <button className="nav-pill active" onClick={() => navigate("/mantenimiento")}>Órdenes</button>
-            <button className="nav-pill" onClick={() => navigate("/mantenimiento/activos")}>Equipos</button>
+            <button className="nav-pill" onClick={() => navigate("/mantenimiento/equipos")}>Equipos</button>
             <button className="nav-pill" onClick={() => navigate("/mantenimiento/plan-maestro")}>Plan Maestro</button>
             <button className="nav-pill" onClick={() => navigate("/mantenimiento/repuestos")}>Repuestos</button>
             <button className="nav-pill" onClick={() => navigate("/mantenimiento/proveedores")}>Proveedores</button>

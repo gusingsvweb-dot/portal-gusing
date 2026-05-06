@@ -138,7 +138,7 @@ export default function Navbar() {
         title: "Mantenimiento",
         items: [
           { to: "/mantenimiento", label: "Órdenes", icon: "🛠️" },
-          { to: "/mantenimiento/activos", label: "Activos", icon: "🏢" },
+          { to: "/mantenimiento/equipos", label: "Equipos", icon: "🏢" },
           { to: "/mantenimiento/plan-maestro", label: "Plan Maestro", icon: "📅" },
           { to: "/mantenimiento/repuestos", label: "Repuestos", icon: "⚙️" },
           { to: "/mantenimiento/proveedores", label: "Proveedores", icon: "🚚" },
