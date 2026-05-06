@@ -20,7 +20,7 @@ export default function GestionProveedoresMant() {
   const [customEsp, setCustomEsp] = useState("");
 
   const [form, setForm] = useState({
-    nombre: "", especialidad: "", contacto: "", telefono: "", email: "", tipo: "Externo"
+    nombre: "", especialidad: "", contacto: "", telefono: "", email: "", tipo: "Externo", contrasena: ""
   });
 
   useEffect(() => { loadProveedores(); }, []);
@@ -44,10 +44,44 @@ export default function GestionProveedoresMant() {
 
   async function saveProveedor() {
     if (!form.nombre) return alert("El nombre es obligatorio");
+    if (form.tipo === "Interno" && !form.contrasena && !form.id) return alert("Asigna una contraseña para el perfil del técnico");
+    
     setSaving(true);
-    const { error } = await supabase.from(st("proveedores_mant")).upsert([form]);
-    if (error) alert("Error: " + error.message);
-    else { setShowForm(false); resetForm(); loadProveedores(); }
+    
+    // 1. Guardar en proveedores_mant
+    // Quitamos contrasena del objeto antes de guardar en proveedores_mant para no causar error si la columna no existe
+    const { contrasena, ...provData } = form;
+    const { data: savedProv, error } = await supabase.from(st("proveedores_mant")).upsert([provData]).select();
+    
+    if (error) {
+      alert("Error en proveedor: " + error.message);
+      setSaving(false);
+      return;
+    }
+
+    // 2. Si es interno y es nuevo, crear usuario en NO_usuarios
+    if (form.tipo === "Interno" && !form.id) {
+      const newUser = {
+        id: crypto.randomUUID(),
+        usuario: form.nombre.trim().toLowerCase().replace(/\s+/g, '.'), // login name
+        contrasena: form.contrasena,
+        rol: "tecnicomantenimiento",
+        correo: form.email || `${form.nombre.trim().toLowerCase()}@gusing.com`,
+        areadetrabajo: "Mantenimiento",
+        created_at: new Date().toISOString()
+      };
+
+      const { error: userError } = await supabase.from(st("usuarios")).insert([newUser]);
+      if (userError) {
+        alert("Proveedor guardado, pero error creando usuario: " + userError.message);
+      } else {
+        alert(`Técnico creado con éxito. Usuario: ${newUser.usuario}`);
+      }
+    }
+
+    setShowForm(false);
+    resetForm();
+    loadProveedores();
     setSaving(false);
   }
 
@@ -60,7 +94,7 @@ export default function GestionProveedoresMant() {
   }
 
   function resetForm() {
-    setForm({ nombre: "", especialidad: "", contacto: "", telefono: "", email: "", tipo: "Externo" });
+    setForm({ nombre: "", especialidad: "", contacto: "", telefono: "", email: "", tipo: "Externo", contrasena: "" });
     setShowCustomEsp(false);
     setCustomEsp("");
   }
@@ -209,12 +243,24 @@ export default function GestionProveedoresMant() {
                       placeholder="+57 300 000 0000" />
                   </div>
                   <div className="v2-form-group">
-                    <label>Email</label>
+                    <label>Email {form.tipo === "Interno" && <span className="req">*</span>}</label>
                     <input className="v2-input" type="email" value={form.email}
                       onChange={e => setForm({ ...form, email: e.target.value })}
                       placeholder="contacto@empresa.com" />
                   </div>
                 </div>
+
+                {form.tipo === "Interno" && !form.id && (
+                  <div className="v2-form-group" style={{ background: "#f0fdf4", padding: "12px", borderRadius: "8px", border: "1px solid #bbf7d0" }}>
+                    <label style={{ color: "#166534", fontWeight: "bold" }}>🔑 Contraseña de Acceso</label>
+                    <input className="v2-input" type="password" value={form.contrasena}
+                      onChange={e => setForm({ ...form, contrasena: e.target.value })}
+                      placeholder="Asigna una clave para el técnico" />
+                    <p style={{ fontSize: "0.75rem", color: "#166534", marginTop: "5px" }}>
+                      Se creará un perfil de usuario automático con rol <strong>tecnicomantenimiento</strong>.
+                    </p>
+                  </div>
+                )}
               </div>
               <div className="modal-v2-footer">
                 {form.id && (
