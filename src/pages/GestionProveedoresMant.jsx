@@ -240,6 +240,7 @@ export default function GestionProveedoresMant() {
               </div>
             </div>
           </div>
+        )}
         {/* HISTORY MODAL */}
         {showHistory && (
           <div className="mant-modal-overlay-v2" onClick={() => setShowHistory(false)}>
