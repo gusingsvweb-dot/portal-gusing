@@ -188,7 +188,7 @@ export default function GestionProveedoresMant() {
               <div className="modal-v2-body">
                  <div className="v2-form-group" style={{ background: "#f8fafc", padding: "15px", borderRadius: "10px", border: "1px solid #e2e8f0", marginBottom: "20px" }}>
                    <label style={{ fontWeight: "bold", color: "var(--mant-primary)" }}>¿Qué tipo de personal deseas registrar?</label>
-                   <select className="v2-select" style={{ fontSize: "1rem", height: "45px", fontWeight: "600" }} 
+                   <select className="v2-select" style={{ fontSize: "1rem", padding: "10px 12px", fontWeight: "600", lineHeight: "1.5" }} 
                      value={form.tipo} onChange={e => setForm({ ...form, tipo: e.target.value })}>
                      <option value="Interno">👨‍🔧 Técnico Interno (Tendrá perfil de usuario)</option>
                      <option value="Externo">🚚 Proveedor Externo</option>
