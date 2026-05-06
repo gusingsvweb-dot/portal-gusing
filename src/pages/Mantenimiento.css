@@ -917,12 +917,12 @@
   width: 100%;
   max-width: 600px;
   border-radius: var(--radius-modal);
-  padding: 36px;
   box-shadow: var(--shadow-modal);
   position: relative;
   animation: slideUp 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  max-height: 90vh;
-  overflow-y: auto;
+  max-height: 95vh;
+  display: flex;
+  flex-direction: column;
 }
 
 .wide-v2 { max-width: 800px; }
@@ -931,7 +931,7 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 28px;
+  padding: 32px 32px 20px;
 }
 
 .modal-v2-header h3 {
@@ -964,7 +964,11 @@
 }
 .close-btn-v2:hover { background: #fee2e2; color: #ef4444; }
 
-.modal-v2-body { max-height: 60vh; overflow-y: auto; padding-right: 4px; }
+.modal-v2-body { 
+  flex: 1;
+  overflow-y: auto; 
+  padding: 0 32px 24px;
+}
 
 .scroll-v2 { max-height: 65vh; overflow-y: auto; }
 
@@ -1009,8 +1013,7 @@
   display: flex;
   justify-content: flex-end;
   gap: 14px;
-  margin-top: 32px;
-  padding-top: 24px;
+  padding: 20px 32px 32px;
   border-top: 1px solid #f1f5f9;
 }
 
