@@ -39,7 +39,6 @@ export default function Mantenimiento() {
     tecnico_asignado: ""
   });
 
-  const TECNICOS = ["Carlos R.", "Julián M.", "Andrés G."];
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -344,7 +343,9 @@ export default function Mantenimiento() {
             <label>Filtrar por Técnico:</label>
             <select className="v2-select" value={filtroTecnico} onChange={e => setFiltroTecnico(e.target.value)}>
               <option value="todos">Todos los técnicos</option>
-              {TECNICOS.map(t => <option key={t} value={t}>{t}</option>)}
+              {proveedores.filter(p => p.tipo === "Interno").map(t => (
+                <option key={t.id} value={t.nombre}>{t.nombre}</option>
+              ))}
               <option value="">Sin asignar</option>
             </select>
           </div>
@@ -440,7 +441,9 @@ export default function Mantenimiento() {
                         disabled={selected.estado_id >= 14}
                       >
                         <option value="">Sin asignar...</option>
-                        {TECNICOS.map(t => <option key={t} value={t}>{t}</option>)}
+                        {proveedores.filter(p => p.tipo === "Interno").map(t => (
+                          <option key={t.id} value={t.nombre}>{t.nombre}</option>
+                        ))}
                       </select>
                     </div>
                   </div>
@@ -604,10 +607,13 @@ export default function Mantenimiento() {
                 </div>
                 <div className="v2-form-group">
                   <label>Asignar a Técnico</label>
-                  <select className="v2-select" value={manualForm.tecnico_asignado} onChange={e => setManualForm({ ...manualForm, tecnico_asignado: e.target.value })}>
-                    <option value="">Sin asignar...</option>
-                    {TECNICOS.map(t => <option key={t} value={t}>{t}</option>)}
-                  </select>
+                    <select className="v2-select" value={manualForm.tecnico_asignado} 
+                      onChange={e => setManualForm({...manualForm, tecnico_asignado: e.target.value})}>
+                      <option value="">Seleccione técnico...</option>
+                      {proveedores.filter(p => p.tipo === "Interno").map(t => (
+                        <option key={t.id} value={t.nombre}>{t.nombre}</option>
+                      ))}
+                    </select>
                 </div>
                 <div className="v2-form-group">
                   <label>Descripción del Trabajo *</label>

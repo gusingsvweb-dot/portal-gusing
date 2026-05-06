@@ -196,10 +196,10 @@ export default function GestionProveedoresMant() {
                  </div>
 
                  <div className="v2-form-group">
-                   <label>Nombre de la Empresa / Técnico <span className="req">*</span></label>
+                   <label>{form.tipo === "Interno" ? "Nombre Completo del Técnico" : "Nombre de la Empresa / Proveedor"} <span className="req">*</span></label>
                    <input className="v2-input" type="text" value={form.nombre}
                      onChange={e => setForm({ ...form, nombre: e.target.value })}
-                     placeholder="Ej: Técnicos Unidos S.A.S" />
+                     placeholder={form.tipo === "Interno" ? "Ej: Juan Pérez" : "Ej: Técnicos Unidos S.A.S"} />
                  </div>
 
                  <div className="v2-form-row">
@@ -215,7 +215,6 @@ export default function GestionProveedoresMant() {
                          }
                        }}>
                        <option value="">Seleccione...</option>
-                       {/* Si hay una especialidad que no está en la lista fija, la mostramos como opción seleccionada */}
                        {form.especialidad && !["Eléctrico", "Refrigeración", "Mecánico", "HVAC", "Instrumentación", "Plomería", "Cómputo / TI", "General"].includes(form.especialidad) && (
                          <option value={form.especialidad}>{form.especialidad}</option>
                        )}
@@ -239,10 +238,10 @@ export default function GestionProveedoresMant() {
                      )}
                    </div>
                    <div className="v2-form-group">
-                     <label>Persona de Contacto</label>
+                     <label>{form.tipo === "Interno" ? "Área / Cargo" : "Persona de Contacto"}</label>
                      <input className="v2-input" type="text" value={form.contacto}
                        onChange={e => setForm({ ...form, contacto: e.target.value })}
-                       placeholder="Nombre del encargado" />
+                       placeholder={form.tipo === "Interno" ? "Ej: Planta 1" : "Nombre del encargado"} />
                    </div>
                  </div>
 
@@ -254,10 +253,10 @@ export default function GestionProveedoresMant() {
                        placeholder="+57 300 000 0000" />
                    </div>
                    <div className="v2-form-group">
-                     <label>Email {form.tipo === "Interno" && <span className="req">*</span>}</label>
+                     <label>{form.tipo === "Interno" ? "Correo Corporativo" : "Email"} <span className="req">*</span></label>
                      <input className="v2-input" type="email" value={form.email}
                        onChange={e => setForm({ ...form, email: e.target.value })}
-                       placeholder="contacto@empresa.com" />
+                       placeholder="ejemplo@gusing.com" />
                    </div>
                  </div>
 
