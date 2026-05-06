@@ -140,7 +140,7 @@ export default function GestionProveedoresMant() {
           </div>
           <div className="mant-actions-group">
             <button className="mant-btn-action secondary" onClick={() => navigate("/mantenimiento")}>← Tablero</button>
-            <button className="mant-btn-action primary" onClick={() => { resetForm(); setShowForm(true); }}>+ Nuevo Proveedor</button>
+            <button className="mant-btn-action primary" onClick={() => { resetForm(); setShowForm(true); }}>+ Añadir Personal</button>
           </div>
         </header>
 
@@ -182,18 +182,18 @@ export default function GestionProveedoresMant() {
           <div className="mant-modal-overlay-v2" onClick={() => { setShowForm(false); resetForm(); }}>
             <div className="mant-modal-content-centered" onClick={e => e.stopPropagation()}>
               <div className="modal-v2-header">
-                <h3>{form.id ? "✏️ Editar Proveedor" : "👷 Nuevo Proveedor"}</h3>
+                <h3>{form.id ? "✏️ Editar Registro" : "👷 Nuevo Registro de Personal"}</h3>
                 <button className="close-btn-v2" onClick={() => { setShowForm(false); resetForm(); }}>✖</button>
               </div>
               <div className="modal-v2-body">
-                <div className="v2-form-row">
-                  <div className="v2-form-group">
-                    <label>Tipo de Recurso</label>
-                    <select className="v2-select" value={form.tipo} onChange={e => setForm({ ...form, tipo: e.target.value })}>
-                      <option value="Interno">Técnico Interno</option>
-                      <option value="Externo">Proveedor Externo</option>
-                    </select>
-                  </div>
+                 <div className="v2-form-group" style={{ background: "#f8fafc", padding: "15px", borderRadius: "10px", border: "1px solid #e2e8f0", marginBottom: "20px" }}>
+                   <label style={{ fontWeight: "bold", color: "var(--mant-primary)" }}>¿Qué tipo de personal deseas registrar?</label>
+                   <select className="v2-select" style={{ fontSize: "1rem", height: "45px", fontWeight: "600" }} 
+                     value={form.tipo} onChange={e => setForm({ ...form, tipo: e.target.value })}>
+                     <option value="Interno">👨‍🔧 Técnico Interno (Tendrá perfil de usuario)</option>
+                     <option value="Externo">🚚 Proveedor Externo</option>
+                   </select>
+                 </div>
                   <div className="v2-form-group">
                     <label>Nombre de la Empresa / Técnico <span className="req">*</span></label>
                     <input className="v2-input" type="text" value={form.nombre}
