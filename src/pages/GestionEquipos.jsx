@@ -22,6 +22,7 @@ export default function GestionEquipos() {
   const [filtroText, setFiltroText] = useState("");
   const [filtroCrit, setFiltroCrit] = useState("todos");
   const [saving, setSaving] = useState(false);
+  const [proveedores, setProveedores] = useState([]);
 
   const [form, setForm] = useState({
     nombre: "", tipo: "Equipo", area_id: "", codigo: "", descripcion: "", criticidad: "Baja", manual_url: ""
@@ -39,12 +40,14 @@ export default function GestionEquipos() {
 
   async function loadData() {
     setLoading(true);
-    const [{ data: act }, { data: ars }] = await Promise.all([
+    const [{ data: act }, { data: ars }, { data: provs }] = await Promise.all([
       supabase.from(st("activos")).select("*").order("nombre"),
       supabase.from(st("areas")).select("*").order("nombre"),
+      supabase.from(st("proveedores_mant")).select("*").order("nombre"),
     ]);
     setEquipos(act || []);
     setAreas(ars || []);
+    setProveedores(provs || []);
     setLoading(false);
   }
 
@@ -507,8 +510,16 @@ export default function GestionEquipos() {
                             <input type="date" className="v2-input" value={manualIntForm.fecha} onChange={e => setManualIntForm({...manualIntForm, fecha: e.target.value})} />
                           </div>
                           <div className="v2-form-group">
-                            <label>Técnico Responsable</label>
-                            <input type="text" className="v2-input" placeholder="Nombre..." value={manualIntForm.tecnico} onChange={e => setManualIntForm({...manualIntForm, tecnico: e.target.value})} />
+                            <label>Técnico / Proveedor Responsable</label>
+                            <select className="v2-select" value={manualIntForm.tecnico} onChange={e => setManualIntForm({...manualIntForm, tecnico: e.target.value})}>
+                              <option value="">Seleccione...</option>
+                              <optgroup label="👨‍🔧 Técnicos Internos">
+                                {proveedores.filter(p => p.tipo === "Interno").map(p => <option key={p.id} value={p.nombre}>{p.nombre}</option>)}
+                              </optgroup>
+                              <optgroup label="🚚 Proveedores Externos">
+                                {proveedores.filter(p => p.tipo !== "Interno").map(p => <option key={p.id} value={p.nombre}>{p.nombre}</option>)}
+                              </optgroup>
+                            </select>
                           </div>
                         </div>
                         <div className="v2-form-group">

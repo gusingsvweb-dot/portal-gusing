@@ -20,7 +20,7 @@ export default function GestionProveedoresMant() {
   const [customEsp, setCustomEsp] = useState("");
 
   const [form, setForm] = useState({
-    nombre: "", especialidad: "", contacto: "", telefono: "", email: ""
+    nombre: "", especialidad: "", contacto: "", telefono: "", email: "", tipo: "Externo"
   });
 
   useEffect(() => { loadProveedores(); }, []);
@@ -60,7 +60,9 @@ export default function GestionProveedoresMant() {
   }
 
   function resetForm() {
-    setForm({ nombre: "", especialidad: "", contacto: "", telefono: "", email: "" });
+    setForm({ nombre: "", especialidad: "", contacto: "", telefono: "", email: "", tipo: "Externo" });
+    setShowCustomEsp(false);
+    setCustomEsp("");
   }
 
   function openEdit(p) { setForm({ ...p }); setShowForm(true); setShowCustomEsp(false); }
@@ -121,46 +123,24 @@ export default function GestionProveedoresMant() {
 
         {loading ? (
           <div className="mant-loading-state">Cargando directorio...</div>
-        ) : filtered.length === 0 ? (
-          <div className="empty-state" style={{ marginTop: "60px" }}>
-            <div className="empty-state-icon">👷</div>
-            <p>No se encontraron proveedores</p>
-          </div>
         ) : (
-          <div className="assets-grid-premium">
-            {filtered.map(p => {
-              const espColor = getEspColor(p.especialidad);
-              return (
-                <div key={p.id} className="asset-card-v2" onClick={() => openEdit(p)}>
-                  <div className="card-v2-header">
-                    <span className="v2-id-tag">PROV-{p.id}</span>
-                    <span className="v2-type-badge" style={{ background: espColor.bg, color: espColor.color }}>
-                      {p.especialidad || "General"}
-                    </span>
-                  </div>
-                  <div className="card-v2-icon">👷</div>
-                  <h4>{p.nombre}</h4>
-                  {p.contacto && <div className="v2-location-info">👤 {p.contacto}</div>}
-                  <div style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "0.82rem", color: "#64748b", marginBottom: "12px" }}>
-                    {p.telefono && <span>📞 {p.telefono}</span>}
-                    {p.email && (
-                      <a href={`mailto:${p.email}`} style={{ color: "var(--mant-primary)" }} onClick={e => e.stopPropagation()}>
-                        📧 {p.email}
-                      </a>
-                    )}
-                  </div>
-                  <div className="card-v2-footer">
-                    <button className="mini-btn" style={{ color: "#10b981", borderColor: "#d1fae5" }}
-                      onClick={e => openHistory(p, e)}>📋 Historial</button>
-                    <button className="mini-btn" style={{ color: "var(--mant-primary)", borderColor: "#bfdbfe" }}
-                      onClick={e => { e.stopPropagation(); openEdit(p); }}>✏️ Editar</button>
-                    <button className="mini-btn" style={{ color: "#ef4444", borderColor: "#fecaca" }}
-                      onClick={e => deleteProveedor(p.id, e)}>🗑️ Eliminar</button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <>
+            <div className="prov-section">
+              <h3 className="section-title">👨‍🔧 Técnicos Internos</h3>
+              <div className="assets-grid-premium">
+                {filtered.filter(p => p.tipo === "Interno").length === 0 ? <p className="v2-empty-state">No hay técnicos internos registrados.</p> : 
+                 filtered.filter(p => p.tipo === "Interno").map(p => <ProviderCard key={p.id} p={p} openEdit={openEdit} openHistory={openHistory} />)}
+              </div>
+            </div>
+
+            <div className="prov-section" style={{ marginTop: "40px" }}>
+              <h3 className="section-title">🚚 Proveedores Externos</h3>
+              <div className="assets-grid-premium">
+                {filtered.filter(p => p.tipo !== "Interno").length === 0 ? <p className="v2-empty-state">No hay proveedores externos registrados.</p> : 
+                 filtered.filter(p => p.tipo !== "Interno").map(p => <ProviderCard key={p.id} p={p} openEdit={openEdit} openHistory={openHistory} />)}
+              </div>
+            </div>
+          </>
         )}
 
         {/* MODAL */}
@@ -172,11 +152,20 @@ export default function GestionProveedoresMant() {
                 <button className="close-btn-v2" onClick={() => { setShowForm(false); resetForm(); }}>✖</button>
               </div>
               <div className="modal-v2-body">
-                <div className="v2-form-group">
-                  <label>Nombre de la Empresa / Técnico <span className="req">*</span></label>
-                  <input className="v2-input" type="text" value={form.nombre}
-                    onChange={e => setForm({ ...form, nombre: e.target.value })}
-                    placeholder="Ej: Técnicos Unidos S.A.S" />
+                <div className="v2-form-row">
+                  <div className="v2-form-group">
+                    <label>Tipo de Recurso</label>
+                    <select className="v2-select" value={form.tipo} onChange={e => setForm({ ...form, tipo: e.target.value })}>
+                      <option value="Interno">Técnico Interno</option>
+                      <option value="Externo">Proveedor Externo</option>
+                    </select>
+                  </div>
+                  <div className="v2-form-group">
+                    <label>Nombre de la Empresa / Técnico <span className="req">*</span></label>
+                    <input className="v2-input" type="text" value={form.nombre}
+                      onChange={e => setForm({ ...form, nombre: e.target.value })}
+                      placeholder="Ej: Técnicos Unidos S.A.S" />
+                  </div>
                 </div>
                 <div className="v2-form-row">
                   <div className="v2-form-group">
@@ -276,4 +265,49 @@ export default function GestionProveedoresMant() {
       <Footer />
     </>
   );
+}
+function ProviderCard({ p, openEdit, openHistory, deleteProveedor }) {
+  const espColor = getEspColor(p.especialidad);
+  return (
+    <div className="asset-card-v2" onClick={() => openEdit(p)}>
+      <div className="card-v2-header">
+        <span className="v2-id-tag">{p.tipo === "Interno" ? "TEC" : "PROV"}-{p.id}</span>
+        <span className="v2-type-badge" style={{ background: espColor.bg, color: espColor.color }}>
+          {p.especialidad || "General"}
+        </span>
+      </div>
+      <div className="card-v2-icon">{p.tipo === "Interno" ? "👨‍🔧" : "🚚"}</div>
+      <h4>{p.nombre}</h4>
+      {p.contacto && <div className="v2-location-info">👤 {p.contacto}</div>}
+      <div style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "0.82rem", color: "#64748b", marginBottom: "12px" }}>
+        {p.telefono && <span>📞 {p.telefono}</span>}
+        {p.email && (
+          <a href={`mailto:${p.email}`} style={{ color: "var(--mant-primary)" }} onClick={e => e.stopPropagation()}>
+            📧 {p.email}
+          </a>
+        )}
+      </div>
+      <div className="card-v2-footer">
+        <button className="mini-btn" style={{ color: "#10b981", borderColor: "#d1fae5" }}
+          onClick={e => openHistory(p, e)}>📋 Historial</button>
+        <button className="mini-btn" style={{ color: "var(--mant-primary)", borderColor: "#bfdbfe" }}
+          onClick={e => { e.stopPropagation(); openEdit(p); }}>✏️ Editar</button>
+        <button className="mini-btn" style={{ color: "#ef4444", borderColor: "#fecaca" }}
+          onClick={e => deleteProveedor(p.id, e)}>🗑️ Eliminar</button>
+      </div>
+    </div>
+  );
+}
+
+function getEspColor(esp) {
+  const colors = {
+    Eléctrico: { bg: "#fef3c7", color: "#92400e" },
+    Refrigeración: { bg: "#e0f2fe", color: "#075985" },
+    Mecánico: { bg: "#ffedd5", color: "#9a3412" },
+    HVAC: { bg: "#f0fdf4", color: "#166534" },
+    Instrumentación: { bg: "#f5f3ff", color: "#5b21b6" },
+    Plomería: { bg: "#ecfeff", color: "#155e75" },
+    "Cómputo / TI": { bg: "#f1f5f9", color: "#334155" },
+  };
+  return colors[esp] || { bg: "#f3f4f6", color: "#374151" };
 }
