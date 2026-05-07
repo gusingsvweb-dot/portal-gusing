@@ -49,15 +49,55 @@ export default function KpisMantenimiento() {
   }, []);
 
   const stats = useMemo(() => {
-    const total = solicitudes.length;
-    const finalizados = solicitudes.filter(s => s.fecha_cierre && s.created_at && [14, 15].includes(s.estado_id));
-    const totalHoras = finalizados.reduce((sum, s) => sum + (new Date(s.fecha_cierre) - new Date(s.created_at)) / 3600000, 0);
-    const mttr = finalizados.length > 0 ? (totalHoras / finalizados.length).toFixed(1) : 0;
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
 
-    const preventivos = solicitudes.filter(s => s.tipo_solicitud_id === 2).length;
-    const correctivos = solicitudes.filter(s => s.tipo_solicitud_id === 1).length;
-    const ratio = total > 0 ? Math.round((preventivos / total) * 100) : 0;
+    const isThisMonth = (dateString) => {
+      if (!dateString) return false;
+      const d = new Date(dateString);
+      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    };
 
+    const isThisYear = (dateString) => {
+      if (!dateString) return false;
+      const d = new Date(dateString);
+      return d.getFullYear() === currentYear;
+    };
+
+    const isTicket = (s) => s.tipos_solicitud?.nombre?.toLowerCase().includes("correctivo") || (!s.tipos_solicitud?.nombre?.toLowerCase().includes("preventivo") && !s.tipos_solicitud?.nombre?.toLowerCase().includes("mejora") && !s.tipos_solicitud?.nombre?.toLowerCase().includes("proyecto"));
+    const isPrev = (s) => s.tipos_solicitud?.nombre?.toLowerCase().includes("preventivo");
+    const isProj = (s) => s.tipos_solicitud?.nombre?.toLowerCase().includes("mejora") || s.tipos_solicitud?.nombre?.toLowerCase().includes("proyecto");
+
+    // Mensual
+    const ticketsThisMonth = solicitudes.filter(s => isThisMonth(s.created_at) && isTicket(s));
+    const ticketsClosedThisMonth = ticketsThisMonth.filter(s => [14, 15].includes(s.estado_id));
+    const ticketCompMonth = ticketsThisMonth.length ? Math.round((ticketsClosedThisMonth.length / ticketsThisMonth.length) * 100) : 100;
+
+    const prevsThisMonth = solicitudes.filter(s => isThisMonth(s.created_at) && isPrev(s));
+    const prevsClosedThisMonth = prevsThisMonth.filter(s => [14, 15].includes(s.estado_id));
+    const prevCompMonth = prevsThisMonth.length ? Math.round((prevsClosedThisMonth.length / prevsThisMonth.length) * 100) : 100;
+
+    const projsThisMonth = solicitudes.filter(s => isThisMonth(s.created_at) && isProj(s));
+    const projsClosedThisMonth = projsThisMonth.filter(s => [14, 15].includes(s.estado_id));
+    const projCompMonth = projsThisMonth.length ? Math.round((projsClosedThisMonth.length / projsThisMonth.length) * 100) : 100;
+
+    // Anual
+    const ticketsThisYear = solicitudes.filter(s => isThisYear(s.created_at) && isTicket(s));
+    const ticketsClosedThisYear = ticketsThisYear.filter(s => [14, 15].includes(s.estado_id));
+    const ticketCompYear = ticketsThisYear.length ? Math.round((ticketsClosedThisYear.length / ticketsThisYear.length) * 100) : 100;
+
+    const prevsThisYear = solicitudes.filter(s => isThisYear(s.created_at) && isPrev(s));
+    const prevsClosedThisYear = prevsThisYear.filter(s => [14, 15].includes(s.estado_id));
+    const prevCompYear = prevsThisYear.length ? Math.round((prevsClosedThisYear.length / prevsThisYear.length) * 100) : 100;
+
+    const projsThisYear = solicitudes.filter(s => isThisYear(s.created_at) && isProj(s));
+    const projsClosedThisYear = projsThisYear.filter(s => [14, 15].includes(s.estado_id));
+    const projCompYear = projsThisYear.length ? Math.round((projsClosedThisYear.length / projsThisYear.length) * 100) : 100;
+
+    const promedioAnual = Math.round((ticketCompYear + prevCompYear + projCompYear) / 3);
+
+    // Data for charts
     const porCriticidad = solicitudes.reduce((acc, s) => {
       const c = s.activos?.criticidad || "Sin equipo";
       acc[c] = (acc[c] || 0) + 1;
@@ -78,9 +118,10 @@ export default function KpisMantenimiento() {
       Finalizados: solicitudes.filter(s => [14, 15].includes(s.estado_id)).length,
     };
 
-    const planesActivos = planes.filter(p => p.activo !== false).length;
-
-    return { total, mttr, preventivos, correctivos, ratio, porCriticidad, porArea, porEstado, finalizados: finalizados.length, planesActivos };
+    return { 
+      ticketCompMonth, prevCompMonth, projCompMonth, promedioAnual,
+      porCriticidad, porArea, porEstado
+    };
   }, [solicitudes, planes]);
 
   const criticidadChartData = {
@@ -135,32 +176,12 @@ export default function KpisMantenimiento() {
 
         {/* STAT CARDS */}
         <div className="kpi-mant-cards">
-          <KpiCard icon="🔧" title="Total Órdenes" value={stats.total} sub="Históricas" color="#6366f1" />
-          <KpiCard icon="⏱️" title="MTTR" value={`${stats.mttr}h`} sub="Tiempo medio de reparación" color="#ef4444" />
-          <KpiCard icon="📅" title="Preventivos" value={stats.preventivos} sub={`${stats.ratio}% del total`} color="#10b981" />
-          <KpiCard icon="🚨" title="Correctivos" value={stats.correctivos} sub={`${100 - stats.ratio}% del total`} color="#f59e0b" />
-          <KpiCard icon="✅" title="Finalizados" value={stats.finalizados} sub="Con cierre registrado" color="#3b82f6" />
-          <KpiCard icon="📦" title="Bajo Stock" value={repuestosBajoStock.length} sub="Repuestos < 5 unidades" color="#f97316" />
+          <KpiCard icon="🎫" title="Tickets (Mes)" value={`${stats.ticketCompMonth}%`} sub="Cumplimiento mensual" color="#ef4444" />
+          <KpiCard icon="📅" title="Preventivos (Mes)" value={`${stats.prevCompMonth}%`} sub="Cumplimiento mensual" color="#10b981" />
+          <KpiCard icon="🚀" title="Proyectos (Mes)" value={`${stats.projCompMonth}%`} sub="Cumplimiento mensual" color="#3b82f6" />
+          <KpiCard icon="📊" title="Promedio Anual" value={`${stats.promedioAnual}%`} sub="Global de indicadores" color="#8b5cf6" />
         </div>
 
-        {/* RATIO BAR */}
-        <div className="kpi-mant-ratio-card">
-          <div className="kpi-ratio-header">
-            <span className="kpi-ratio-title">Ratio Preventivo vs Correctivo</span>
-            <span className="kpi-ratio-pct">{stats.ratio}% Preventivo</span>
-          </div>
-          <div className="kpi-ratio-track">
-            <div className="kpi-ratio-fill kpi-ratio-prev" style={{ width: `${stats.ratio}%` }}>
-              {stats.ratio > 10 && <span>Preventivos: {stats.preventivos}</span>}
-            </div>
-            <div className="kpi-ratio-fill kpi-ratio-corr" style={{ width: `${100 - stats.ratio}%` }}>
-              {(100 - stats.ratio) > 10 && <span>Correctivos: {stats.correctivos}</span>}
-            </div>
-          </div>
-          <div className="kpi-ratio-legend">
-            <span><span className="kpi-dot prev"></span> Preventivos (objetivo: &gt;60%)</span>
-            <span><span className="kpi-dot corr"></span> Correctivos</span>
-          </div>
         </div>
 
         {/* CHARTS GRID */}
