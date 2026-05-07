@@ -36,6 +36,8 @@ import GestionRepuestos from "./pages/GestionRepuestos.jsx";
 import ImportarCronograma from "./pages/ImportarCronograma.jsx";
 import ImportarEquiposExcel from "./pages/ImportarEquiposExcel.jsx";
 import TecnicoMantenimiento from "./pages/TecnicoMantenimiento.jsx";
+import ProyectosMantenimiento from "./pages/ProyectosMantenimiento.jsx";
+
 
 
 export default function AppRouter() {
@@ -322,6 +324,15 @@ export default function AppRouter() {
         element={
           ["mantenimiento", "gerencia"].includes(usuarioActual?.rol)
             ? <GestionProveedoresMant />
+            : <Navigate to="/" />
+        }
+      />
+
+      <Route
+        path="/mantenimiento/proyectos"
+        element={
+          ["mantenimiento", "gerencia"].includes(usuarioActual?.rol)
+            ? <ProyectosMantenimiento />
             : <Navigate to="/" />
         }
       />

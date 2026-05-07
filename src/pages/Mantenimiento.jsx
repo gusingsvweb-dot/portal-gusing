@@ -305,6 +305,7 @@ export default function Mantenimiento() {
             <button className="nav-pill" onClick={() => navigate("/mantenimiento/equipos")}>Equipos</button>
             <button className="nav-pill" onClick={() => navigate("/mantenimiento/plan-maestro")}>Plan Maestro</button>
             <button className="nav-pill" onClick={() => navigate("/mantenimiento/repuestos")}>Repuestos</button>
+            <button className="nav-pill" onClick={() => navigate("/mantenimiento/proyectos")}>Proyectos</button>
             <button className="nav-pill" onClick={() => navigate("/mantenimiento/proveedores")}>Personal Técnico</button>
             <button className="nav-pill kpi-pill" onClick={() => navigate("/kpis-mantenimiento")}>KPIs</button>
             <button className="nav-pill" onClick={() => setShowManualForm(true)}>+ Intervención Manual</button>
