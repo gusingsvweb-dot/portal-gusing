@@ -35,6 +35,7 @@ import PlanMaestro from "./pages/PlanMaestro.jsx";
 import GestionRepuestos from "./pages/GestionRepuestos.jsx";
 import ImportarCronograma from "./pages/ImportarCronograma.jsx";
 import ImportarEquiposExcel from "./pages/ImportarEquiposExcel.jsx";
+import TecnicoMantenimiento from "./pages/TecnicoMantenimiento.jsx";
 
 
 export default function AppRouter() {
@@ -293,6 +294,16 @@ export default function AppRouter() {
         element={
           ["mantenimiento"].includes(usuarioActual?.rol)
             ? <Mantenimiento />
+            : <Navigate to="/" />
+        }
+      />
+
+      {/* MANTENIMIENTO TÉCNICO */}
+      <Route
+        path="/tecnico-mantenimiento"
+        element={
+          ["tecnicomantenimiento", "gerencia"].includes(usuarioActual?.rol)
+            ? <TecnicoMantenimiento />
             : <Navigate to="/" />
         }
       />
