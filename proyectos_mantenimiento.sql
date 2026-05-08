@@ -60,9 +60,15 @@ ALTER TABLE public."NO_solicitudes" ADD COLUMN IF NOT EXISTS usuario_id UUID;
 ALTER TABLE public."NO_notificaciones" ADD COLUMN IF NOT EXISTS tipo TEXT DEFAULT 'info';
 
 -- 5. DATOS BASE (Asegurar que existen los IDs que usa el sistema)
+-- Oficiales
 INSERT INTO public."tipos_solicitud" (id, nombre) VALUES (2, 'Mantenimiento Correctivo'), (5, 'Mantenimiento Preventivo'), (6, 'Mantenimiento de Mejora') ON CONFLICT (id) DO NOTHING;
 INSERT INTO public."estados" (id, nombre) VALUES (1, 'Pendiente'), (13, 'En Proceso'), (14, 'Finalizado'), (15, 'Cerrado') ON CONFLICT (id) DO NOTHING;
 INSERT INTO public."prioridades" (id, nombre) VALUES (1, 'Baja'), (2, 'Media'), (3, 'Alta') ON CONFLICT (id) DO NOTHING;
+
+-- No Oficiales (Pruebas)
+INSERT INTO public."NO_tipos_solicitud" (id, nombre) VALUES (2, 'Mantenimiento Correctivo'), (5, 'Mantenimiento Preventivo'), (6, 'Mantenimiento de Mejora') ON CONFLICT (id) DO NOTHING;
+INSERT INTO public."NO_estados" (id, nombre) VALUES (1, 'Pendiente'), (13, 'En Proceso'), (14, 'Finalizado'), (15, 'Cerrado') ON CONFLICT (id) DO NOTHING;
+INSERT INTO public."NO_prioridades" (id, nombre) VALUES (1, 'Baja'), (2, 'Media'), (3, 'Alta') ON CONFLICT (id) DO NOTHING;
 
 -- Notificar a PostgREST para recargar el esquema
 NOTIFY pgrst, 'reload schema';
