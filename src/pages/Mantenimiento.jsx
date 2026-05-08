@@ -486,7 +486,9 @@ export default function Mantenimiento() {
                       <div style={{ display: "flex", gap: "10px" }}>
                         <select className="v2-select" value={proveedorId} onChange={e => setProveedorId(e.target.value)} style={{ flex: 1 }}>
                           <option value="">Sin asignar...</option>
-                          {proveedores.map(p => <option key={p.id} value={p.id}>{p.nombre} — {p.especialidad}</option>)}
+                          {proveedores.filter(p => p.tipo !== "Interno").map(p => (
+                            <option key={p.id} value={p.id}>{p.nombre} — {p.especialidad}</option>
+                          ))}
                         </select>
                         <button className="mant-btn-action success" onClick={updateProveedor} disabled={saving || !proveedorId}>
                           {saving ? "..." : "Guardar"}
