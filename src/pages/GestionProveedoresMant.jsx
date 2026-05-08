@@ -120,10 +120,9 @@ export default function GestionProveedoresMant() {
 
     const { data } = await supabase
       .from(st("solicitudes"))
-      .select(`id, consecutivo, descripcion, fecha_cierre, activos(nombre)`)
-      .not("fecha_cierre", "is", null)
+      .select(`id, consecutivo, descripcion, fecha_cierre, created_at, activos(nombre), estados(nombre)`)
       .or(orFilter)
-      .order("fecha_cierre", { ascending: false });
+      .order("created_at", { ascending: false });
 
     setHistory(data || []);
     setHistoryLoading(false);
@@ -312,13 +311,24 @@ export default function GestionProveedoresMant() {
                  history.length === 0 ? <p>No hay intervenciones registradas para este proveedor.</p> : (
                   <table className="anual-table">
                     <thead>
-                      <tr><th>Fecha</th><th>OT</th><th>Equipo</th><th>Descripción</th></tr>
+                      <tr>
+                        <th>Fecha</th>
+                        <th>OT</th>
+                        <th>Estado</th>
+                        <th>Equipo</th>
+                        <th>Descripción</th>
+                      </tr>
                     </thead>
                     <tbody>
                       {history.map(h => (
                         <tr key={h.id}>
-                          <td>{new Date(h.fecha_cierre).toLocaleDateString()}</td>
+                          <td>{new Date(h.fecha_cierre || h.created_at).toLocaleDateString()}</td>
                           <td>M-{h.consecutivo}</td>
+                          <td>
+                            <span className={`v2-status-mini ${h.estados?.nombre?.toLowerCase()}`}>
+                              {h.estados?.nombre}
+                            </span>
+                          </td>
                           <td>{h.activos?.nombre}</td>
                           <td style={{ fontSize: "0.85rem" }}>{h.descripcion}</td>
                         </tr>

@@ -737,6 +737,10 @@ function KanbanCard({ data, onClick }) {
         {data.activos && <span className="card-meta-item">⚙️ {data.activos.nombre}</span>}
       </div>
 
+      {data.tecnico_asignado && (
+        <div className="card-tecnico-tag">👷 {data.tecnico_asignado}</div>
+      )}
+
       {data.proveedor && (
         <div className="card-proveedor-tag">🚚 {data.proveedor.nombre}</div>
       )}
