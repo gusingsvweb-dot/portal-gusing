@@ -28,6 +28,7 @@ export default function Mantenimiento() {
   const [saving, setSaving] = useState(false);
   const [filtro, setFiltro] = useState("");
   const [filtroTecnico, setFiltroTecnico] = useState("todos");
+  const [filtroProveedor, setFiltroProveedor] = useState("todos");
   const [activeTab, setActiveTab] = useState("info");
   const [allPrioridades, setAllPrioridades] = useState([]);
   const [showManualForm, setShowManualForm] = useState(false);
@@ -113,6 +114,10 @@ export default function Mantenimiento() {
     
     if (filtroTecnico !== "todos") {
       res = res.filter(s => s.tecnico_asignado === filtroTecnico);
+    }
+
+    if (filtroProveedor !== "todos") {
+      res = res.filter(s => String(s.proveedor_id) === String(filtroProveedor));
     }
 
     if (q) {
@@ -375,6 +380,16 @@ export default function Mantenimiento() {
                 <option key={t.id} value={t.nombre}>{t.nombre}</option>
               ))}
               <option value="">Sin asignar</option>
+            </select>
+          </div>
+
+          <div className="mant-filter-tec">
+            <label>Filtrar por Proveedor:</label>
+            <select className="v2-select" value={filtroProveedor} onChange={e => setFiltroProveedor(e.target.value)}>
+              <option value="todos">Todos los proveedores</option>
+              {proveedores.filter(p => p.tipo !== "Interno").map(p => (
+                <option key={p.id} value={p.id}>{p.nombre}</option>
+              ))}
             </select>
           </div>
           {filtro && <span className="filter-count">{filtered.length} resultado{filtered.length !== 1 ? "s" : ""}</span>}
