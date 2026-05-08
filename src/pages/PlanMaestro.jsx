@@ -48,12 +48,21 @@ export default function PlanMaestro() {
   async function loadData() {
     setLoading(true);
     try {
+      // Cargamos planes y activos por separado para evitar errores de relación en tablas "NO OFICIALES"
       const [{ data: pls }, { data: acts }, { data: crono }] = await Promise.all([
-        supabase.from(st("planes_preventivos")).select(`*, activos:${st("activos")}(id, nombre, codigo, criticidad, area_id)`).order("proxima_fecha"),
-        supabase.from(st("activos")).select("id, nombre, criticidad").order("nombre"),
+        supabase.from(st("planes_preventivos")).select("*").order("proxima_fecha"),
+        supabase.from(st("activos")).select("id, nombre, codigo, criticidad, area_id").order("nombre"),
         supabase.from(st("maintenance_schedules")).select(`*, maintenance_schedule_months:${st("maintenance_schedule_months")}(*)`).eq("year", selectedYear).order("equipment_code")
       ]);
-      setPlanes(pls || []);
+
+      // Unimos en memoria
+      const actMap = new Map(acts?.map(a => [a.id, a]));
+      const hydratedPlanes = (pls || []).map(p => ({
+        ...p,
+        activos: actMap.get(p.activo_id)
+      }));
+
+      setPlanes(hydratedPlanes);
       setActivos(acts || []);
       setCronogramaAnual(crono || []);
     } catch (err) {
@@ -115,8 +124,10 @@ export default function PlanMaestro() {
       const finStr = `${fin.getFullYear()}-${String(fin.getMonth() + 1).padStart(2, '0')}-${String(fin.getDate()).padStart(2, '0')}`;
 
       const tareas = planes.filter(p => {
-        if (!p.activo) return false;
-        return p.proxima_fecha >= inicioStr && p.proxima_fecha <= finStr;
+        if (p.activo === false) return false;
+        const isProxima = p.proxima_fecha >= inicioStr && p.proxima_fecha <= finStr;
+        const isUltima = p.ultima_fecha >= inicioStr && p.ultima_fecha <= finStr;
+        return isProxima || isUltima;
       });
 
       semanas.push({ num: semNum, inicio: inicioStr, fin: finStr, tareas });
@@ -165,6 +176,34 @@ export default function PlanMaestro() {
       area_solicitante: "MANTENIMIENTO",
     }]);
 
+    // 4. Sincronizar con el Cronograma Anual si existe
+    try {
+      const mesActual = new Date().getMonth() + 1;
+      const anioActual = new Date().getFullYear();
+      const eqCode = plan.activos?.codigo;
+
+      if (eqCode) {
+        // Buscar el schedule del equipo para este año
+        const { data: schedule } = await supabase
+          .from(st("maintenance_schedules"))
+          .select("id")
+          .eq("equipment_code", eqCode)
+          .eq("year", anioActual)
+          .single();
+
+        if (schedule) {
+          // Marcar el mes como completado
+          await supabase
+            .from(st("maintenance_schedule_months"))
+            .update({ status: 'completado' })
+            .eq("schedule_id", schedule.id)
+            .eq("month", mesActual);
+        }
+      }
+    } catch (syncErr) {
+      console.warn("No se pudo sincronizar con el cronograma anual:", syncErr);
+    }
+
     setCompletando(null);
     loadData();
   }
@@ -211,7 +250,13 @@ export default function PlanMaestro() {
   async function savePlan() {
     if (!form.activo_id || !form.proxima_fecha) return alert("Activo y Fecha son obligatorios");
     setSaving(true);
-    const { error } = await supabase.from(st("planes_preventivos")).upsert([form]);
+    
+    // Eliminamos objetos unidos (como 'activos') antes de guardar en la tabla plana
+    const payload = { ...form };
+    delete payload.activos;
+    delete payload.maintenance_schedule_months;
+
+    const { error } = await supabase.from(st("planes_preventivos")).upsert([payload]);
     if (error) alert("Error: " + error.message);
     else { setShowModal(false); resetForm(); loadData(); }
     setSaving(false);
@@ -499,29 +544,34 @@ export default function PlanMaestro() {
                         <div className="pm-semana-empty">Sin preventivos esta semana</div>
                       ) : semana.tareas.map(p => {
                         const dias = diasRestantes(p.proxima_fecha);
-                        const isVencido = dias <= 0;
+                        const isCompletada = p.ultima_fecha >= semana.inicio && p.ultima_fecha <= semana.fin;
+                        const isVencida = !isCompletada && dias <= 0;
+                        const isProxima = !isCompletada && dias > 0 && dias <= 7;
+                        
                         return (
-                          <div key={p.id} 
-                               className={`pm-semana-tarea ${isVencido ? "tarea-vencida" : ""}`}
-                               draggable
+                          <div key={`${p.id}-${isCompletada ? 'c' : 'p'}`} 
+                               className={`pm-semana-tarea ${isCompletada ? "tarea-completada" : isVencida ? "tarea-vencida" : isProxima ? "tarea-proxima" : ""}`}
+                               draggable={!isCompletada}
                                onDragStart={(e) => handleDragStart(e, p.id)}>
                             <div className="pm-semana-tarea-top">
                               <span className={`v2-crit-badge crit-${p.activos?.criticidad?.toLowerCase() || "baja"}`} style={{ fontSize: "0.65rem", padding: "2px 7px" }}>
                                 {p.activos?.criticidad || "Baja"}
                               </span>
-                              <span className="pm-semana-fecha">{p.proxima_fecha}</span>
+                              <span className="pm-semana-fecha">{isCompletada ? `Completado: ${p.ultima_fecha}` : p.proxima_fecha}</span>
                             </div>
                             <p className="pm-semana-equipo">{p.activos?.nombre || "Equipo"}</p>
                             <p className="pm-semana-desc">{p.descripcion_tarea || "Sin descripción"}</p>
                             <div className="pm-semana-actions">
-                              <button
-                                className="mini-btn mini-btn-complete"
-                                style={{ fontSize: "0.72rem", padding: "4px 10px" }}
-                                onClick={() => completarPlan(p)}
-                                disabled={completando === p.id}
-                              >
-                                {completando === p.id ? "..." : "✓ Completar"}
-                              </button>
+                              {!isCompletada && (
+                                <button
+                                  className="mini-btn mini-btn-complete"
+                                  style={{ fontSize: "0.72rem", padding: "4px 10px" }}
+                                  onClick={() => completarPlan(p)}
+                                  disabled={completando === p.id}
+                                >
+                                  {completando === p.id ? "..." : "✓ Completar"}
+                                </button>
+                              )}
                               <button
                                 className="mini-btn"
                                 style={{ fontSize: "0.72rem", padding: "4px 10px" }}
