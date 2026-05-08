@@ -5,6 +5,7 @@ import Footer from "../components/Footer";
 import "./CrearSolicitud.css";
 import { useAuth } from "../context/AuthContext";
 import CamposDinamicos from "../components/solicitudes/CamposDinamicos";
+import { notifyRoles } from "../api/notifications";
 
 export default function CrearSolicitud() {
   const { usuarioActual } = useAuth();
@@ -138,6 +139,22 @@ export default function CrearSolicitud() {
     }
 
     setMensaje("✅ Solicitud enviada correctamente.");
+
+    // Enviar Notificación al Área Destino
+    try {
+      const areaDestino = areas.find((a) => String(a.id) === String(form.area_id));
+      const areaNombre = areaDestino ? areaDestino.nombre : "mantenimiento";
+      
+      await notifyRoles(
+        [areaNombre, "gerencia"],
+        "🔔 Nueva Solicitud",
+        `El usuario ${usuarioActual?.usuario || 'Sistema'} ha generado una nueva solicitud para tu área.`,
+        null,
+        "info"
+      );
+    } catch (notifErr) {
+      console.error("No se pudo enviar la notificación: ", notifErr);
+    }
     
     // Reset formulario
     setForm({
