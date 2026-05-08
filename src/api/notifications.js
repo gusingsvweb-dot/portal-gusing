@@ -34,6 +34,7 @@ export async function notifyUser(userId, titulo, mensaje, pedidoId = null) {
                 titulo,
                 mensaje,
                 pedido_id: pedidoId,
+                tipo: "info",
                 leida: false,
             },
         ]);

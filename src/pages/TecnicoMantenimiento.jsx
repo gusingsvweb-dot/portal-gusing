@@ -85,7 +85,7 @@ export default function TecnicoMantenimiento() {
     const currentUsername = usuarioActual?.usuario || "";
 
     // Filtrar solo las del técnico logueado
-    let res = solicitudes.filter(s => formatName(s.tecnico_asignado) === currentUsername);
+    let res = solicitudes.filter(s => formatName(s.tecnico_asignado) === formatName(currentUsername));
 
     if (q) {
       res = res.filter(s =>
