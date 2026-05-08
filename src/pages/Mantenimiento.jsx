@@ -101,16 +101,18 @@ export default function Mantenimiento() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  const stats = useMemo(() => ({
-    total: solicitudes.length,
-    pendientes: solicitudes.filter(s => s.estado_id === 1).length,
-    proceso: solicitudes.filter(s => s.estado_id === 13).length,
-    finalizados: solicitudes.filter(s => [14, 15].includes(s.estado_id)).length,
-  }), [solicitudes]);
+    const tickets = solicitudes.filter(s => s.tipo_solicitud_id !== 5);
+    return {
+      total: tickets.length,
+      pendientes: tickets.filter(s => s.estado_id === 1).length,
+      proceso: tickets.filter(s => s.estado_id === 13).length,
+      finalizados: tickets.filter(s => [14, 15].includes(s.estado_id)).length,
+    };
+  }, [solicitudes]);
 
   const filtered = useMemo(() => {
     const q = filtro.toLowerCase();
-    let res = solicitudes;
+    let res = solicitudes.filter(s => s.tipo_solicitud_id !== 5);
     
     if (filtroTecnico !== "todos") {
       res = res.filter(s => s.tecnico_asignado === filtroTecnico);
