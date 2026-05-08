@@ -51,5 +51,8 @@ CREATE POLICY "Public Access" ON public."tareas_proyecto_mant" FOR ALL USING (tr
 CREATE POLICY "Public Access" ON public."NO_proyectos_mant" FOR ALL USING (true);
 CREATE POLICY "Public Access" ON public."NO_tareas_proyecto_mant" FOR ALL USING (true);
 
+-- 4. ACTUALIZACIÓN DE TABLAS EXISTENTES
+ALTER TABLE public."repuestos" ADD COLUMN IF NOT EXISTS stock_minimo INTEGER DEFAULT 5;
+
 -- Notificar a PostgREST para recargar el esquema
 NOTIFY pgrst, 'reload schema';
