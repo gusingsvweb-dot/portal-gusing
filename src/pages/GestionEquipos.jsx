@@ -23,6 +23,7 @@ export default function GestionEquipos() {
   const [filtroCrit, setFiltroCrit] = useState("todos");
   const [saving, setSaving] = useState(false);
   const [proveedores, setProveedores] = useState([]);
+  const [tiposSolicitud, setTiposSolicitud] = useState([]);
 
   const [form, setForm] = useState({
     nombre: "", tipo: "Equipo", area_id: "", codigo: "", descripcion: "", criticidad: "Baja", manual_url: ""
@@ -33,21 +34,24 @@ export default function GestionEquipos() {
     fecha: new Date().toISOString().split("T")[0], 
     descripcion: "", 
     accion: "", 
-    tecnico: "" 
+    tecnico: "",
+    tipo_solicitud_id: 5 // Preventivo por defecto
   });
 
   useEffect(() => { loadData(); }, []);
 
   async function loadData() {
     setLoading(true);
-    const [{ data: act }, { data: ars }, { data: provs }] = await Promise.all([
+    const [{ data: act }, { data: ars }, { data: provs }, { data: types }] = await Promise.all([
       supabase.from(st("activos")).select("*").order("nombre"),
       supabase.from(st("areas")).select("*").order("nombre"),
       supabase.from(st("proveedores_mant")).select("*").order("nombre"),
+      supabase.from(st("tipos_solicitud")).select("*")
     ]);
     setEquipos(act || []);
     setAreas(ars || []);
     setProveedores(provs || []);
+    setTiposSolicitud(types || []);
     setLoading(false);
   }
 
@@ -128,7 +132,7 @@ export default function GestionEquipos() {
 
     const { error } = await supabase.from(st("solicitudes")).insert([{
       activo_id: selectedEquipo.id,
-      tipo_solicitud_id: 2, // Correctivo por defecto para manuales
+      tipo_solicitud_id: parseInt(manualIntForm.tipo_solicitud_id) || 2,
       descripcion: `(MANUAL) ${manualIntForm.descripcion}`,
       accion_realizada: manualIntForm.accion,
       usuario_id: manualIntForm.tecnico || "TÉCNICO EXTERNO",
@@ -519,6 +523,18 @@ export default function GestionEquipos() {
                               <optgroup label="🚚 Proveedores Externos">
                                 {proveedores.filter(p => p.tipo !== "Interno").map(p => <option key={p.id} value={p.nombre}>{p.nombre}</option>)}
                               </optgroup>
+                            </select>
+                          </div>
+                          <div className="v2-form-group">
+                            <label>Tipo de Intervención</label>
+                            <select 
+                              className="v2-select" 
+                              value={manualIntForm.tipo_solicitud_id} 
+                              onChange={e => setManualIntForm({...manualIntForm, tipo_solicitud_id: e.target.value})}
+                            >
+                              {tiposSolicitud.filter(t => [2, 5, 6].includes(t.id) || t.nombre.toLowerCase().includes("mejora")).map(t => (
+                                <option key={t.id} value={t.id}>{t.nombre}</option>
+                              ))}
                             </select>
                           </div>
                         </div>
