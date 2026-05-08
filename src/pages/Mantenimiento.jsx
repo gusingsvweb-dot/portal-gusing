@@ -4,7 +4,7 @@ import Footer from "../components/Footer";
 import { supabase, st, ss } from "../api/supabaseClient";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { notifyUser } from "../api/notifications";
+import { notifyUserByUsername, notifyRoles } from "../api/notifications";
 import "./Mantenimiento.css";
 
 const NEXT_STATE = { 1: 13, 13: 14, 14: 15, 15: 15 };
@@ -195,13 +195,22 @@ export default function Mantenimiento() {
     const { error: err } = await supabase.from(st("solicitudes")).update(update).eq("id", selected.id);
     if (err) { alert("Error: " + err.message); setSaving(false); return; }
 
-    if (next === 14 && selected.usuario_id) {
-      await notifyUser(
-        selected.usuario_id,
-        "✅ Orden de Mantenimiento Finalizada",
-        `La solicitud M-${selected.consecutivo} para ${selected.activos?.nombre || "equipo"} ha sido finalizada. Por favor, califica el servicio.`,
-        selected.id
-      );
+    if (selected.usuario_id) {
+      if (next === 13) {
+        await notifyUserByUsername(
+          selected.usuario_id,
+          "⚙️ Solicitud en Proceso",
+          `Tu solicitud M-${selected.consecutivo} (${selected.activos?.nombre || "equipo"}) ha sido tomada y está siendo atendida por el equipo de mantenimiento.`,
+          selected.id
+        );
+      } else if (next === 14) {
+        await notifyUserByUsername(
+          selected.usuario_id,
+          "✅ Orden de Mantenimiento Finalizada",
+          `La solicitud M-${selected.consecutivo} para ${selected.activos?.nombre || "equipo"} ha sido finalizada. Por favor, califica el servicio.`,
+          selected.id
+        );
+      }
     }
 
     closeModal();
@@ -235,6 +244,24 @@ export default function Mantenimiento() {
     setSaving(false);
     loadData();
     setSelected(prev => ({ ...prev, tecnico_asignado: tecnico }));
+
+    if (tecnico && selected.usuario_id) {
+      await notifyUserByUsername(
+        selected.usuario_id,
+        "👷 Técnico Asignado",
+        `Se asignó a ${tecnico} para atender tu solicitud M-${selected.consecutivo}.`,
+        selected.id
+      );
+    }
+    if (tecnico) {
+      await notifyRoles(
+        ["tecnicomantenimiento"],
+        "🔧 Nueva Asignación de Orden",
+        `La orden M-${selected.consecutivo} ha sido asignada a ${tecnico}. Revisa tu tablero.`,
+        selected.id,
+        "info"
+      );
+    }
   };
 
   const saveManual = async () => {

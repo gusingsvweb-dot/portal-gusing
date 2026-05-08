@@ -1,6 +1,29 @@
 import { supabase, st } from "./supabaseClient";
 
 /**
+ * Envía una notificación a un usuario buscándolo por su nombre de usuario.
+ */
+export async function notifyUserByUsername(username, titulo, mensaje, pedidoId = null) {
+    if (!username) return false;
+    try {
+        const { data: userRow, error } = await supabase
+            .from(st("usuarios"))
+            .select("id")
+            .eq("usuario", username)
+            .single();
+
+        if (error || !userRow) {
+            console.warn("notifyUserByUsername: usuario no encontrado:", username);
+            return false;
+        }
+        return notifyUser(userRow.id, titulo, mensaje, pedidoId);
+    } catch (err) {
+        console.error("Error en notifyUserByUsername:", err);
+        return false;
+    }
+}
+
+/**
  * Envía una notificación a un usuario específico.
  */
 export async function notifyUser(userId, titulo, mensaje, pedidoId = null) {

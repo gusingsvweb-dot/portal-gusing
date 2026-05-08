@@ -66,7 +66,7 @@ export default function CrearSolicitud() {
   // ================================
   async function enviarSolicitud() {
     const areaSeleccionada = areas.find(a => String(a.id) === String(form.area_id));
-    const isMantenimiento = areaSeleccionada?.nombre?.toLowerCase().includes("mantenimiento");
+    const isMantenimiento = areaSeleccionada?.nombre?.toLowerCase().trim() === "mantenimiento";
 
     // Validación obligatoria de jerarquía para Mantenimiento
     if (isMantenimiento) {
@@ -171,7 +171,7 @@ export default function CrearSolicitud() {
   }
 
   const areaSeleccionadaRender = areas.find(a => String(a.id) === String(form.area_id));
-  const isMantenimientoRender = areaSeleccionadaRender?.nombre?.toLowerCase().includes("mantenimiento");
+  const isMantenimientoRender = areaSeleccionadaRender?.nombre?.toLowerCase().trim() === "mantenimiento";
 
   return (
     <>
@@ -193,7 +193,7 @@ export default function CrearSolicitud() {
           >
             <option value="">Seleccione...</option>
             {areas
-              .filter((a) => a.nombre.toLowerCase().includes("mantenimiento"))
+              .filter((a) => a.nombre.toLowerCase().trim() === "mantenimiento")
               .map((a) => (
               <option key={a.id} value={a.id}>
                 {a.nombre}
