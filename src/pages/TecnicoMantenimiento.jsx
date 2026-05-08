@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useMemo, useCallback } from "react";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
-import { supabase, st, ss } from "../api/supabaseClient";
+import { supabase, st } from "../api/supabaseClient";
 import { useAuth } from "../context/AuthContext";
-import { notifyUser } from "../api/notifications";
+import { notifyUserByUsername, notifyRoles } from "../api/notifications";
 import "./Mantenimiento.css";
 
 const NEXT_STATE = { 1: 13, 13: 14, 14: 15, 15: 15 };
@@ -203,12 +203,33 @@ export default function TecnicoMantenimiento() {
         }
       }
 
-      // Notificar a Mantenimiento o Usuario original
-      await notifyUser(
-        ss(selected.usuario_id),
-        `Orden ${selected.consecutivo ? "M-"+selected.consecutivo : selected.id} actualizada: ${notifMsg}`,
-        "/usuario/mis-solicitudes"
-      );
+      // Notificar al usuario solicitante
+      if (selected.usuario_id) {
+        const orderId = selected.consecutivo ? `M-${selected.consecutivo}` : `#${selected.id}`;
+        const equipoNombre = selected.activos?.nombre || "equipo";
+        if (isEnProceso) {
+          await notifyUserByUsername(
+            selected.usuario_id,
+            "✅ Orden de Mantenimiento Finalizada",
+            `La solicitud ${orderId} para ${equipoNombre} ha sido completada por el técnico. Por favor, califica el servicio.`,
+            selected.id
+          );
+          await notifyRoles(
+            ["mantenimiento"],
+            "✅ Orden Completada por Técnico",
+            `El técnico ha finalizado la orden ${orderId} (${equipoNombre}). Acción: ${accion.substring(0, 100)}${accion.length > 100 ? "..." : ""}`,
+            selected.id,
+            "info"
+          );
+        } else {
+          await notifyUserByUsername(
+            selected.usuario_id,
+            "⚙️ Tu solicitud está en proceso",
+            `El técnico ha iniciado el trabajo en la solicitud ${orderId} para ${equipoNombre}.`,
+            selected.id
+          );
+        }
+      }
 
       await loadData();
       closeModal();

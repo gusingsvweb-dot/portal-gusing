@@ -148,10 +148,12 @@ export default function CrearSolicitud() {
       const areaDestino = areas.find((a) => String(a.id) === String(form.area_id));
       const areaNombre = areaDestino ? areaDestino.nombre : "mantenimiento";
       
+      const prioridadNombre = prioridades.find(p => String(p.id) === String(form.prioridad_id))?.nombre || "";
+      const resumen = finalDesc.length > 80 ? finalDesc.substring(0, 80) + "…" : finalDesc;
       await notifyRoles(
         [areaNombre, "gerencia"],
-        "🔔 Nueva Solicitud",
-        `El usuario ${usuarioActual?.usuario || 'Sistema'} ha generado una nueva solicitud para tu área.`,
+        `🔔 Nueva Solicitud${prioridadNombre ? ` — Prioridad ${prioridadNombre}` : ""}`,
+        `${usuarioActual?.usuario || "Sistema"} (${usuarioActual?.areadetrabajo || "—"}) creó la solicitud M-${nextConsecutivo}: "${resumen}"`,
         null,
         "info"
       );

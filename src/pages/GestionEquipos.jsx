@@ -144,7 +144,7 @@ export default function GestionEquipos() {
     else {
       setShowManualInt(false);
       setManualIntForm({ fecha: new Date().toISOString().split("T")[0], descripcion: "", accion: "", tecnico: "" });
-      openRutina(selectedEquipo);
+      loadRutina(selectedEquipo);
     }
     setSaving(false);
   }
