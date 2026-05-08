@@ -182,8 +182,6 @@ export default function KpisMantenimiento() {
           <KpiCard icon="📊" title="Promedio Anual" value={`${stats.promedioAnual}%`} sub="Global de indicadores" color="#8b5cf6" />
         </div>
 
-        </div>
-
         {/* CHARTS GRID */}
         <div className="kpi-mant-charts-grid">
           <div className="kpi-chart-box">
