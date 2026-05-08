@@ -30,7 +30,7 @@ export default function ProyectosMantenimiento() {
       // Usar st() para soporte de ambiente oficial/no oficial
       const { data, error } = await supabase
         .from(st("proyectos_mant"))
-        .select("*, tareas_proyecto_mant(*)")
+        .select(`*, tareas_proyecto_mant: ${st("tareas_proyecto_mant")}(*)`)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
