@@ -27,22 +27,24 @@ export default function KpisMantenimiento() {
   const navigate = useNavigate();
   const [solicitudes, setSolicitudes] = useState([]);
   const [planes, setPlanes] = useState([]);
-  const [repuestosBajoStock, setRepuestosBajoStock] = useState([]);
+  const [proyectos, setProyectos] = useState([]);
+  const [repuestos, setRepuestos] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
-      const [{ data: sol }, { data: pls }, { data: rep }] = await Promise.all([
-        supabase.from(st("solicitudes")).select(ss(`
-          id, estado_id, prioridad_id, area_solicitante, created_at, fecha_cierre,
-          tipo_solicitud_id, estados(nombre), prioridades(nombre), activos(criticidad, nombre)
-        `)).eq("area_id", 1),
-        supabase.from(st("planes_preventivos")).select("id, activo"),
-        supabase.from(st("repuestos_mant")).select("nombre, stock").lt("stock", 5)
+      const [{ data: sol }, { data: pls }, { data: proy }, { data: rep }] = await Promise.all([
+        supabase.from(st("solicitudes")).select(ss(
+          "id, estado_id, tipo_solicitud_id, area_solicitante, created_at, activos(criticidad, nombre)"
+        )).eq("area_id", 1),
+        supabase.from(st("planes_preventivos")).select("id, proxima_fecha, ultima_fecha"),
+        supabase.from(st("proyectos_mant")).select("id, estado"),
+        supabase.from(st("repuestos")).select("nombre, stock, stock_minimo"),
       ]);
       setSolicitudes(sol || []);
       setPlanes(pls || []);
-      setRepuestosBajoStock(rep || []);
+      setProyectos(proy || []);
+      setRepuestos(rep || []);
       setLoading(false);
     }
     load();
@@ -53,51 +55,45 @@ export default function KpisMantenimiento() {
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
 
-    const isThisMonth = (dateString) => {
-      if (!dateString) return false;
-      const d = new Date(dateString);
-      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    const isThisMonth = (d) => {
+      if (!d) return false;
+      const dt = new Date(d);
+      return dt.getMonth() === currentMonth && dt.getFullYear() === currentYear;
+    };
+    const isThisYear = (d) => {
+      if (!d) return false;
+      return new Date(d).getFullYear() === currentYear;
     };
 
-    const isThisYear = (dateString) => {
-      if (!dateString) return false;
-      const d = new Date(dateString);
-      return d.getFullYear() === currentYear;
-    };
+    // KPI 1: cumplimiento solicitudes de ticket del mes (tipo != 5, que es preventivo)
+    const ticketsMes = solicitudes.filter(s => s.tipo_solicitud_id !== 5 && isThisMonth(s.created_at));
+    const ticketsCerradosMes = ticketsMes.filter(s => [14, 15].includes(s.estado_id));
+    const kpi1 = ticketsMes.length > 0 ? Math.round((ticketsCerradosMes.length / ticketsMes.length) * 100) : 0;
 
-    const isTicket = (s) => s.tipos_solicitud?.nombre?.toLowerCase().includes("correctivo") || (!s.tipos_solicitud?.nombre?.toLowerCase().includes("preventivo") && !s.tipos_solicitud?.nombre?.toLowerCase().includes("mejora") && !s.tipos_solicitud?.nombre?.toLowerCase().includes("proyecto"));
-    const isPrev = (s) => s.tipos_solicitud?.nombre?.toLowerCase().includes("preventivo");
-    const isProj = (s) => s.tipos_solicitud?.nombre?.toLowerCase().includes("mejora") || s.tipos_solicitud?.nombre?.toLowerCase().includes("proyecto");
+    // KPI 2: cumplimiento preventivos programados del mes (desde planes_preventivos)
+    const prevMes = planes.filter(p => isThisMonth(p.proxima_fecha));
+    const prevCompletadosMes = prevMes.filter(p => isThisMonth(p.ultima_fecha));
+    const kpi2 = prevMes.length > 0 ? Math.round((prevCompletadosMes.length / prevMes.length) * 100) : 0;
 
-    // Mensual
-    const ticketsThisMonth = solicitudes.filter(s => isThisMonth(s.created_at) && isTicket(s));
-    const ticketsClosedThisMonth = ticketsThisMonth.filter(s => [14, 15].includes(s.estado_id));
-    const ticketCompMonth = ticketsThisMonth.length ? Math.round((ticketsClosedThisMonth.length / ticketsThisMonth.length) * 100) : 100;
+    // KPI 3: proyectos (global — finalizados vs total)
+    const proyFinalizados = proyectos.filter(p => p.estado === "Finalizado").length;
+    const kpi3 = proyectos.length > 0 ? Math.round((proyFinalizados / proyectos.length) * 100) : 0;
 
-    const prevsThisMonth = solicitudes.filter(s => isThisMonth(s.created_at) && isPrev(s));
-    const prevsClosedThisMonth = prevsThisMonth.filter(s => [14, 15].includes(s.estado_id));
-    const prevCompMonth = prevsThisMonth.length ? Math.round((prevsClosedThisMonth.length / prevsThisMonth.length) * 100) : 100;
+    // KPI 4: promedio anual (tickets año + preventivos año + proyectos global) / 3
+    const ticketsAño = solicitudes.filter(s => s.tipo_solicitud_id !== 5 && isThisYear(s.created_at));
+    const ticketsAñoCerrados = ticketsAño.filter(s => [14, 15].includes(s.estado_id));
+    const kpi1Año = ticketsAño.length > 0 ? Math.round((ticketsAñoCerrados.length / ticketsAño.length) * 100) : 0;
 
-    const projsThisMonth = solicitudes.filter(s => isThisMonth(s.created_at) && isProj(s));
-    const projsClosedThisMonth = projsThisMonth.filter(s => [14, 15].includes(s.estado_id));
-    const projCompMonth = projsThisMonth.length ? Math.round((projsClosedThisMonth.length / projsThisMonth.length) * 100) : 100;
+    const prevAño = planes.filter(p => isThisYear(p.proxima_fecha));
+    const prevAñoCompletados = prevAño.filter(p => isThisYear(p.ultima_fecha));
+    const kpi2Año = prevAño.length > 0 ? Math.round((prevAñoCompletados.length / prevAño.length) * 100) : 0;
 
-    // Anual
-    const ticketsThisYear = solicitudes.filter(s => isThisYear(s.created_at) && isTicket(s));
-    const ticketsClosedThisYear = ticketsThisYear.filter(s => [14, 15].includes(s.estado_id));
-    const ticketCompYear = ticketsThisYear.length ? Math.round((ticketsClosedThisYear.length / ticketsThisYear.length) * 100) : 100;
+    const promedioAnual = Math.round((kpi1Año + kpi2Año + kpi3) / 3);
 
-    const prevsThisYear = solicitudes.filter(s => isThisYear(s.created_at) && isPrev(s));
-    const prevsClosedThisYear = prevsThisYear.filter(s => [14, 15].includes(s.estado_id));
-    const prevCompYear = prevsThisYear.length ? Math.round((prevsClosedThisYear.length / prevsThisYear.length) * 100) : 100;
+    // Repuestos bajo stock (comparado contra stock_minimo configurable)
+    const bajoStock = repuestos.filter(r => r.stock <= (r.stock_minimo ?? 5));
 
-    const projsThisYear = solicitudes.filter(s => isThisYear(s.created_at) && isProj(s));
-    const projsClosedThisYear = projsThisYear.filter(s => [14, 15].includes(s.estado_id));
-    const projCompYear = projsThisYear.length ? Math.round((projsClosedThisYear.length / projsThisYear.length) * 100) : 100;
-
-    const promedioAnual = Math.round((ticketCompYear + prevCompYear + projCompYear) / 3);
-
-    // Data for charts
+    // Charts
     const porCriticidad = solicitudes.reduce((acc, s) => {
       const c = s.activos?.criticidad || "Sin equipo";
       acc[c] = (acc[c] || 0) + 1;
@@ -118,11 +114,16 @@ export default function KpisMantenimiento() {
       Finalizados: solicitudes.filter(s => [14, 15].includes(s.estado_id)).length,
     };
 
-    return { 
-      ticketCompMonth, prevCompMonth, projCompMonth, promedioAnual,
-      porCriticidad, porArea, porEstado
+    return {
+      kpi1, kpi2, kpi3, promedioAnual,
+      kpi1Detail: { total: ticketsMes.length, done: ticketsCerradosMes.length },
+      kpi2Detail: { total: prevMes.length, done: prevCompletadosMes.length },
+      kpi3Detail: { total: proyectos.length, done: proyFinalizados },
+      bajoStock,
+      porCriticidad, porArea, porEstado,
+      totalSol: solicitudes.length,
     };
-  }, [solicitudes, planes]);
+  }, [solicitudes, planes, proyectos, repuestos]);
 
   const criticidadChartData = {
     labels: Object.keys(stats.porCriticidad),
@@ -176,10 +177,25 @@ export default function KpisMantenimiento() {
 
         {/* STAT CARDS */}
         <div className="kpi-mant-cards">
-          <KpiCard icon="🎫" title="Tickets (Mes)" value={`${stats.ticketCompMonth}%`} sub="Cumplimiento mensual" color="#ef4444" />
-          <KpiCard icon="📅" title="Preventivos (Mes)" value={`${stats.prevCompMonth}%`} sub="Cumplimiento mensual" color="#10b981" />
-          <KpiCard icon="🚀" title="Proyectos (Mes)" value={`${stats.projCompMonth}%`} sub="Cumplimiento mensual" color="#3b82f6" />
-          <KpiCard icon="📊" title="Promedio Anual" value={`${stats.promedioAnual}%`} sub="Global de indicadores" color="#8b5cf6" />
+          <KpiCard
+            icon="🎫" title="Tickets (Mes)" value={`${stats.kpi1}%`}
+            sub="Cumplimiento solicitudes" color="#ef4444"
+            detail={stats.kpi1Detail}
+          />
+          <KpiCard
+            icon="📅" title="Preventivos (Mes)" value={`${stats.kpi2}%`}
+            sub="Preventivos programados" color="#10b981"
+            detail={stats.kpi2Detail}
+          />
+          <KpiCard
+            icon="🚀" title="Proyectos" value={`${stats.kpi3}%`}
+            sub="Finalizados vs total" color="#3b82f6"
+            detail={stats.kpi3Detail}
+          />
+          <KpiCard
+            icon="📊" title="Promedio Anual" value={`${stats.promedioAnual}%`}
+            sub="Promedio de los 3 indicadores" color="#8b5cf6"
+          />
         </div>
 
         {/* CHARTS GRID */}
@@ -215,14 +231,14 @@ export default function KpisMantenimiento() {
         </div>
 
         {/* BAJO STOCK ALERT */}
-        {repuestosBajoStock.length > 0 && (
-          <div className="kpi-chart-box kpi-alert-card" style={{ marginBottom: "24px", borderLeft: "4px solid #f97316" }}>
+        {stats.bajoStock.length > 0 && (
+          <div className="kpi-chart-box kpi-alert-card" style={{ marginTop: "22px", marginBottom: "24px", borderLeft: "4px solid #f97316" }}>
             <h3 className="kpi-chart-title" style={{ color: "#c2410c" }}>⚠️ Alerta de Repuestos (Bajo Stock)</h3>
             <div className="kpi-stock-list">
-              {repuestosBajoStock.map((r, i) => (
+              {stats.bajoStock.map((r, i) => (
                 <div key={i} className="kpi-stock-item">
                   <span className="stock-name">{r.nombre}</span>
-                  <span className="stock-val">{r.stock} unid.</span>
+                  <span className="stock-val">{r.stock} / {r.stock_minimo ?? 5} mín.</span>
                 </div>
               ))}
             </div>
@@ -238,7 +254,7 @@ export default function KpisMantenimiento() {
             </thead>
             <tbody>
               {Object.entries(stats.porCriticidad).map(([crit, count]) => {
-                const pct = stats.total > 0 ? ((count / stats.total) * 100).toFixed(1) : 0;
+                const pct = stats.totalSol > 0 ? ((count / stats.totalSol) * 100).toFixed(1) : 0;
                 const colorMap = { Alta: "#ef4444", Media: "#f59e0b", Baja: "#10b981" };
                 const col = colorMap[crit] || "#94a3b8";
                 return (
@@ -263,7 +279,7 @@ export default function KpisMantenimiento() {
   );
 }
 
-function KpiCard({ icon, title, value, sub, color }) {
+function KpiCard({ icon, title, value, sub, color, detail }) {
   return (
     <div className="kpi-card" style={{ "--kc": color }}>
       <div className="kpi-card-icon">{icon}</div>
@@ -271,6 +287,9 @@ function KpiCard({ icon, title, value, sub, color }) {
         <span className="kpi-card-val">{value}</span>
         <span className="kpi-card-title-text">{title}</span>
         <span className="kpi-card-sub">{sub}</span>
+        {detail && (
+          <span className="kpi-card-detail">{detail.done} / {detail.total} completados</span>
+        )}
       </div>
     </div>
   );

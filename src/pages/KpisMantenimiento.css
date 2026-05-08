@@ -47,7 +47,7 @@
 /* STAT CARDS */
 .kpi-mant-cards {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 16px;
   margin-bottom: 28px;
 }
@@ -88,6 +88,14 @@
   font-size: 0.72rem;
   color: #94a3b8;
   font-weight: 600;
+}
+
+.kpi-card-detail {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--kc, #6366f1);
+  margin-top: 4px;
+  opacity: 0.85;
 }
 
 /* RATIO BAR */
