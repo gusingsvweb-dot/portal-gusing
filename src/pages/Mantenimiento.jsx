@@ -101,6 +101,7 @@ export default function Mantenimiento() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  const stats = useMemo(() => {
     const tickets = solicitudes.filter(s => s.tipo_solicitud_id !== 5);
     return {
       total: tickets.length,
