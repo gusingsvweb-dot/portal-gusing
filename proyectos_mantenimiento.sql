@@ -53,6 +53,11 @@ CREATE POLICY "Public Access" ON public."NO_tareas_proyecto_mant" FOR ALL USING 
 
 -- 4. ACTUALIZACIÓN DE TABLAS EXISTENTES
 ALTER TABLE public."repuestos" ADD COLUMN IF NOT EXISTS stock_minimo INTEGER DEFAULT 5;
+ALTER TABLE public."solicitudes" ADD COLUMN IF NOT EXISTS tecnico_asignado TEXT;
+ALTER TABLE public."solicitudes" ADD COLUMN IF NOT EXISTS usuario_id UUID;
+ALTER TABLE public."NO_solicitudes" ADD COLUMN IF NOT EXISTS tecnico_asignado TEXT;
+ALTER TABLE public."NO_solicitudes" ADD COLUMN IF NOT EXISTS usuario_id UUID;
+ALTER TABLE public."NO_notificaciones" ADD COLUMN IF NOT EXISTS tipo TEXT DEFAULT 'info';
 
 -- Notificar a PostgREST para recargar el esquema
 NOTIFY pgrst, 'reload schema';
