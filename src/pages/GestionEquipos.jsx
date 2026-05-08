@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase, st } from "../api/supabaseClient";
+import { supabase, st, ss } from "../api/supabaseClient";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
 import "./Mantenimiento.css";
@@ -203,10 +203,10 @@ export default function GestionEquipos() {
     setRutina([]);
     const { data } = await supabase
       .from(st("solicitudes"))
-      .select(`id, consecutivo, created_at, descripcion, accion_realizada, fecha_cierre, usuario_id, tipos_solicitud(nombre)`)
+      .select(ss(`id, consecutivo, created_at, descripcion, accion_realizada, fecha_cierre, usuario_id, prioridad_id, tipos_solicitud(nombre)`))
       .eq("activo_id", activo.id)
-      .not("accion_realizada", "is", null)
-      .order("fecha_cierre", { ascending: false });
+      .in("estado_id", [13, 14, 15])
+      .order("created_at", { ascending: false });
     setRutina(data || []);
     setRutinaLoading(false);
   }
@@ -431,7 +431,7 @@ export default function GestionEquipos() {
                   </div>
                 </div>
                   <div className="v2-form-group">
-                    <label>Manual / Hoja de Vida (PDF)</label>
+                    <label>Manual / Hoja de Rutina (PDF)</label>
                     <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
                       <input className="v2-input" type="file" accept=".pdf" onChange={e => setFile(e.target.files[0])} />
                       {form.manual_url && (
@@ -545,29 +545,36 @@ export default function GestionEquipos() {
                       </div>
                     ) : (
                       <div className="v2-timeline">
-                        {rutina.map(item => (
+                        {rutina.map(item => {
+                          const fechaRef = item.fecha_cierre || item.created_at;
+                          const enProceso = !item.fecha_cierre;
+                          return (
                           <div key={item.id} className="v2-timeline-item">
-                            <div className="v2-tl-marker"></div>
+                            <div className={`v2-tl-marker ${enProceso ? "tl-marker-proceso" : ""}`}></div>
                             <div className="v2-tl-date">
-                              <span className="v2-date-main">{new Date(item.fecha_cierre).toLocaleDateString("es-CO")}</span>
-                              <span className="v2-date-sub">{new Date(item.fecha_cierre).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                              <span className="v2-date-main">{new Date(fechaRef).toLocaleDateString("es-CO")}</span>
+                              <span className="v2-date-sub">{enProceso ? "En proceso" : new Date(fechaRef).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
                             </div>
-                            <div className="v2-tl-card">
+                            <div className={`v2-tl-card ${enProceso ? "tl-card-proceso" : ""}`}>
                               <div className="v2-tl-header">
                                 <span className="v2-tl-consec">M-{item.consecutivo}</span>
                                 <span className="v2-tl-type">{item.tipos_solicitud?.nombre || "Manual"}</span>
+                                {enProceso && <span className="tl-badge-proceso">⚙️ En Proceso</span>}
                               </div>
                               <div className="v2-tl-body">
                                 <p className="v2-tl-orig"><strong>Problema:</strong> {item.descripcion}</p>
-                                <div className="v2-tl-action">
-                                  <strong>Acción realizada:</strong>
-                                  <p>{item.accion_realizada}</p>
-                                </div>
+                                {item.accion_realizada && (
+                                  <div className="v2-tl-action">
+                                    <strong>Acción realizada:</strong>
+                                    <p>{item.accion_realizada}</p>
+                                  </div>
+                                )}
                               </div>
                               <div className="v2-tl-footer">👨‍🔧 Responsable: {item.usuario_id}</div>
                             </div>
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                    </>

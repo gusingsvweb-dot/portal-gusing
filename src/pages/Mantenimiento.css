@@ -1190,6 +1190,20 @@
 .v2-empty-state { text-align: center; padding: 40px 20px; color: #94a3b8; }
 .v2-empty-icon { font-size: 3rem; margin-bottom: 12px; opacity: 0.3; }
 
+/* Timeline: "En Proceso" state */
+.tl-marker-proceso { background: #3b82f6 !important; border-color: #bfdbfe !important; }
+.tl-card-proceso { border-left: 3px solid #3b82f6; background: linear-gradient(135deg, #fff, #f0f7ff); }
+.tl-badge-proceso {
+  font-size: 0.65rem;
+  font-weight: 800;
+  background: #dbeafe;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  padding: 2px 8px;
+  border-radius: 99px;
+  margin-left: auto;
+}
+
 /* Mini button */
 .mini-btn {
   padding: 7px 14px;

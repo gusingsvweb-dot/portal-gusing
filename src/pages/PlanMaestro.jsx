@@ -130,14 +130,41 @@ export default function PlanMaestro() {
   async function completarPlan(plan) {
     if (!confirm(`¿Marcar como completado el preventivo de "${plan.activos?.nombre}"? Esto avanzará la próxima fecha.`)) return;
     setCompletando(plan.id);
-    const hoyDate = new Date().toISOString().split("T")[0];
+    const hoyISO = new Date().toISOString();
+    const hoyDate = hoyISO.split("T")[0];
     const proxima = new Date();
     proxima.setDate(proxima.getDate() + (plan.frecuencia_dias || 30));
-    const proximaStr = proxima.toISOString().split("T")[0];
+
+    // 1. Avanzar el plan preventivo
     await supabase.from(st("planes_preventivos")).update({
       ultima_fecha: hoyDate,
-      proxima_fecha: proximaStr,
+      proxima_fecha: proxima.toISOString().split("T")[0],
     }).eq("id", plan.id);
+
+    // 2. Calcular consecutivo para el registro histórico
+    const { data: maxData } = await supabase
+      .from(st("solicitudes"))
+      .select("consecutivo")
+      .eq("area_id", 1)
+      .order("consecutivo", { ascending: false })
+      .limit(1);
+    const nextConsecutivo = (maxData?.[0]?.consecutivo || 0) + 1;
+
+    // 3. Insertar registro en solicitudes para que quede en el historial del equipo
+    await supabase.from(st("solicitudes")).insert([{
+      activo_id: plan.activo_id,
+      tipo_solicitud_id: 5, // Preventivo
+      descripcion: `[PLAN PREVENTIVO] ${plan.activos?.nombre || "Equipo"} — ${plan.descripcion_tarea || "Revisión programada"}`,
+      accion_realizada: `Preventivo completado manualmente desde Plan Maestro. Próxima intervención: ${proxima.toISOString().split("T")[0]}`,
+      usuario_id: "SISTEMA",
+      estado_id: 14,
+      area_id: 1,
+      consecutivo: nextConsecutivo,
+      fecha_cierre: hoyISO,
+      created_at: hoyISO,
+      area_solicitante: "MANTENIMIENTO",
+    }]);
+
     setCompletando(null);
     loadData();
   }
