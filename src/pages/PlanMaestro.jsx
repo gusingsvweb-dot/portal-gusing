@@ -123,11 +123,43 @@ export default function PlanMaestro() {
       const inicioStr = `${inicio.getFullYear()}-${String(inicio.getMonth() + 1).padStart(2, '0')}-${String(inicio.getDate()).padStart(2, '0')}`;
       const finStr = `${fin.getFullYear()}-${String(fin.getMonth() + 1).padStart(2, '0')}-${String(fin.getDate()).padStart(2, '0')}`;
 
-      const tareas = planes.filter(p => {
-        if (p.activo === false) return false;
-        const isProxima = p.proxima_fecha >= inicioStr && p.proxima_fecha <= finStr;
-        const isUltima = p.ultima_fecha >= inicioStr && p.ultima_fecha <= finStr;
-        return isProxima || isUltima;
+      const tareas = planes.flatMap(p => {
+        if (p.activo === false) return [];
+        const occurrences = [];
+        
+        // 1. Instancias reales (Última y Próxima oficial)
+        if (p.proxima_fecha >= inicioStr && p.proxima_fecha <= finStr) {
+            occurrences.push({...p, isProjection: false});
+        }
+        if (p.ultima_fecha >= inicioStr && p.ultima_fecha <= finStr) {
+            occurrences.push({...p, isProjection: false, isCompletada: true});
+        }
+
+        // 2. Proyecciones si estamos viendo el futuro
+        const freq = p.frecuencia_dias || 30;
+        if (freq > 0) {
+          let tempDate = new Date(p.proxima_fecha + "T00:00:00");
+          const weekStart = new Date(inicioStr + "T00:00:00");
+          const weekEnd = new Date(finStr + "T00:00:00");
+
+          // Si la proxima_fecha oficial ya pasó la semana, no proyectamos hacia atrás
+          if (tempDate > weekEnd) return occurrences;
+
+          // Avanzar tempDate hasta que entre en el rango de la semana o lo pase
+          while (tempDate < weekStart) {
+              tempDate.setDate(tempDate.getDate() + freq);
+          }
+
+          // Si la recurrencia proyectada cae en esta semana y NO es la proxima_fecha oficial
+          if (tempDate >= weekStart && tempDate <= weekEnd) {
+              const tempStr = tempDate.toISOString().split("T")[0];
+              if (tempStr !== p.proxima_fecha) {
+                  occurrences.push({...p, proxima_fecha: tempStr, isProjection: true});
+              }
+          }
+        }
+        
+        return occurrences;
       });
 
       semanas.push({ num: semNum, inicio: inicioStr, fin: finStr, tareas });
@@ -198,12 +230,12 @@ export default function PlanMaestro() {
           .single();
 
         if (schedule) {
-          // Marcar el mes como completado
+          // Marcar el mes como completado (Usando 'Ejecutado' que es el valor válido en BD)
           await supabase
             .from(st("maintenance_schedule_months"))
-            .update({ status: 'completado' })
+            .update({ status: 'Ejecutado' })
             .eq("schedule_id", schedule.id)
-            .eq("month", mesActual);
+            .eq("month_number", mesActual);
         }
       }
     } catch (syncErr) {
@@ -243,7 +275,7 @@ export default function PlanMaestro() {
   }
 
   async function toggleMonthStatus(monthEntry) {
-    const newStatus = monthEntry.status === "completado" ? "pendiente" : "completado";
+    const newStatus = monthEntry.status === "Ejecutado" ? "Pendiente" : "Ejecutado";
     await supabase.from(st("maintenance_schedule_months")).update({ status: newStatus }).eq("id", monthEntry.id);
     setCronogramaAnual(prev => prev.map(item => ({
       ...item,
@@ -566,9 +598,12 @@ export default function PlanMaestro() {
                               <span className="pm-semana-fecha">{isCompletada ? `Completado: ${p.ultima_fecha}` : p.proxima_fecha}</span>
                             </div>
                             <p className="pm-semana-equipo">{p.activos?.nombre || "Equipo"}</p>
-                            <p className="pm-semana-desc">{p.descripcion_tarea || "Sin descripción"}</p>
+                            <p className="pm-semana-desc">
+                              {p.isProjection && <span style={{ color: "var(--mant-primary)", fontWeight: "bold" }}>[PROYECCIÓN] </span>}
+                              {p.descripcion_tarea || "Sin descripción"}
+                            </p>
                             <div className="pm-semana-actions">
-                              {!isCompletada && (
+                              {!isCompletada && !p.isProjection && (
                                 <button
                                   className="mini-btn mini-btn-complete"
                                   style={{ fontSize: "0.72rem", padding: "4px 10px" }}
@@ -620,7 +655,7 @@ export default function PlanMaestro() {
               </div>
               <select className="v2-select" style={{ width: "160px" }} value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)}>
                 <option value="todos">Todos los estados</option>
-                <option value="completado">Completados ✓</option>
+                <option value="ejecutado">Ejecutados ✓</option>
                 <option value="pendiente">Pendientes</option>
                 <option value="vencido">Vencidos !</option>
               </select>
@@ -661,12 +696,12 @@ export default function PlanMaestro() {
                         <div className="anual-mes-card-top">
                           <span className="codigo-cell">{item.equipment_code}</span>
                           <button
-                            className={`anual-estado-btn ${isCompletado ? "estado-completado" : "estado-pendiente"}`}
-                            onClick={() => toggleMonthStatus(mesEntry)}
-                            title={isCompletado ? "Marcar como pendiente" : "Marcar como completado"}
-                          >
-                            {isCompletado ? "✓ Completado" : "○ Pendiente"}
-                          </button>
+                                className={`anual-estado-btn ${isCompletado ? "estado-completado" : "estado-pendiente"}`}
+                                onClick={() => toggleMonthStatus(mesEntry)}
+                                title={isCompletado ? "Marcar como pendiente" : "Marcar como ejecutado"}
+                              >
+                                {isCompletado ? "✓ Ejecutado" : "○ Pendiente"}
+                              </button>
                         </div>
                         <p className="anual-mes-equipo">{item.equipment_name}</p>
                         <p className="anual-mes-tarea">{item.task_description || "—"}</p>
@@ -702,7 +737,7 @@ export default function PlanMaestro() {
                           const scheduled = item.maintenance_schedule_months?.find(mon => mon.month_number === m);
                           if (!scheduled) return <td key={m} className="month-col empty"></td>;
                           const statusClass = scheduled.status.toLowerCase();
-                          const statusIcon = statusClass === "completado" ? "✓" : statusClass === "vencido" ? "!" : "P";
+                          const statusIcon = statusClass === "ejecutado" ? "✓" : statusClass === "vencido" ? "!" : "P";
                           return (
                             <td key={m} className={`month-col has-plan ${statusClass}`}>
                               <div
