@@ -162,19 +162,25 @@ export default function PlanMaestro() {
     const nextConsecutivo = (maxData?.[0]?.consecutivo || 0) + 1;
 
     // 3. Insertar registro en solicitudes para que quede en el historial del equipo
-    await supabase.from(st("solicitudes")).insert([{
-      activo_id: plan.activo_id,
-      tipo_solicitud_id: 5, // Preventivo
-      descripcion: `[PLAN PREVENTIVO] ${plan.activos?.nombre || "Equipo"} — ${plan.descripcion_tarea || "Revisión programada"}`,
-      accion_realizada: `Preventivo completado manualmente desde Plan Maestro. Próxima intervención: ${proxima.toISOString().split("T")[0]}`,
-      usuario_id: "SISTEMA",
-      estado_id: 14,
-      area_id: 1,
-      consecutivo: nextConsecutivo,
-      fecha_cierre: hoyISO,
-      created_at: hoyISO,
-      area_solicitante: "MANTENIMIENTO",
-    }]);
+    try {
+      const { error: insErr } = await supabase.from(st("solicitudes")).insert([{
+        activo_id: plan.activo_id,
+        tipo_solicitud_id: 5, // Preventivo
+        descripcion: `[PLAN PREVENTIVO] ${plan.activos?.nombre || "Equipo"} — ${plan.descripcion_tarea || "Revisión programada"}`,
+        accion_realizada: `Preventivo completado manualmente desde Plan Maestro. Próxima intervención: ${proxima.toISOString().split("T")[0]}`,
+        usuario_id: "SISTEMA",
+        estado_id: 14,
+        area_id: 1,
+        consecutivo: nextConsecutivo,
+        fecha_cierre: hoyISO,
+        created_at: hoyISO,
+        area_solicitante: "MANTENIMIENTO",
+      }]);
+      if (insErr) throw insErr;
+    } catch (err) {
+      console.error("Error al registrar en historial:", err);
+      alert("Atención: El plan se avanzó pero no se pudo crear el registro en el historial: " + err.message);
+    }
 
     // 4. Sincronizar con el Cronograma Anual si existe
     try {
