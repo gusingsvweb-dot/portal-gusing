@@ -106,12 +106,21 @@ export default function GestionProveedoresMant() {
     setSelectedProv(p);
     setShowHistory(true);
     setHistoryLoading(true);
-    const { data } = await supabase
+    
+    let query = supabase
       .from(st("solicitudes"))
       .select(`id, consecutivo, descripcion, fecha_cierre, activos(nombre)`)
-      .eq("proveedor_id", p.id)
       .not("fecha_cierre", "is", null)
       .order("fecha_cierre", { ascending: false });
+
+    if (p.tipo === "Interno") {
+      const userName = p.nombre.trim().toLowerCase().replace(/\s+/g, '.');
+      query = query.eq("tecnico_asignado", userName);
+    } else {
+      query = query.eq("proveedor_id", p.id);
+    }
+
+    const { data } = await query;
     setHistory(data || []);
     setHistoryLoading(false);
   }
