@@ -169,7 +169,9 @@ export default function CrearSolicitud() {
             onChange={(e) => setForm({ ...form, area_id: e.target.value })}
           >
             <option value="">Seleccione...</option>
-            {areas.map((a) => (
+            {areas
+              .filter((a) => a.id === 1 || a.nombre.toLowerCase() === "mantenimiento")
+              .map((a) => (
               <option key={a.id} value={a.id}>
                 {a.nombre}
               </option>
