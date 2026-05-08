@@ -6,27 +6,41 @@ import Footer from "../components/Footer";
 import "./Mantenimiento.css";
 import "./PlanMaestro.css";
 
+const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+const MESES_CORTO = ["ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SEP","OCT","NOV","DIC"];
+
 export default function PlanMaestro() {
   const navigate = useNavigate();
   const [planes, setPlanes] = useState([]);
   const [activos, setActivos] = useState([]);
   const [cronogramaAnual, setCronogramaAnual] = useState([]);
-  const [activeTab, setActiveTab] = useState("auto"); // "auto" | "anual"
+  const [activeTab, setActiveTab] = useState("auto"); // "auto" | "semanal" | "anual"
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [completando, setCompletando] = useState(null); // id del plan siendo completado
+
+  // Filtros Motor Automático
+  const [filtroMes, setFiltroMes] = useState("todos"); // "todos" | "0"-"11"
+  const [filtroEstadoAuto, setFiltroEstadoAuto] = useState("todos"); // "todos"|"vencido"|"proximo"|"ok"
+
+  // Filtros Cronograma Anual
+  const [filtroTexto, setFiltroTexto] = useState("");
+  const [filtroEstado, setFiltroEstado] = useState("todos");
+  const [filtroMesAnual, setFiltroMesAnual] = useState("todos"); // "todos" | "1"-"12"
+
+  // Vista Semanal
+  const [semanalMes, setSemanalMes] = useState(new Date().getMonth()); // 0-11
+  const [semanalAnio, setSemanalAnio] = useState(new Date().getFullYear());
 
   const [form, setForm] = useState({
     activo_id: "", frecuencia_dias: 30,
     proxima_fecha: new Date().toISOString().split("T")[0],
     descripcion_tarea: "", activo: true
   });
-
-  const [filtroTexto, setFiltroTexto] = useState("");
-  const [filtroEstado, setFiltroEstado] = useState("todos");
 
   useEffect(() => { loadData(); }, []);
 
@@ -48,9 +62,7 @@ export default function PlanMaestro() {
     }
   }
 
-  useEffect(() => {
-    loadData();
-  }, [selectedYear]);
+  useEffect(() => { loadData(); }, [selectedYear]);
 
   const hoy = new Date().toISOString().split("T")[0];
 
@@ -60,9 +72,81 @@ export default function PlanMaestro() {
       const diff = (new Date(p.proxima_fecha) - new Date()) / (1000 * 60 * 60 * 24);
       return diff > 0 && diff <= 7 && p.activo !== false;
     });
-    const activos = planes.filter(p => p.activo !== false);
-    return { vencidos: vencidos.length, proximos7: proximos7.length, total: planes.length, activos: activos.length };
+    const activosPlanes = planes.filter(p => p.activo !== false);
+    return { vencidos: vencidos.length, proximos7: proximos7.length, total: planes.length, activos: activosPlanes.length };
   }, [planes, hoy]);
+
+  // ── Planes filtrados para Motor Automático ──
+  const planesFiltrados = useMemo(() => {
+    return planes.filter(p => {
+      if (filtroMes !== "todos") {
+        const mes = new Date(p.proxima_fecha).getMonth();
+        if (mes !== parseInt(filtroMes)) return false;
+      }
+      if (filtroEstadoAuto !== "todos") {
+        const dias = diasRestantes(p.proxima_fecha);
+        if (filtroEstadoAuto === "vencido" && dias > 0) return false;
+        if (filtroEstadoAuto === "proximo" && (dias <= 0 || dias > 7)) return false;
+        if (filtroEstadoAuto === "ok" && (dias <= 7)) return false;
+      }
+      return true;
+    });
+  }, [planes, filtroMes, filtroEstadoAuto]);
+
+  // ── Planes por semana (Vista Semanal) ──
+  const semanasPorMes = useMemo(() => {
+    const primerDia = new Date(semanalAnio, semanalMes, 1);
+    const ultimoDia = new Date(semanalAnio, semanalMes + 1, 0);
+    const semanas = [];
+
+    let inicio = new Date(primerDia);
+    let semNum = 1;
+    while (inicio <= ultimoDia) {
+      const fin = new Date(inicio);
+      fin.setDate(fin.getDate() + 6);
+      if (fin > ultimoDia) fin.setTime(ultimoDia.getTime());
+
+      const inicioStr = inicio.toISOString().split("T")[0];
+      const finStr = fin.toISOString().split("T")[0];
+
+      const tareas = planes.filter(p => {
+        if (!p.activo) return false;
+        return p.proxima_fecha >= inicioStr && p.proxima_fecha <= finStr;
+      });
+
+      semanas.push({ num: semNum, inicio: inicioStr, fin: finStr, tareas });
+      semNum++;
+      inicio = new Date(fin);
+      inicio.setDate(inicio.getDate() + 1);
+    }
+    return semanas;
+  }, [planes, semanalMes, semanalAnio]);
+
+  async function completarPlan(plan) {
+    if (!confirm(`¿Marcar como completado el preventivo de "${plan.activos?.nombre}"? Esto avanzará la próxima fecha.`)) return;
+    setCompletando(plan.id);
+    const hoyDate = new Date().toISOString().split("T")[0];
+    const proxima = new Date();
+    proxima.setDate(proxima.getDate() + (plan.frecuencia_dias || 30));
+    const proximaStr = proxima.toISOString().split("T")[0];
+    await supabase.from(st("planes_preventivos")).update({
+      ultima_fecha: hoyDate,
+      proxima_fecha: proximaStr,
+    }).eq("id", plan.id);
+    setCompletando(null);
+    loadData();
+  }
+
+  async function toggleMonthStatus(monthEntry) {
+    const newStatus = monthEntry.status === "completado" ? "pendiente" : "completado";
+    await supabase.from(st("maintenance_schedule_months")).update({ status: newStatus }).eq("id", monthEntry.id);
+    setCronogramaAnual(prev => prev.map(item => ({
+      ...item,
+      maintenance_schedule_months: item.maintenance_schedule_months?.map(m =>
+        m.id === monthEntry.id ? { ...m, status: newStatus } : m
+      )
+    })));
+  }
 
   async function savePlan() {
     if (!form.activo_id || !form.proxima_fecha) return alert("Activo y Fecha son obligatorios");
@@ -116,31 +200,13 @@ export default function PlanMaestro() {
 
   async function syncWithMotor() {
     if (!cronogramaAnual.length) return;
-    if (!confirm("¿Deseas sincronizar los equipos del cronograma con el Motor Automático? Esto creará o actualizará los planes preventivos según la frecuencia del Excel.")) return;
-    
+    if (!confirm("¿Deseas sincronizar los equipos del cronograma con el Motor Automático?")) return;
     setSyncing(true);
     try {
-      // Re-importar lógica de sincronización (usando la API que acabamos de actualizar)
-      const { saveScheduleToSupabase } = await import("../api/supabaseMaintenanceSchedule");
-      
-      // Mapear cronogramaAnual de vuelta al formato que espera el save
-      const rows = cronogramaAnual.map(c => ({
-        codigo_equipo:    c.equipment_code,
-        nombre_equipo:    c.equipment_name,
-        tarea_realizar:   c.task_description,
-        semana_programada: c.scheduled_week,
-        frecuencia_meses: c.frequency_months,
-        mes_base:         c.base_month,
-        meses_programados: [] // No necesitamos re-insertar meses
-      }));
-
-      // Usamos una versión "light" del save que solo sincroniza con planes_preventivos
-      // Para simplificar, simplemente llamaremos a una nueva función de API que crearé
       const { syncAllSchedulesWithMotor } = await import("../api/supabaseMaintenanceSchedule");
       const result = await syncAllSchedulesWithMotor(selectedYear);
-      
       if (result.matched === 0) {
-        alert("Atención: No se encontró ningún activo en la base de datos que coincida con los códigos del cronograma. Asegúrate de importar primero los activos.");
+        alert("Atención: No se encontró ningún activo coincidente. Importa primero los activos.");
       } else {
         alert(`¡Sincronización completada!\n\n- Equipos vinculados: ${result.matched}\n- Planes creados/actualizados: ${result.updated}\n- No encontrados: ${result.missing}`);
         setActiveTab("auto");
@@ -153,19 +219,34 @@ export default function PlanMaestro() {
     }
   }
 
-  function openEdit(plan) {
-    setForm({ ...plan });
-    setShowModal(true);
-  }
-
+  function openEdit(plan) { setForm({ ...plan }); setShowModal(true); }
   function resetForm() {
     setForm({ activo_id: "", frecuencia_dias: 30, proxima_fecha: new Date().toISOString().split("T")[0], descripcion_tarea: "", activo: true });
   }
 
-  const diasRestantes = (fecha) => {
-    const diff = Math.ceil((new Date(fecha) - new Date()) / (1000 * 60 * 60 * 24));
-    return diff;
-  };
+  const diasRestantes = (fecha) => Math.ceil((new Date(fecha) - new Date()) / (1000 * 60 * 60 * 24));
+
+  // ── Cronograma Anual filtrado ──
+  const cronogramaFiltrado = useMemo(() => {
+    return cronogramaAnual.filter(item => {
+      const matchText = !filtroTexto || (
+        item.equipment_name?.toLowerCase().includes(filtroTexto.toLowerCase()) ||
+        item.equipment_code?.toLowerCase().includes(filtroTexto.toLowerCase()) ||
+        item.task_description?.toLowerCase().includes(filtroTexto.toLowerCase())
+      );
+      if (!matchText) return false;
+
+      if (filtroMesAnual !== "todos") {
+        const mesNum = parseInt(filtroMesAnual);
+        return item.maintenance_schedule_months?.some(m => m.month_number === mesNum);
+      }
+
+      if (filtroEstado !== "todos") {
+        return item.maintenance_schedule_months?.some(m => m.status.toLowerCase() === filtroEstado.toLowerCase());
+      }
+      return true;
+    });
+  }, [cronogramaAnual, filtroTexto, filtroEstado, filtroMesAnual]);
 
   return (
     <>
@@ -186,18 +267,15 @@ export default function PlanMaestro() {
           </div>
         </header>
 
-        {/* TABS SELECTOR */}
+        {/* TABS */}
         <div className="pm-tabs">
-          <button 
-            className={`pm-tab ${activeTab === "auto" ? "active" : ""}`} 
-            onClick={() => setActiveTab("auto")}
-          >
+          <button className={`pm-tab ${activeTab === "auto" ? "active" : ""}`} onClick={() => setActiveTab("auto")}>
             ⚙️ Motor Automático
           </button>
-          <button 
-            className={`pm-tab ${activeTab === "anual" ? "active" : ""}`} 
-            onClick={() => setActiveTab("anual")}
-          >
+          <button className={`pm-tab ${activeTab === "semanal" ? "active" : ""}`} onClick={() => setActiveTab("semanal")}>
+            📆 Vista Semanal
+          </button>
+          <button className={`pm-tab ${activeTab === "anual" ? "active" : ""}`} onClick={() => setActiveTab("anual")}>
             📅 Cronograma Anual {selectedYear}
           </button>
         </div>
@@ -205,8 +283,9 @@ export default function PlanMaestro() {
         {loading ? (
           <div className="mant-loading-state">Cargando datos...</div>
         ) : activeTab === "auto" ? (
+
+          /* ══ TAB: MOTOR AUTOMÁTICO ══ */
           <>
-            {/* STATS (only for auto) */}
             <div className="pm-stats-row">
               <div className="pm-stat-card pm-vencidos">
                 <span className="pm-stat-num">{stats.vencidos}</span>
@@ -227,24 +306,47 @@ export default function PlanMaestro() {
               </div>
             </div>
 
-            {/* ALERTA VENCIDOS */}
             {stats.vencidos > 0 && (
               <div className="pm-alert-banner">
-                <span>⚠️ Hay <strong>{stats.vencidos} plan{stats.vencidos !== 1 ? "es" : ""}</strong> con fecha vencida. Use "Procesar Pendientes" para generar las órdenes de trabajo automáticamente.</span>
+                ⚠️ Hay <strong>{stats.vencidos} plan{stats.vencidos !== 1 ? "es" : ""}</strong> vencidos. Use "Procesar Pendientes" para generar órdenes de trabajo automáticamente.
               </div>
             )}
 
-            {planes.length === 0 ? (
+            {/* Filtros Motor Automático */}
+            <div className="pm-filter-bar">
+              <div className="pm-filter-group">
+                <label>Mes:</label>
+                <select className="v2-select" value={filtroMes} onChange={e => setFiltroMes(e.target.value)}>
+                  <option value="todos">Todos los meses</option>
+                  {MESES.map((m, i) => <option key={i} value={i}>{m}</option>)}
+                </select>
+              </div>
+              <div className="pm-filter-group">
+                <label>Estado:</label>
+                <select className="v2-select" value={filtroEstadoAuto} onChange={e => setFiltroEstadoAuto(e.target.value)}>
+                  <option value="todos">Todos</option>
+                  <option value="vencido">⚠️ Vencidos</option>
+                  <option value="proximo">⏳ Próximos 7 días</option>
+                  <option value="ok">✅ Al día</option>
+                </select>
+              </div>
+              {(filtroMes !== "todos" || filtroEstadoAuto !== "todos") && (
+                <span className="pm-filter-count">{planesFiltrados.length} plan{planesFiltrados.length !== 1 ? "es" : ""}</span>
+              )}
+            </div>
+
+            {planesFiltrados.length === 0 ? (
               <div className="empty-state" style={{ marginTop: "40px" }}>
                 <div className="empty-state-icon">📅</div>
-                <p>No hay planes preventivos programados</p>
+                <p>{planes.length === 0 ? "No hay planes preventivos programados" : "No hay planes con estos filtros"}</p>
               </div>
             ) : (
               <div className="pm-grid">
-                {planes.map(p => {
+                {planesFiltrados.map(p => {
                   const dias = diasRestantes(p.proxima_fecha);
                   const isVencido = dias <= 0;
                   const isProximo = dias > 0 && dias <= 7;
+                  const isCompletandoEste = completando === p.id;
                   return (
                     <div key={p.id} className={`pm-card ${isVencido ? "pm-card-vencido" : isProximo ? "pm-card-proximo" : ""}`}>
                       {isVencido && <div className="pm-vencido-stripe"></div>}
@@ -273,6 +375,14 @@ export default function PlanMaestro() {
                           `⏳ En ${dias} día${dias !== 1 ? "s" : ""}`}
                       </div>
                       <div className="pm-card-footer">
+                        <button
+                          className="mini-btn mini-btn-complete"
+                          onClick={() => completarPlan(p)}
+                          disabled={isCompletandoEste}
+                          title="Marcar como completado y avanzar fecha"
+                        >
+                          {isCompletandoEste ? "..." : "✓ Completar"}
+                        </button>
                         <button className="mini-btn" onClick={() => openEdit(p)}>✏️ Editar</button>
                         <button className="mini-btn" style={{ color: "#ef4444", borderColor: "#fecaca" }} onClick={() => deletePlan(p.id)}>🗑️</button>
                       </div>
@@ -282,56 +392,126 @@ export default function PlanMaestro() {
               </div>
             )}
           </>
-        ) : (
-          /* TAB CRONOGRAMA ANUAL */
-          <div className="anual-container">
-            <div className="anual-filters" style={{ justifyContent: "space-between" }}>
-              <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+
+        ) : activeTab === "semanal" ? (
+
+          /* ══ TAB: VISTA SEMANAL ══ */
+          <div className="pm-semanal-container">
+            <div className="pm-semanal-header">
+              <div className="pm-filter-group">
+                <label>Mes:</label>
+                <select className="v2-select" value={semanalMes} onChange={e => setSemanalMes(parseInt(e.target.value))}>
+                  {MESES.map((m, i) => <option key={i} value={i}>{m}</option>)}
+                </select>
+              </div>
+              <div className="pm-filter-group">
                 <label>Año:</label>
-                <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} className="v2-select" style={{ width: "100px" }}>
+                <select className="v2-select" value={semanalAnio} onChange={e => setSemanalAnio(parseInt(e.target.value))}>
                   {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
                 </select>
               </div>
+              <span className="pm-semanal-titulo">{MESES[semanalMes]} {semanalAnio}</span>
+            </div>
 
+            {semanasPorMes.every(s => s.tareas.length === 0) ? (
+              <div className="empty-state" style={{ marginTop: "40px" }}>
+                <div className="empty-state-icon">📆</div>
+                <p>No hay preventivos programados para {MESES[semanalMes]} {semanalAnio}</p>
+              </div>
+            ) : (
+              <div className="pm-semanas-grid">
+                {semanasPorMes.map(semana => (
+                  <div key={semana.num} className="pm-semana-col">
+                    <div className="pm-semana-header">
+                      <span className="pm-semana-num">Semana {semana.num}</span>
+                      <span className="pm-semana-rango">
+                        {new Date(semana.inicio + "T00:00:00").toLocaleDateString("es-CO", { day: "numeric", month: "short" })} —{" "}
+                        {new Date(semana.fin + "T00:00:00").toLocaleDateString("es-CO", { day: "numeric", month: "short" })}
+                      </span>
+                      <span className="pm-semana-badge">{semana.tareas.length} tarea{semana.tareas.length !== 1 ? "s" : ""}</span>
+                    </div>
+                    <div className="pm-semana-tareas">
+                      {semana.tareas.length === 0 ? (
+                        <div className="pm-semana-empty">Sin preventivos esta semana</div>
+                      ) : semana.tareas.map(p => {
+                        const dias = diasRestantes(p.proxima_fecha);
+                        const isVencido = dias <= 0;
+                        return (
+                          <div key={p.id} className={`pm-semana-tarea ${isVencido ? "tarea-vencida" : ""}`}>
+                            <div className="pm-semana-tarea-top">
+                              <span className={`v2-crit-badge crit-${p.activos?.criticidad?.toLowerCase() || "baja"}`} style={{ fontSize: "0.65rem", padding: "2px 7px" }}>
+                                {p.activos?.criticidad || "Baja"}
+                              </span>
+                              <span className="pm-semana-fecha">{p.proxima_fecha}</span>
+                            </div>
+                            <p className="pm-semana-equipo">{p.activos?.nombre || "Equipo"}</p>
+                            <p className="pm-semana-desc">{p.descripcion_tarea || "Sin descripción"}</p>
+                            <div className="pm-semana-actions">
+                              <button
+                                className="mini-btn mini-btn-complete"
+                                style={{ fontSize: "0.72rem", padding: "4px 10px" }}
+                                onClick={() => completarPlan(p)}
+                                disabled={completando === p.id}
+                              >
+                                {completando === p.id ? "..." : "✓ Completar"}
+                              </button>
+                              <button
+                                className="mini-btn"
+                                style={{ fontSize: "0.72rem", padding: "4px 10px" }}
+                                onClick={() => openEdit(p)}
+                              >
+                                ✏️
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+        ) : (
+
+          /* ══ TAB: CRONOGRAMA ANUAL ══ */
+          <div className="anual-container">
+            <div className="anual-filters" style={{ flexWrap: "wrap", gap: "12px" }}>
               <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-                <div className="mant-search-wrap" style={{ width: "250px" }}>
-                  <span className="search-icon">🔍</span>
-                  <input 
-                    className="mant-search-input" 
-                    placeholder="Buscar equipo o tarea..." 
-                    value={filtroTexto} 
-                    onChange={e => setFiltroTexto(e.target.value)} 
-                  />
-                </div>
-                <select 
-                  className="v2-select" 
-                  style={{ width: "150px" }} 
-                  value={filtroEstado} 
-                  onChange={e => setFiltroEstado(e.target.value)}
-                >
-                  <option value="todos">Todos los estados</option>
-                  <option value="completado">Completados ✓</option>
-                  <option value="pendiente">Pendientes P</option>
-                  <option value="vencido">Vencidos !</option>
+                <label>Año:</label>
+                <select value={selectedYear} onChange={e => setSelectedYear(e.target.value)} className="v2-select" style={{ width: "100px" }}>
+                  {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
                 </select>
               </div>
-              
+              <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                <label>Mes:</label>
+                <select className="v2-select" style={{ width: "140px" }} value={filtroMesAnual} onChange={e => setFiltroMesAnual(e.target.value)}>
+                  <option value="todos">Todos los meses</option>
+                  {MESES.map((m, i) => <option key={i+1} value={i+1}>{m}</option>)}
+                </select>
+              </div>
+              <div className="mant-search-wrap" style={{ width: "220px" }}>
+                <span className="search-icon">🔍</span>
+                <input className="mant-search-input" placeholder="Buscar equipo o tarea..." value={filtroTexto} onChange={e => setFiltroTexto(e.target.value)} />
+              </div>
+              <select className="v2-select" style={{ width: "160px" }} value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)}>
+                <option value="todos">Todos los estados</option>
+                <option value="completado">Completados ✓</option>
+                <option value="pendiente">Pendientes</option>
+                <option value="vencido">Vencidos !</option>
+              </select>
               {cronogramaAnual.length > 0 && (
-                <button 
-                  className="mant-btn-action success" 
-                  style={{ fontSize: "0.8rem", padding: "8px 16px" }}
-                  onClick={syncWithMotor}
-                  disabled={syncing}
-                >
-                  {syncing ? "Sincronizando..." : "🔄 Sincronizar con Motor Automático"}
+                <button className="mant-btn-action success" style={{ fontSize: "0.8rem", padding: "8px 16px" }} onClick={syncWithMotor} disabled={syncing}>
+                  {syncing ? "Sincronizando..." : "🔄 Sincronizar con Motor"}
                 </button>
               )}
             </div>
 
             {cronogramaAnual.length > 0 && (
               <div className="anual-legend">
-                <span className="legend-item"><span className="dot p"></span> Programado</span>
-                <span className="legend-item"><span className="dot c"></span> Completado</span>
+                <span className="legend-item"><span className="dot p"></span> Programado (click para completar)</span>
+                <span className="legend-item"><span className="dot c"></span> Completado (click para revertir)</span>
                 <span className="legend-item"><span className="dot v"></span> Vencido</span>
               </div>
             )}
@@ -344,7 +524,39 @@ export default function PlanMaestro() {
                   📥 Importar Cronograma Excel
                 </button>
               </div>
+            ) : filtroMesAnual !== "todos" ? (
+              /* Vista mes detallado: tarjetas */
+              <div className="anual-mes-detalle">
+                <h3 className="anual-mes-titulo">{MESES[parseInt(filtroMesAnual) - 1]} {selectedYear} — {cronogramaFiltrado.length} equipo{cronogramaFiltrado.length !== 1 ? "s" : ""}</h3>
+                <div className="anual-mes-grid">
+                  {cronogramaFiltrado.map(item => {
+                    const mesEntry = item.maintenance_schedule_months?.find(m => m.month_number === parseInt(filtroMesAnual));
+                    if (!mesEntry) return null;
+                    const isCompletado = mesEntry.status === "completado";
+                    return (
+                      <div key={item.id} className={`anual-mes-card ${isCompletado ? "anual-mes-completado" : "anual-mes-pendiente"}`}>
+                        <div className="anual-mes-card-top">
+                          <span className="codigo-cell">{item.equipment_code}</span>
+                          <button
+                            className={`anual-estado-btn ${isCompletado ? "estado-completado" : "estado-pendiente"}`}
+                            onClick={() => toggleMonthStatus(mesEntry)}
+                            title={isCompletado ? "Marcar como pendiente" : "Marcar como completado"}
+                          >
+                            {isCompletado ? "✓ Completado" : "○ Pendiente"}
+                          </button>
+                        </div>
+                        <p className="anual-mes-equipo">{item.equipment_name}</p>
+                        <p className="anual-mes-tarea">{item.task_description || "—"}</p>
+                        {mesEntry.scheduled_week && (
+                          <span className="anual-mes-semana">Semana {mesEntry.scheduled_week}</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             ) : (
+              /* Vista tabla anual (12 meses) */
               <div className="anual-table-wrapper">
                 <table className="anual-table">
                   <thead>
@@ -352,38 +564,29 @@ export default function PlanMaestro() {
                       <th>Código</th>
                       <th>Equipo</th>
                       <th>Tarea</th>
-                      {["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"].map(m => (
-                        <th key={m} className="month-col">{m}</th>
+                      {MESES_CORTO.map((m, i) => (
+                        <th key={m} className={`month-col ${(i + 1) === new Date().getMonth() + 1 ? "month-col-current" : ""}`}>{m}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {cronogramaAnual
-                      .filter(item => {
-                        const matchText = (item.equipment_name?.toLowerCase().includes(filtroTexto.toLowerCase()) || 
-                                           item.equipment_code?.toLowerCase().includes(filtroTexto.toLowerCase()) ||
-                                           item.task_description?.toLowerCase().includes(filtroTexto.toLowerCase()));
-                        
-                        if (filtroEstado === "todos") return matchText;
-                        
-                        const hasStatus = item.maintenance_schedule_months?.some(m => m.status.toLowerCase() === filtroEstado.toLowerCase());
-                        return matchText && hasStatus;
-                      })
-                      .map(item => (
+                    {cronogramaFiltrado.map(item => (
                       <tr key={item.id}>
                         <td className="codigo-cell">{item.equipment_code}</td>
                         <td className="nombre-cell">{item.equipment_name}</td>
                         <td className="tarea-cell" title={item.task_description}>{item.task_description || "—"}</td>
-                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(m => {
+                        {[1,2,3,4,5,6,7,8,9,10,11,12].map(m => {
                           const scheduled = item.maintenance_schedule_months?.find(mon => mon.month_number === m);
                           if (!scheduled) return <td key={m} className="month-col empty"></td>;
-                          
                           const statusClass = scheduled.status.toLowerCase();
                           const statusIcon = statusClass === "completado" ? "✓" : statusClass === "vencido" ? "!" : "P";
-                          
                           return (
                             <td key={m} className={`month-col has-plan ${statusClass}`}>
-                              <div className={`scheduled-badge ${statusClass}`} title={`${scheduled.month_name}: ${scheduled.status}`}>
+                              <div
+                                className={`scheduled-badge ${statusClass} badge-clickable`}
+                                title={`${scheduled.month_name || MESES[m-1]}: ${scheduled.status} — Click para cambiar`}
+                                onClick={() => statusClass !== "vencido" && toggleMonthStatus(scheduled)}
+                              >
                                 {statusIcon}
                               </div>
                             </td>
@@ -398,7 +601,7 @@ export default function PlanMaestro() {
           </div>
         )}
 
-        {/* MODAL */}
+        {/* MODAL PROGRAMAR / EDITAR */}
         {showModal && (
           <div className="mant-modal-overlay-v2" onClick={() => { setShowModal(false); resetForm(); }}>
             <div className="mant-modal-content-centered" onClick={e => e.stopPropagation()}>
@@ -432,7 +635,7 @@ export default function PlanMaestro() {
                   <label>Descripción de Tareas Preventivas</label>
                   <textarea className="v2-input" rows={4} value={form.descripcion_tarea}
                     onChange={e => setForm({ ...form, descripcion_tarea: e.target.value })}
-                    placeholder="Ej: Cambio de lubricante, limpieza de filtros HEPA, ajuste de correas, calibración de sensores..." />
+                    placeholder="Ej: Cambio de lubricante, limpieza de filtros HEPA, ajuste de correas..." />
                 </div>
                 <div className="v2-form-group">
                   <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}>
