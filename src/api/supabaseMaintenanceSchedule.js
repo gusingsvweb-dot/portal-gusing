@@ -195,9 +195,9 @@ export async function syncAllSchedulesWithMotor(year) {
 
     result.matched++;
 
-    // Calcular fecha base: día 15 del mes base del año seleccionado
+    // Calcular fecha base: día 15 del mes base del año seleccionado (T12 para estabilidad)
     const monthIndex = MONTH_MAP[row.base_month] ?? 0;
-    const baseDate = new Date(year, monthIndex, 15);
+    const baseDate = new Date(year, monthIndex, 15, 12, 0, 0);
     
     // Si la fecha base ya pasó, calculamos la siguiente según frecuencia
     const frequencyMonths = parseInt(row.frequency_months) || 1;

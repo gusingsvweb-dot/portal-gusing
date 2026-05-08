@@ -138,22 +138,21 @@ export default function PlanMaestro() {
         // 2. Proyecciones si estamos viendo el futuro
         const freq = p.frecuencia_dias || 30;
         if (freq > 0) {
-          let tempDate = new Date(p.proxima_fecha + "T00:00:00");
+          let tempDate = new Date(p.proxima_fecha + "T12:00:00");
           const weekStart = new Date(inicioStr + "T00:00:00");
-          const weekEnd = new Date(finStr + "T00:00:00");
+          const weekEnd = new Date(finStr + "T23:59:59");
 
-          // Si la proxima_fecha oficial ya pasó la semana, no proyectamos hacia atrás
           if (tempDate > weekEnd) return occurrences;
 
-          // Avanzar tempDate hasta que entre en el rango de la semana o lo pase
-          while (tempDate < weekStart) {
+          let safeGuard = 0;
+          while (tempDate < weekStart && safeGuard < 100) {
               tempDate.setDate(tempDate.getDate() + freq);
+              safeGuard++;
           }
 
-          // Si la recurrencia proyectada cae en esta semana y NO es la proxima_fecha oficial
           if (tempDate >= weekStart && tempDate <= weekEnd) {
               const tempStr = tempDate.toISOString().split("T")[0];
-              if (tempStr !== p.proxima_fecha) {
+              if (tempStr !== p.proxima_fecha && tempStr !== p.ultima_fecha) {
                   occurrences.push({...p, proxima_fecha: tempStr, isProjection: true});
               }
           }
