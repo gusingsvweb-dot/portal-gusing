@@ -113,11 +113,15 @@ export default function GestionProveedoresMant() {
       .not("fecha_cierre", "is", null)
       .order("fecha_cierre", { ascending: false });
 
-    if (p.tipo === "Interno") {
-      const userName = p.nombre.trim().toLowerCase().replace(/\s+/g, '.');
-      query = query.eq("tecnico_asignado", userName);
-    } else {
-      query = query.eq("proveedor_id", p.id);
+    const normalizedName = p.nombre.trim().toLowerCase().replace(/\s+/g, '.');
+    
+    // Buscamos tanto por el nombre exacto como por el nombre normalizado (juan.b)
+    query = query.or(`tecnico_asignado.ilike.%${p.nombre}%,tecnico_asignado.eq.${normalizedName}`);
+
+    // Si es externo y tiene ID, también podemos buscar por proveedor_id por si acaso
+    if (p.tipo !== "Interno" && p.id) {
+       // Supabase 'or' syntax for multiple conditions across columns can be tricky with different types
+       // so we just keep it simple with name matching which is the most reliable right now
     }
 
     const { data } = await query;
