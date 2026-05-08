@@ -130,7 +130,7 @@ export default function Mantenimiento() {
       );
     }
     return res;
-  }, [solicitudes, filtro, filtroTecnico]);
+  }, [solicitudes, filtro, filtroTecnico, filtroProveedor]);
 
   const openModal = async (s) => {
     setSelected(s);
