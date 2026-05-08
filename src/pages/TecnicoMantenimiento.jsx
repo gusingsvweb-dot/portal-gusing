@@ -38,7 +38,7 @@ export default function TecnicoMantenimiento() {
         { data: actRaw },
         { data: repsRaw }
       ] = await Promise.all([
-        supabase.from(st("solicitudes")).select("*").eq("area_id", 1).order("id", { ascending: false }),
+        supabase.from(st("solicitudes")).select("*").order("id", { ascending: false }),
         supabase.from(st("tipos_solicitud")).select("*"),
         supabase.from(st("prioridades")).select("*"),
         supabase.from(st("estados")).select("*"),
