@@ -64,45 +64,49 @@ export default function CamposDinamicos({ tipo, areaId, form, setForm }) {
             </div>
           )}
 
-          {/* 3. EQUIPO (Filtrado por Categoría) */}
+          {/* 3. EQUIPO / INSTALACIÓN (Dinámico por Categoría) */}
           {form.maint_category && form.maint_type && (
             <div className="dynamic-maint-fields" style={{ animation: "fadeIn 0.3s ease" }}>
               <label style={{ display: "block", marginBottom: "6px", fontWeight: "700", fontSize: "0.85rem", color: "#1e40af" }}>
                 3. Vincular Equipo / Instalación Específica (Obligatorio) ⚙️
               </label>
-              <select
-                value={form.activo_id || ""}
-                onChange={(e) => setForm({ ...form, activo_id: e.target.value })}
-                required
-                style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1", background: "white" }}
-              >
-                <option value="">Seleccione el equipo, área o computador...</option>
-                {activos
-                  .filter((a) => a.tipo === form.maint_category)
-                  .map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.nombre} {a.codigo ? `(${a.codigo})` : ""}
-                    </option>
-                  ))}
-              </select>
-              <p style={{ fontSize: "0.75rem", color: "#64748b", marginTop: "5px" }}>
-                * Mostrando solo equipos de la categoría: {form.maint_category}
-              </p>
-            </div>
-          )}
-
-          {/* 4. FECHA SUGERIDA (Solo para Instalaciones) */}
-          {form.maint_category === "Instalación" && (
-            <div style={{ animation: "fadeIn 0.3s ease" }}>
-              <label style={{ display: "block", marginBottom: "6px", fontWeight: "700", fontSize: "0.85rem", color: "#1e40af" }}>
-                4. ¿Para cuándo se requiere la intervención? (Programación sugerida) 📅
-              </label>
-              <input 
-                type="date"
-                value={form.fecha_sugerida || ""}
-                onChange={(e) => setForm({ ...form, fecha_sugerida: e.target.value })}
-                style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1" }}
-              />
+              
+              {form.maint_category === "Instalación" ? (
+                <>
+                  <input
+                    type="text"
+                    value={form.instalacion_desc || ""}
+                    onChange={(e) => setForm({ ...form, instalacion_desc: e.target.value })}
+                    placeholder="Escriba aquí la instalación o ubicación exacta..."
+                    required
+                    style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1" }}
+                  />
+                  <p style={{ fontSize: "0.75rem", color: "#64748b", marginTop: "5px" }}>
+                    * Especifique el lugar físico donde se requiere el mantenimiento.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <select
+                    value={form.activo_id || ""}
+                    onChange={(e) => setForm({ ...form, activo_id: e.target.value })}
+                    required
+                    style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1", background: "white" }}
+                  >
+                    <option value="">Seleccione el equipo o computador...</option>
+                    {activos
+                      .filter((a) => a.tipo === form.maint_category)
+                      .map((a) => (
+                        <option key={a.id} value={a.id}>
+                          {a.nombre} {a.codigo ? `(${a.codigo})` : ""}
+                        </option>
+                      ))}
+                  </select>
+                  <p style={{ fontSize: "0.75rem", color: "#64748b", marginTop: "5px" }}>
+                    * Mostrando solo equipos de la categoría: {form.maint_category}
+                  </p>
+                </>
+              )}
             </div>
           )}
         </div>

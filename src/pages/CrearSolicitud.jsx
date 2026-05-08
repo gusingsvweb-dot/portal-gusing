@@ -22,7 +22,7 @@ export default function CrearSolicitud() {
     activo_id: "", 
     maint_category: "", // Nuevo para jerarquía
     maint_type: "",      // Nuevo para jerarquía
-    fecha_sugerida: "",  // Nuevo para instalaciones
+    instalacion_desc: "", // Input libre para instalaciones
   });
 
   const [loading, setLoading] = useState(false);
@@ -66,8 +66,14 @@ export default function CrearSolicitud() {
   async function enviarSolicitud() {
     // Validación obligatoria de jerarquía para Mantenimiento (Area ID 1)
     if (Number(form.area_id) === 1) {
-      if (!form.maint_category || !form.maint_type || !form.activo_id) {
-        return setMensaje("⚠️ Para mantenimiento debes seleccionar Categoría, Tipo y Equipo.");
+      if (!form.maint_category || !form.maint_type) {
+        return setMensaje("⚠️ Para mantenimiento debes seleccionar Categoría y Tipo.");
+      }
+      if (form.maint_category !== "Instalación" && !form.activo_id) {
+        return setMensaje("⚠️ Debes seleccionar el equipo a vincular.");
+      }
+      if (form.maint_category === "Instalación" && !form.instalacion_desc.trim()) {
+        return setMensaje("⚠️ Debes escribir la instalación o lugar a intervenir.");
       }
     } else if (!form.tipo_solicitud_id) {
       // Para otras áreas, el tipo estándar es obligatorio
@@ -104,8 +110,8 @@ export default function CrearSolicitud() {
       if (mapped) finalTipoId = mapped.id;
       
       // Enriquecer descripción
-      const extraFecha = form.fecha_sugerida ? `\n[FECHA SUGERIDA: ${form.fecha_sugerida}]` : "";
-      finalDesc = `[${form.maint_category.toUpperCase()} - ${form.maint_type.toUpperCase()}]${extraFecha}\n${form.descripcion}`;
+      const extraInst = form.maint_category === "Instalación" ? `\n[INSTALACIÓN: ${form.instalacion_desc}]` : "";
+      finalDesc = `[${form.maint_category.toUpperCase()} - ${form.maint_type.toUpperCase()}]${extraInst}\n${form.descripcion}`;
     }
 
     // 3. Insertar solicitud
@@ -140,7 +146,7 @@ export default function CrearSolicitud() {
       prioridad_id: "",
       descripcion: "",
       activo_id: "",
-      fecha_sugerida: "",
+      instalacion_desc: "",
     });
   }
 
