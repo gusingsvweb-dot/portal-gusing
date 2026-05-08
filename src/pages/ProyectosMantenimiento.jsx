@@ -27,7 +27,6 @@ export default function ProyectosMantenimiento() {
   const loadProyectos = async () => {
     setLoading(true);
     try {
-      // Usar st() para soporte de ambiente oficial/no oficial
       const { data, error } = await supabase
         .from(st("proyectos_mant"))
         .select(`*, tareas_proyecto_mant: ${st("tareas_proyecto_mant")}(*)`)
@@ -85,10 +84,11 @@ export default function ProyectosMantenimiento() {
 
       if (error) throw error;
 
-      // Update local state for immediate UI feedback
+      // Actualizar estado local
+      const updatedData = data[0];
       const updatedProyectos = proyectos.map(p => {
         if (p.id === selectedProyecto.id) {
-          const updatedTareas = [...(p.tareas_proyecto_mant || []), data[0]];
+          const updatedTareas = [...(p.tareas_proyecto_mant || []), updatedData];
           const pData = { ...p, tareas_proyecto_mant: updatedTareas };
           setSelectedProyecto(pData);
           return pData;
@@ -112,7 +112,6 @@ export default function ProyectosMantenimiento() {
 
       if (error) throw error;
 
-      // Update local state
       const updatedProyectos = proyectos.map(p => {
         if (p.id === selectedProyecto.id) {
           const updatedTareas = p.tareas_proyecto_mant.map(t => t.id === tarea.id ? { ...t, completada: newState } : t);
@@ -123,8 +122,6 @@ export default function ProyectosMantenimiento() {
         return p;
       });
       setProyectos(updatedProyectos);
-      
-      // Auto-update project state if all tasks are done
       checkProjectCompletion(selectedProyecto.id, updatedProyectos);
     } catch (err) {
       console.error(err);
@@ -145,11 +142,12 @@ export default function ProyectosMantenimiento() {
     
     if (newState !== proj.estado) {
         await supabase.from(st("proyectos_mant")).update({ estado: newState }).eq("id", projectId);
-        loadProyectos(); // reload to get new state
+        loadProyectos(); 
     }
   };
 
   const deleteTarea = async (tareaId) => {
+    if (!confirm("¿Eliminar esta subtarea?")) return;
     try {
       await supabase.from(st("tareas_proyecto_mant")).delete().eq("id", tareaId);
       const updatedProyectos = proyectos.map(p => {
@@ -175,67 +173,70 @@ export default function ProyectosMantenimiento() {
 
   return (
     <>
-      <Navbar rol="mantenimiento" />
-      <div className="mant-layout">
-        <header className="mant-header">
+      <Navbar />
+      <div className="mant-container">
+        <header className="mant-header-section">
           <div>
-            <h1 className="mant-title">Proyectos de Mantenimiento</h1>
-            <p className="mant-subtitle">Gestión de proyectos, subtareas y seguimiento de avance</p>
+            <h2 className="mant-title">Gestión de Proyectos</h2>
+            <p className="mant-subtitle">Seguimiento de obras, mejoras y proyectos de mantenimiento — {proyectos.length} activos</p>
           </div>
-          <div className="mant-hero-img-container">
-            <img src="/mantenimiento_hero.png" alt="Mantenimiento" className="mant-hero-mini-img" />
-          </div>
-          <div className="mant-nav-pills">
-            <button className="nav-pill" onClick={() => navigate("/mantenimiento/equipos")}>Equipos</button>
-            <button className="nav-pill" onClick={() => navigate("/mantenimiento/plan-maestro")}>Plan Maestro</button>
-            <button className="nav-pill" onClick={() => navigate("/mantenimiento/repuestos")}>Repuestos</button>
-            <button className="nav-pill active">Proyectos</button>
-            <button className="nav-pill" onClick={() => navigate("/mantenimiento/proveedores")}>Personal Técnico</button>
-            <button className="nav-pill kpi-pill" onClick={() => navigate("/kpis-mantenimiento")}>KPIs</button>
-            <button className="nav-pill" onClick={() => setShowCreateModal(true)}>+ Nuevo Proyecto</button>
-            <button className="nav-pill" onClick={() => navigate("/mantenimiento")} style={{ background: "#e2e8f0", color: "#334155" }}>Volver</button>
+          <div className="mant-actions-group">
+            <button className="mant-btn-action secondary" onClick={() => navigate("/mantenimiento")}>← Volver</button>
+            <button className="mant-btn-action primary" onClick={() => setShowCreateModal(true)}>+ Nuevo Proyecto</button>
           </div>
         </header>
 
-        {error && <div className="mant-error-banner">⚠️ {error}</div>}
+        {error && <div className="mant-error-banner" style={{ margin: "20px 0" }}>⚠️ {error}</div>}
 
         {loading ? (
-          <div style={{ textAlign: "center", padding: "50px", color: "#64748b" }}>Cargando proyectos...</div>
+          <div className="mant-loading-state">Cargando proyectos de mantenimiento...</div>
         ) : (
-          <div className="mant-board" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))" }}>
+          <div className="assets-grid-premium" style={{ marginTop: "30px" }}>
             {proyectos.map(p => {
               const avance = calcAvance(p.tareas_proyecto_mant);
               return (
-                <div key={p.id} className="mant-card" onClick={() => setSelectedProyecto(p)} style={{ cursor: "pointer", borderTop: avance === 100 ? "4px solid #10b981" : "4px solid #6366f1" }}>
-                  <div className="card-top">
-                    <span className="card-id-tag">PRJ-{p.id}</span>
-                    <span className={`card-prio-badge ${avance === 100 ? "prio-1" : avance > 0 ? "prio-2" : "prio-3"}`}>
+                <div key={p.id} className="asset-card-v2" onClick={() => setSelectedProyecto(p)}>
+                  <div className="card-v2-header">
+                    <span className="v2-id-tag">PRJ-{p.id}</span>
+                    <span className={`v2-type-badge`} style={{ 
+                        background: avance === 100 ? "#f0fdf4" : "#eff6ff", 
+                        color: avance === 100 ? "#166534" : "#1e40af" 
+                    }}>
                       {p.estado || "Planeado"}
                     </span>
                   </div>
-                  <h4 className="card-type" style={{ marginTop: "10px", fontSize: "1.1rem" }}>{p.nombre}</h4>
-                  <p className="card-desc" style={{ marginBottom: "15px" }}>{p.descripcion || "Sin descripción"}</p>
+                  <div className="card-v2-icon">{avance === 100 ? "✅" : "🚀"}</div>
+                  <h4 style={{ fontSize: "1.1rem", marginBottom: "8px" }}>{p.nombre}</h4>
+                  <p style={{ fontSize: "0.85rem", color: "#64748b", marginBottom: "15px", display: "-webkit-box", WebkitLineClamp: "2", WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                    {p.descripcion || "Sin descripción adicional"}
+                  </p>
                   
-                  <div className="card-meta" style={{ marginBottom: "15px" }}>
-                    <span className="card-meta-item">👤 {p.encargado || "Sin encargado"}</span>
-                    {p.fecha_fin && <span className="card-meta-item">📅 {new Date(p.fecha_fin).toLocaleDateString("es-CO")}</span>}
+                  <div className="v2-location-info" style={{ marginBottom: "12px" }}>
+                    👤 {p.encargado || "No asignado"}
                   </div>
 
-                  {/* Barra de progreso visual */}
-                  <div style={{ background: "#f1f5f9", borderRadius: "10px", height: "8px", width: "100%", overflow: "hidden", marginTop: "10px" }}>
-                    <div style={{ width: `${avance}%`, background: avance === 100 ? "#10b981" : "#6366f1", height: "100%", transition: "width 0.3s ease" }}></div>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", color: "#64748b", marginTop: "5px", fontWeight: "600" }}>
-                    <span>{p.tareas_proyecto_mant?.filter(t=>t.completada).length || 0} / {p.tareas_proyecto_mant?.length || 0} tareas</span>
-                    <span>{avance}% completado</span>
+                  <div className="card-v2-footer" style={{ flexDirection: "column", alignItems: "stretch", gap: "8px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", fontWeight: "bold" }}>
+                        <span style={{ color: "#64748b" }}>Progreso</span>
+                        <span style={{ color: "var(--mant-primary)" }}>{avance}%</span>
+                    </div>
+                    <div style={{ background: "#e2e8f0", height: "6px", borderRadius: "10px", overflow: "hidden" }}>
+                        <div style={{ width: `${avance}%`, background: avance === 100 ? "#10b981" : "var(--mant-primary)", height: "100%", transition: "width 0.4s ease" }}></div>
+                    </div>
+                    <div style={{ textAlign: "right", fontSize: "0.7rem", color: "#94a3b8", marginTop: "4px" }}>
+                        {p.tareas_proyecto_mant?.length || 0} tareas registradas
+                    </div>
                   </div>
                 </div>
-              )
+              );
             })}
             
             {proyectos.length === 0 && (
-                <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "50px", color: "#94a3b8" }}>
-                    No hay proyectos registrados. Crea uno nuevo para empezar.
+                <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "80px 20px", background: "#f8fafc", borderRadius: "20px", border: "2px dashed #e2e8f0" }}>
+                    <div style={{ fontSize: "3rem", marginBottom: "20px" }}>🏗️</div>
+                    <h3 style={{ color: "#64748b" }}>No hay proyectos aún</h3>
+                    <p style={{ color: "#94a3b8", marginBottom: "20px" }}>Comienza creando el primer proyecto de mejora o mantenimiento.</p>
+                    <button className="mant-btn-action primary" onClick={() => setShowCreateModal(true)}>+ Crear Proyecto</button>
                 </div>
             )}
           </div>
@@ -252,123 +253,114 @@ export default function ProyectosMantenimiento() {
             </div>
             <div className="modal-v2-body">
               <div className="v2-form-group">
-                <label>Nombre del Proyecto *</label>
-                <input className="v2-input" type="text" value={formProyecto.nombre} onChange={e => setFormProyecto({...formProyecto, nombre: e.target.value})} placeholder="Ej: Instalación de red eléctrica en Planta 2" />
+                <label>Nombre del Proyecto <span className="req">*</span></label>
+                <input className="v2-input" type="text" value={formProyecto.nombre} 
+                  onChange={e => setFormProyecto({...formProyecto, nombre: e.target.value})} 
+                  placeholder="Ej: Instalación de red eléctrica" />
               </div>
               <div className="v2-form-group">
-                <label>Descripción</label>
-                <textarea className="v2-input" rows="3" value={formProyecto.descripcion} onChange={e => setFormProyecto({...formProyecto, descripcion: e.target.value})} placeholder="Detalles del proyecto..." />
+                <label>Descripción General</label>
+                <textarea className="v2-input" rows="3" value={formProyecto.descripcion} 
+                  onChange={e => setFormProyecto({...formProyecto, descripcion: e.target.value})} 
+                  placeholder="Explica brevemente de qué trata el proyecto..." />
               </div>
               <div className="v2-form-row">
                 <div className="v2-form-group">
-                    <label>Líder / Encargado</label>
-                    <input className="v2-input" type="text" value={formProyecto.encargado} onChange={e => setFormProyecto({...formProyecto, encargado: e.target.value})} placeholder="Nombre del encargado" />
+                    <label>Encargado / Líder</label>
+                    <input className="v2-input" type="text" value={formProyecto.encargado} 
+                      onChange={e => setFormProyecto({...formProyecto, encargado: e.target.value})} 
+                      placeholder="Nombre del responsable" />
                 </div>
                 <div className="v2-form-group">
-                    <label>Fecha Límite</label>
-                    <input className="v2-input" type="date" value={formProyecto.fecha_fin} onChange={e => setFormProyecto({...formProyecto, fecha_fin: e.target.value})} />
+                    <label>Fecha Objetivo</label>
+                    <input className="v2-input" type="date" value={formProyecto.fecha_fin} 
+                      onChange={e => setFormProyecto({...formProyecto, fecha_fin: e.target.value})} />
                 </div>
               </div>
             </div>
             <div className="modal-v2-footer">
               <button className="v2-btn-secondary" onClick={() => setShowCreateModal(false)}>Cancelar</button>
-              <button className="v2-btn-primary" onClick={handleCreate} disabled={saving || !formProyecto.nombre}>Crear Proyecto</button>
+              <button className="v2-btn-primary" onClick={handleCreate} disabled={saving || !formProyecto.nombre}>
+                {saving ? "Creando..." : "Crear Proyecto"}
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* MODAL GESTIÓN DE TAREAS (PROYECTO) */}
+      {/* MODAL DETALLE / TAREAS */}
       {selectedProyecto && (
         <div className="mant-modal-overlay-v2" onClick={() => setSelectedProyecto(null)}>
-          <div className="mant-modal-content-centered" onClick={e => e.stopPropagation()} style={{ maxWidth: "600px" }}>
+          <div className="mant-modal-content-centered wide-v2" onClick={e => e.stopPropagation()}>
             <div className="modal-v2-header">
-              <div className="modal-title-wrap">
-                <span className={`modal-state-badge ${selectedProyecto.estado === 'Finalizado' ? 'state-14' : 'state-13'}`}>
-                  {selectedProyecto.estado?.toUpperCase() || 'PLANEADO'}
-                </span>
-                <h3>{selectedProyecto.nombre}</h3>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <span style={{ padding: "4px 10px", background: "#eff6ff", color: "#1e40af", borderRadius: "6px", fontSize: "0.75rem", fontWeight: "bold" }}>PRJ-{selectedProyecto.id}</span>
+                <h3 style={{ margin: 0 }}>{selectedProyecto.nombre}</h3>
               </div>
               <button className="close-btn-v2" onClick={() => setSelectedProyecto(null)}>✖</button>
             </div>
-            <div className="modal-v2-body">
-              
-              {/* Progreso General */}
-              {(() => {
-                const avance = calcAvance(selectedProyecto.tareas_proyecto_mant);
-                return (
-                  <div style={{ marginBottom: "20px", padding: "15px", background: "#f8fafc", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", fontWeight: "600", color: "#334155" }}>
-                      <span>Progreso del Proyecto</span>
-                      <span style={{ color: avance === 100 ? "#10b981" : "#6366f1" }}>{avance}%</span>
-                    </div>
-                    <div style={{ background: "#cbd5e1", borderRadius: "10px", height: "10px", width: "100%", overflow: "hidden" }}>
-                      <div style={{ width: `${avance}%`, background: avance === 100 ? "#10b981" : "#6366f1", height: "100%", transition: "width 0.4s cubic-bezier(0.4, 0, 0.2, 1)" }}></div>
-                    </div>
-                  </div>
-                )
-              })()}
+            <div className="modal-v2-body scroll-v2" style={{ maxHeight: "75vh" }}>
+              <div style={{ marginBottom: "25px", padding: "15px", background: "#f8fafc", borderRadius: "12px", border: "1px solid #e2e8f0" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                    <span style={{ fontSize: "0.9rem", fontWeight: "bold", color: "#475569" }}>Avance General</span>
+                    <span style={{ fontWeight: "bold", color: "var(--mant-primary)" }}>{calcAvance(selectedProyecto.tareas_proyecto_mant)}%</span>
+                </div>
+                <div style={{ background: "#cbd5e1", height: "10px", borderRadius: "10px", overflow: "hidden" }}>
+                    <div style={{ width: `${calcAvance(selectedProyecto.tareas_proyecto_mant)}%`, background: "var(--mant-primary)", height: "100%", transition: "width 0.5s ease" }}></div>
+                </div>
+              </div>
 
-              <div className="modal-section">
-                <span className="modal-section-label">Checklist de Subtareas</span>
-                
-                {/* Input para nueva tarea */}
-                <div style={{ display: "flex", gap: "10px", marginBottom: "15px" }}>
-                    <input 
-                        className="v2-input" 
-                        type="text" 
-                        value={nuevaTarea} 
-                        onChange={e => setNuevaTarea(e.target.value)} 
-                        placeholder="Añadir una nueva subtarea..." 
-                        onKeyDown={e => { if (e.key === 'Enter') addTarea(); }}
-                    />
-                    <button className="mant-btn-action primary" onClick={addTarea}>Agregar</button>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 280px", gap: "25px" }}>
+                {/* LISTA DE TAREAS */}
+                <div>
+                    <h4 style={{ marginBottom: "15px", color: "#334155" }}>📋 Subtareas y Actividades</h4>
+                    <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
+                        <input className="v2-input" placeholder="¿Qué sigue por hacer?" value={nuevaTarea} 
+                          onChange={e => setNuevaTarea(e.target.value)} onKeyDown={e => e.key === 'Enter' && addTarea()} />
+                        <button className="mant-btn-action primary" onClick={addTarea}>Añadir</button>
+                    </div>
+
+                    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                        {(!selectedProyecto.tareas_proyecto_mant || selectedProyecto.tareas_proyecto_mant.length === 0) ? (
+                            <p style={{ textAlign: "center", padding: "30px", color: "#94a3b8", border: "1px dashed #e2e8f0", borderRadius: "10px" }}>
+                                No hay tareas asignadas. Comienza añadiendo una arriba.
+                            </p>
+                        ) : (
+                            selectedProyecto.tareas_proyecto_mant.map(t => (
+                                <div key={t.id} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "12px", background: t.completada ? "#f0fdf4" : "#fff", border: "1px solid #e2e8f0", borderRadius: "10px" }}>
+                                    <input type="checkbox" checked={t.completada} onChange={() => toggleTarea(t)} style={{ width: "20px", height: "20px", cursor: "pointer" }} />
+                                    <span style={{ flex: 1, textDecoration: t.completada ? "line-through" : "none", color: t.completada ? "#94a3b8" : "#334155" }}>{t.nombre}</span>
+                                    <button onClick={() => deleteTarea(t.id)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.1rem" }}>🗑️</button>
+                                </div>
+                            ))
+                        )}
+                    </div>
                 </div>
 
-                {/* Lista de tareas */}
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "300px", overflowY: "auto", paddingRight: "5px" }}>
-                  {!selectedProyecto.tareas_proyecto_mant || selectedProyecto.tareas_proyecto_mant.length === 0 ? (
-                    <div style={{ textAlign: "center", padding: "20px", color: "#94a3b8", background: "#f8fafc", borderRadius: "8px" }}>
-                        No hay tareas en este proyecto aún.
-                    </div>
-                  ) : (
-                    selectedProyecto.tareas_proyecto_mant.map(t => (
-                        <div key={t.id} style={{ 
-                            display: "flex", alignItems: "center", gap: "10px", padding: "12px 15px", 
-                            background: t.completada ? "#f0fdf4" : "#ffffff", 
-                            border: t.completada ? "1px solid #bbf7d0" : "1px solid #e2e8f0", 
-                            borderRadius: "8px", transition: "all 0.2s ease" 
-                        }}>
-                            <input 
-                                type="checkbox" 
-                                checked={t.completada} 
-                                onChange={() => toggleTarea(t)}
-                                style={{ width: "18px", height: "18px", cursor: "pointer", accentColor: "#10b981" }}
-                            />
-                            <span style={{ 
-                                flex: 1, 
-                                fontSize: "0.95rem", 
-                                color: t.completada ? "#64748b" : "#334155",
-                                textDecoration: t.completada ? "line-through" : "none"
-                            }}>
-                                {t.nombre}
-                            </span>
-                            <button 
-                                onClick={() => deleteTarea(t.id)} 
-                                style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: "1.1rem", padding: "0 5px", opacity: 0.7 }}
-                                onMouseEnter={e => e.target.style.opacity = 1}
-                                onMouseLeave={e => e.target.style.opacity = 0.7}
-                            >
-                                ✖
-                            </button>
+                {/* INFO LATERAL */}
+                <div style={{ background: "#f8fafc", padding: "15px", borderRadius: "12px", border: "1px solid #e2e8f0", height: "fit-content" }}>
+                    <h4 style={{ fontSize: "0.9rem", marginBottom: "15px" }}>Información</h4>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "12px", fontSize: "0.85rem" }}>
+                        <div>
+                            <label style={{ color: "#64748b", display: "block" }}>Líder</label>
+                            <strong>{selectedProyecto.encargado || "No asignado"}</strong>
                         </div>
-                    ))
-                  )}
+                        <div>
+                            <label style={{ color: "#64748b", display: "block" }}>Fecha Estimada</label>
+                            <strong>{selectedProyecto.fecha_fin ? new Date(selectedProyecto.fecha_fin).toLocaleDateString() : "No definida"}</strong>
+                        </div>
+                        <div>
+                            <label style={{ color: "#64748b", display: "block" }}>Estado</label>
+                            <span style={{ color: "var(--mant-primary)", fontWeight: "bold" }}>{selectedProyecto.estado}</span>
+                        </div>
+                        <hr style={{ border: "0", borderTop: "1px solid #e2e8f0", margin: "10px 0" }} />
+                        <p style={{ fontStyle: "italic", color: "#64748b" }}>{selectedProyecto.descripcion || "Sin descripción."}</p>
+                    </div>
                 </div>
               </div>
             </div>
             <div className="modal-v2-footer">
-              <button className="mant-btn-action secondary" onClick={() => setSelectedProyecto(null)}>Cerrar Panel</button>
+              <button className="v2-btn-secondary" onClick={() => setSelectedProyecto(null)}>Cerrar</button>
             </div>
           </div>
         </div>
