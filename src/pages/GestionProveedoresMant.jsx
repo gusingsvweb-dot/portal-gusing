@@ -107,24 +107,24 @@ export default function GestionProveedoresMant() {
     setShowHistory(true);
     setHistoryLoading(true);
     
-    let query = supabase
+    const normalizedName = p.nombre.trim().toLowerCase().replace(/\s+/g, '.');
+    
+    // Construimos el filtro OR
+    // 1. Coincidencia por proveedor_id (para externos)
+    // 2. Coincidencia por tecnico_asignado (texto exacto o ilike)
+    // 3. Coincidencia por nombre normalizado (para internos)
+    let orFilter = `tecnico_asignado.ilike.%${p.nombre}%,tecnico_asignado.eq.${normalizedName}`;
+    if (p.id) {
+      orFilter += `,proveedor_id.eq.${p.id}`;
+    }
+
+    const { data } = await supabase
       .from(st("solicitudes"))
       .select(`id, consecutivo, descripcion, fecha_cierre, activos(nombre)`)
       .not("fecha_cierre", "is", null)
+      .or(orFilter)
       .order("fecha_cierre", { ascending: false });
 
-    const normalizedName = p.nombre.trim().toLowerCase().replace(/\s+/g, '.');
-    
-    // Buscamos tanto por el nombre exacto como por el nombre normalizado (juan.b)
-    query = query.or(`tecnico_asignado.ilike.%${p.nombre}%,tecnico_asignado.eq.${normalizedName}`);
-
-    // Si es externo y tiene ID, también podemos buscar por proveedor_id por si acaso
-    if (p.tipo !== "Interno" && p.id) {
-       // Supabase 'or' syntax for multiple conditions across columns can be tricky with different types
-       // so we just keep it simple with name matching which is the most reliable right now
-    }
-
-    const { data } = await query;
     setHistory(data || []);
     setHistoryLoading(false);
   }
