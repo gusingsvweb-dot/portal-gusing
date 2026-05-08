@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { supabase, st } from "../../api/supabaseClient";
 
-export default function CamposDinamicos({ tipo, areaId, form, setForm }) {
+export default function CamposDinamicos({ tipo, areaId, form, setForm, isMantenimiento }) {
   const [activos, setActivos] = useState([]);
 
   useEffect(() => {
-    // Cargar equipos si es área de Mantenimiento (Area ID 1)
-    if (Number(areaId) === 1 || Number(tipo) === 2) {
+    // Cargar equipos si es área de Mantenimiento
+    if (isMantenimiento || Number(tipo) === 2) {
       async function loadEquipos() {
         const { data } = await supabase.from(st("activos")).select("id, nombre, tipo, codigo").order("nombre");
         setActivos(data || []);
@@ -15,8 +15,8 @@ export default function CamposDinamicos({ tipo, areaId, form, setForm }) {
     }
   }, [tipo, areaId]);
 
-  // Hierarchy para Mantenimiento (Area ID 1)
-  if (Number(areaId) === 1) {
+  // Hierarchy para Mantenimiento
+  if (isMantenimiento) {
     return (
         <div className="hierarchy-container" style={{ 
           marginTop: "15px", 

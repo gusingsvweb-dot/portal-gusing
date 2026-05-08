@@ -65,8 +65,11 @@ export default function CrearSolicitud() {
   // Guardar solicitud
   // ================================
   async function enviarSolicitud() {
-    // Validación obligatoria de jerarquía para Mantenimiento (Area ID 1)
-    if (Number(form.area_id) === 1) {
+    const areaSeleccionada = areas.find(a => String(a.id) === String(form.area_id));
+    const isMantenimiento = areaSeleccionada?.nombre?.toLowerCase().includes("mantenimiento");
+
+    // Validación obligatoria de jerarquía para Mantenimiento
+    if (isMantenimiento) {
       if (!form.maint_category || !form.maint_type) {
         return setMensaje("⚠️ Para mantenimiento debes seleccionar Categoría y Tipo.");
       }
@@ -105,7 +108,7 @@ export default function CrearSolicitud() {
     let finalTipoId = form.tipo_solicitud_id;
     let finalDesc = form.descripcion;
 
-    if (Number(form.area_id) === 1) {
+    if (isMantenimiento) {
       // Mapear maint_type al ID real en la tabla tipos_solicitud
       const mapped = tiposFiltrados.find(t => t.nombre.toLowerCase().includes(form.maint_type.toLowerCase()));
       if (mapped) finalTipoId = mapped.id;
@@ -167,6 +170,9 @@ export default function CrearSolicitud() {
     });
   }
 
+  const areaSeleccionadaRender = areas.find(a => String(a.id) === String(form.area_id));
+  const isMantenimientoRender = areaSeleccionadaRender?.nombre?.toLowerCase().includes("mantenimiento");
+
   return (
     <>
       <Navbar />
@@ -187,7 +193,7 @@ export default function CrearSolicitud() {
           >
             <option value="">Seleccione...</option>
             {areas
-              .filter((a) => a.id === 1 || a.nombre.toLowerCase() === "mantenimiento")
+              .filter((a) => a.nombre.toLowerCase().includes("mantenimiento"))
               .map((a) => (
               <option key={a.id} value={a.id}>
                 {a.nombre}
@@ -196,7 +202,7 @@ export default function CrearSolicitud() {
           </select>
 
           {/* Tipo de solicitud (OCULTO para Mantenimiento) */}
-          {Number(form.area_id) !== 1 && (
+          {!isMantenimientoRender && (
             <>
               <label>Tipo de solicitud *</label>
               <select
@@ -229,8 +235,8 @@ export default function CrearSolicitud() {
             <option value="">Seleccione...</option>
             {prioridades
               .filter(p => {
-                // Si es mantenimiento (Area ID 1), solo Bajo, Medio y Alto
-                if (Number(form.area_id) === 1) {
+                // Si es mantenimiento, solo Bajo, Medio y Alto
+                if (isMantenimientoRender) {
                   return !["Muy Alto", "Critica", "Urgente"].includes(p.nombre);
                 }
                 return true;
@@ -243,12 +249,13 @@ export default function CrearSolicitud() {
           </select>
 
           {/* Campos dinámicos según el área/tipo */}
-          {(form.tipo_solicitud_id || Number(form.area_id) === 1) && (
+          {(form.tipo_solicitud_id || isMantenimientoRender) && (
             <CamposDinamicos
               tipo={form.tipo_solicitud_id}
               areaId={form.area_id}
               form={form}
               setForm={setForm}
+              isMantenimiento={isMantenimientoRender}
             />
           )}
 
