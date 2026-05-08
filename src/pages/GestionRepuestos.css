@@ -106,10 +106,11 @@
 /* Stock bar */
 .rep-stock-bar-wrap {
   width: 100%;
-  height: 6px;
+  height: 8px;
   background: #f1f5f9;
   border-radius: 99px;
-  overflow: hidden;
+  overflow: visible;
+  position: relative;
 }
 
 .rep-stock-bar {
@@ -118,12 +119,38 @@
   background: var(--col, #10b981);
   border-radius: 99px;
   transition: width 0.5s ease-out;
+  position: relative;
+  z-index: 1;
 }
 
-/* Metrics */
+/* Marcador de stock mínimo sobre la barra */
+.rep-stock-min-marker {
+  position: absolute;
+  top: -3px;
+  left: var(--minpct, 25%);
+  width: 3px;
+  height: 14px;
+  background: #f59e0b;
+  border-radius: 2px;
+  z-index: 2;
+  transform: translateX(-50%);
+}
+.rep-stock-min-marker::after {
+  content: "min";
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.55rem;
+  font-weight: 800;
+  color: #d97706;
+  white-space: nowrap;
+}
+
+/* Metrics — 4 columnas para incluir "Mínimo" */
 .rep-metrics {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 8px;
 }
 
@@ -151,6 +178,56 @@
 }
 
 .val-bajo { color: #ef4444; }
+.rep-minimo-val { color: #d97706; }
+
+/* ── STOCK MÍNIMO en modal ── */
+.rep-minimo-label {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.rep-minimo-hint {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #94a3b8;
+}
+
+.rep-minimo-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.rep-minimo-input-wrap .v2-input {
+  max-width: 120px;
+}
+
+.rep-minimo-unit {
+  font-size: 0.85rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.rep-minimo-preview {
+  font-size: 0.8rem;
+  font-weight: 800;
+  padding: 4px 12px;
+  border-radius: 99px;
+}
+
+.preview-bajo {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.preview-ok {
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+}
 
 .rep-card-footer {
   display: flex;

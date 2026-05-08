@@ -35,6 +35,7 @@ export default function PlanMaestro() {
   // Vista Semanal
   const [semanalMes, setSemanalMes] = useState(new Date().getMonth()); // 0-11
   const [semanalAnio, setSemanalAnio] = useState(new Date().getFullYear());
+  const [dragOverWeek, setDragOverWeek] = useState(null); // Almacena el inicio de la semana sobre la que se arrastra
 
   const [form, setForm] = useState({
     activo_id: "", frecuencia_dias: 30,
@@ -102,12 +103,16 @@ export default function PlanMaestro() {
     let inicio = new Date(primerDia);
     let semNum = 1;
     while (inicio <= ultimoDia) {
+      const diaSemana = inicio.getDay(); // 0 es Domingo, 1 es Lunes
+      const diasHastaDomingo = diaSemana === 0 ? 0 : 7 - diaSemana;
+      
       const fin = new Date(inicio);
-      fin.setDate(fin.getDate() + 6);
+      fin.setDate(fin.getDate() + diasHastaDomingo);
       if (fin > ultimoDia) fin.setTime(ultimoDia.getTime());
 
-      const inicioStr = inicio.toISOString().split("T")[0];
-      const finStr = fin.toISOString().split("T")[0];
+      // Evitamos problemas de Timezone formateando localmente
+      const inicioStr = `${inicio.getFullYear()}-${String(inicio.getMonth() + 1).padStart(2, '0')}-${String(inicio.getDate()).padStart(2, '0')}`;
+      const finStr = `${fin.getFullYear()}-${String(fin.getMonth() + 1).padStart(2, '0')}-${String(fin.getDate()).padStart(2, '0')}`;
 
       const tareas = planes.filter(p => {
         if (!p.activo) return false;
@@ -135,6 +140,34 @@ export default function PlanMaestro() {
     }).eq("id", plan.id);
     setCompletando(null);
     loadData();
+  }
+
+  // ── Drag & Drop handlers ──
+  async function handleDropTarea(e, targetDate) {
+    e.preventDefault();
+    setDragOverWeek(null);
+    const planId = e.dataTransfer.getData("planId");
+    if (!planId) return;
+
+    // Solo actualizamos de forma optimista
+    setPlanes(prev => prev.map(p => String(p.id) === String(planId) ? { ...p, proxima_fecha: targetDate } : p));
+    
+    // Y en BD
+    await supabase.from(st("planes_preventivos")).update({ proxima_fecha: targetDate }).eq("id", planId);
+  }
+
+  function handleDragOver(e, targetDate) {
+    e.preventDefault();
+    if (dragOverWeek !== targetDate) setDragOverWeek(targetDate);
+  }
+
+  function handleDragLeave(e, targetDate) {
+    e.preventDefault();
+    if (dragOverWeek === targetDate) setDragOverWeek(null);
+  }
+
+  function handleDragStart(e, planId) {
+    e.dataTransfer.setData("planId", planId);
   }
 
   async function toggleMonthStatus(monthEntry) {
@@ -421,7 +454,11 @@ export default function PlanMaestro() {
             ) : (
               <div className="pm-semanas-grid">
                 {semanasPorMes.map(semana => (
-                  <div key={semana.num} className="pm-semana-col">
+                  <div key={semana.num} 
+                       className={`pm-semana-col ${dragOverWeek === semana.inicio ? "drag-over" : ""}`}
+                       onDragOver={(e) => handleDragOver(e, semana.inicio)}
+                       onDragLeave={(e) => handleDragLeave(e, semana.inicio)}
+                       onDrop={(e) => handleDropTarea(e, semana.inicio)}>
                     <div className="pm-semana-header">
                       <span className="pm-semana-num">Semana {semana.num}</span>
                       <span className="pm-semana-rango">
@@ -437,7 +474,10 @@ export default function PlanMaestro() {
                         const dias = diasRestantes(p.proxima_fecha);
                         const isVencido = dias <= 0;
                         return (
-                          <div key={p.id} className={`pm-semana-tarea ${isVencido ? "tarea-vencida" : ""}`}>
+                          <div key={p.id} 
+                               className={`pm-semana-tarea ${isVencido ? "tarea-vencida" : ""}`}
+                               draggable
+                               onDragStart={(e) => handleDragStart(e, p.id)}>
                             <div className="pm-semana-tarea-top">
                               <span className={`v2-crit-badge crit-${p.activos?.criticidad?.toLowerCase() || "baja"}`} style={{ fontSize: "0.65rem", padding: "2px 7px" }}>
                                 {p.activos?.criticidad || "Baja"}

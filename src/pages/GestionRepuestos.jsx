@@ -3,9 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { supabase, st } from "../api/supabaseClient";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
+import { notifyRoles } from "../api/notifications";
 import "./Mantenimiento.css";
 import "./GestionRepuestos.css";
-
 
 export default function GestionRepuestos() {
   const navigate = useNavigate();
@@ -16,19 +16,46 @@ export default function GestionRepuestos() {
   const [filtroText, setFiltroText] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const [form, setForm] = useState({ nombre: "", stock: 0, costo: 0, unidad: "Unidad" });
+  const [form, setForm] = useState({ nombre: "", stock: 0, costo: 0, unidad: "Unidad", stock_minimo: 5 });
 
   useEffect(() => { loadData(); }, []);
 
   async function loadData() {
     setLoading(true);
     const { data } = await supabase.from(st("repuestos")).select("*").order("nombre");
-    setRepuestos(data || []);
+    const items = data || [];
+    setRepuestos(items);
     setLoading(false);
+    checkLowStockAndNotify(items);
   }
 
+  // Envía notificación de bajo stock máximo una vez por día
+  async function checkLowStockAndNotify(items) {
+    const hoy = new Date().toISOString().split("T")[0];
+    const lastKey = "lastLowStockNotif";
+    if (localStorage.getItem(lastKey) === hoy) return; // ya notificó hoy
+
+    const bajos = items.filter(r => r.stock <= (r.stock_minimo ?? 5));
+    if (bajos.length === 0) return;
+
+    const lista = bajos
+      .map(r => `• ${r.nombre}: ${r.stock} ${r.unidad} (mín. ${r.stock_minimo ?? 5})`)
+      .join("\n");
+
+    await notifyRoles(
+      ["mantenimiento", "gerencia"],
+      `⚠️ Alerta de Bajo Stock — ${bajos.length} ítem${bajos.length !== 1 ? "s" : ""}`,
+      `Los siguientes repuestos están por debajo del stock mínimo:\n${lista}`,
+      null,
+      "info"
+    );
+    localStorage.setItem(lastKey, hoy);
+  }
+
+  const isBajoStock = (r) => r.stock <= (r.stock_minimo ?? 5);
+
   const stats = useMemo(() => {
-    const bajoStock = repuestos.filter(r => r.stock < 5).length;
+    const bajoStock = repuestos.filter(isBajoStock).length;
     const valorTotal = repuestos.reduce((sum, r) => sum + (parseFloat(r.costo || 0) * parseFloat(r.stock || 0)), 0);
     return { total: repuestos.length, bajoStock, valorTotal };
   }, [repuestos]);
@@ -42,7 +69,7 @@ export default function GestionRepuestos() {
     if (sortBy === "stock_asc") res.sort((a, b) => a.stock - b.stock);
     else if (sortBy === "stock_desc") res.sort((a, b) => b.stock - a.stock);
     else if (sortBy === "costo_desc") res.sort((a, b) => b.costo - a.costo);
-    else if (sortBy === "bajo_stock") res.sort(a => (a.stock < 5 ? -1 : 1));
+    else if (sortBy === "bajo_stock") res.sort(a => (isBajoStock(a) ? -1 : 1));
     else res.sort((a, b) => a.nombre?.localeCompare(b.nombre));
     return res;
   }, [repuestos, sortBy, filtroText]);
@@ -50,7 +77,11 @@ export default function GestionRepuestos() {
   async function saveRepuesto() {
     if (!form.nombre) return alert("Nombre es obligatorio");
     setSaving(true);
-    const { error } = await supabase.from(st("repuestos")).upsert([form]);
+    const payload = {
+      ...form,
+      stock_minimo: parseInt(form.stock_minimo) || 5,
+    };
+    const { error } = await supabase.from(st("repuestos")).upsert([payload]);
     if (error) alert("Error: " + error.message);
     else { setShowModal(false); resetForm(); loadData(); }
     setSaving(false);
@@ -64,9 +95,13 @@ export default function GestionRepuestos() {
     else loadData();
   }
 
-  function resetForm() { setForm({ nombre: "", stock: 0, costo: 0, unidad: "Unidad" }); }
+  function resetForm() { setForm({ nombre: "", stock: 0, costo: 0, unidad: "Unidad", stock_minimo: 5 }); }
+  function openEdit(r) { setForm({ ...r, stock_minimo: r.stock_minimo ?? 5 }); setShowModal(true); }
 
-  function openEdit(r) { setForm({ ...r }); setShowModal(true); }
+  const stockPct = (r) => {
+    const max = Math.max((r.stock_minimo ?? 5) * 4, 20, r.stock);
+    return Math.min((r.stock / max) * 100, 100);
+  };
 
   return (
     <>
@@ -96,7 +131,7 @@ export default function GestionRepuestos() {
             <span className="rep-stat-icon">⚠️</span>
             <div className="rep-stat-body">
               <span className="rep-stat-num">{stats.bajoStock}</span>
-              <span className="rep-stat-lbl">Bajo Stock (&lt;5)</span>
+              <span className="rep-stat-lbl">Bajo Stock (por debajo del mínimo)</span>
             </div>
           </div>
           <div className="rep-stat-card" style={{ "--c": "#10b981" }}>
@@ -135,28 +170,36 @@ export default function GestionRepuestos() {
         ) : (
           <div className="rep-grid">
             {displayList.map(r => {
-              const isBajo = r.stock < 5;
+              const bajo = isBajoStock(r);
+              const minimo = r.stock_minimo ?? 5;
+              const pct = stockPct(r);
               const valorItem = parseFloat(r.costo || 0) * parseFloat(r.stock || 0);
               return (
-                <div key={r.id} className={`rep-card ${isBajo ? "rep-card-bajo" : ""}`} onClick={() => openEdit(r)}>
+                <div key={r.id} className={`rep-card ${bajo ? "rep-card-bajo" : ""}`} onClick={() => openEdit(r)}>
                   <div className="rep-card-header">
                     <span className="v2-id-tag">REP-{r.id}</span>
-                    {isBajo && <span className="rep-bajo-badge">⚠️ BAJO STOCK</span>}
+                    {bajo && <span className="rep-bajo-badge">⚠️ BAJO STOCK</span>}
                   </div>
 
                   <h4 className="rep-card-name">{r.nombre}</h4>
 
-                  <div className="rep-stock-bar-wrap">
-                    <div className="rep-stock-bar" style={{ "--pct": `${Math.min((r.stock / 50) * 100, 100)}%`, "--col": isBajo ? "#ef4444" : "#10b981" }}></div>
+                  {/* Barra de stock con indicador de mínimo */}
+                  <div className="rep-stock-bar-wrap" title={`Stock: ${r.stock} / Mínimo: ${minimo}`}>
+                    <div className="rep-stock-bar" style={{ "--pct": `${pct}%`, "--col": bajo ? "#ef4444" : "#10b981" }}></div>
+                    <div className="rep-stock-min-marker" style={{ "--minpct": `${Math.min((minimo / Math.max(minimo * 4, 20, r.stock)) * 100, 100)}%` }} title={`Mínimo: ${minimo}`}></div>
                   </div>
 
                   <div className="rep-metrics">
                     <div className="rep-metric">
                       <span className="rep-metric-lbl">Stock</span>
-                      <span className={`rep-metric-val ${isBajo ? "val-bajo" : ""}`}>{r.stock} {r.unidad}</span>
+                      <span className={`rep-metric-val ${bajo ? "val-bajo" : ""}`}>{r.stock} {r.unidad}</span>
                     </div>
                     <div className="rep-metric">
-                      <span className="rep-metric-lbl">Costo unitario</span>
+                      <span className="rep-metric-lbl">Mínimo</span>
+                      <span className="rep-metric-val rep-minimo-val">{minimo} {r.unidad}</span>
+                    </div>
+                    <div className="rep-metric">
+                      <span className="rep-metric-lbl">Costo unit.</span>
                       <span className="rep-metric-val">${parseFloat(r.costo || 0).toLocaleString()}</span>
                     </div>
                     <div className="rep-metric">
@@ -210,6 +253,31 @@ export default function GestionRepuestos() {
                     </select>
                   </div>
                 </div>
+
+                {/* Alerta de bajo stock configurable */}
+                <div className="v2-form-group">
+                  <label className="rep-minimo-label">
+                    <span>🔔 Alerta de Bajo Stock (Stock Mínimo)</span>
+                    <span className="rep-minimo-hint">Se notificará cuando el stock sea igual o menor a este valor</span>
+                  </label>
+                  <div className="rep-minimo-input-wrap">
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      className="v2-input"
+                      value={form.stock_minimo}
+                      onChange={e => setForm({ ...form, stock_minimo: parseInt(e.target.value) || 0 })}
+                    />
+                    <span className="rep-minimo-unit">{form.unidad}</span>
+                    {form.stock > 0 && (
+                      <span className={`rep-minimo-preview ${form.stock <= form.stock_minimo ? "preview-bajo" : "preview-ok"}`}>
+                        {form.stock <= form.stock_minimo ? "⚠️ Bajo stock actual" : "✓ Stock OK"}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
                 <div className="v2-form-group">
                   <label>Costo Unitario ($)</label>
                   <input type="number" min="0" step="0.01" className="v2-input" value={form.costo}
