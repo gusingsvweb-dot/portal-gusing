@@ -1635,7 +1635,7 @@ export default function Produccion() {
       }
 
       update.op = Math.floor(Number(op));
-      update.lote = Math.floor(Number(lote));
+      update.lote = String(lote).trim();
       update.fecha_vencimiento = fecha_vencimiento;
       update.tamano_lote = Math.floor(Number(tamano_lote));
 
@@ -2046,7 +2046,7 @@ export default function Produccion() {
 
           <label>Lote</label>
           <input
-            type="number"
+            type="text"
             value={formData.lote ?? selected.lote ?? ""}
             onChange={(ev) => setFormData({ ...formData, lote: ev.target.value })}
             disabled={!puedeEditar}
