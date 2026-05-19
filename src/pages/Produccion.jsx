@@ -2537,12 +2537,6 @@ export default function Produccion() {
                   <strong>Prioridad:</strong> {selected.prioridad || "Normal"}
                 </p>
                 <p>
-                  <strong>Lote:</strong> {selected.lote || "—"}
-                </p>
-                <p>
-                  <strong>OP:</strong> {selected.op || "—"}
-                </p>
-                <p>
                   <strong>Tam. Lote:</strong> {selected.tamano_lote || "—"}
                 </p>
                 <p>
