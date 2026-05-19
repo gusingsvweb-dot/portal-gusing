@@ -107,22 +107,24 @@ export default function GestionProveedoresMant() {
     setShowHistory(true);
     setHistoryLoading(true);
     
-    const normalizedName = p.nombre.trim().toLowerCase().replace(/\s+/g, '.');
-    
-    // Construimos el filtro OR
-    // 1. Coincidencia por proveedor_id (para externos)
-    // 2. Coincidencia por tecnico_asignado (texto exacto o ilike)
-    // 3. Coincidencia por nombre normalizado (para internos)
-    let orFilter = `tecnico_asignado.ilike.%${p.nombre}%,tecnico_asignado.eq.${normalizedName}`;
-    if (p.id) {
-      orFilter += `,proveedor_id.eq.${p.id}`;
-    }
-
-    const { data } = await supabase
+    let query = supabase
       .from(st("solicitudes"))
       .select(`id, consecutivo, descripcion, fecha_cierre, created_at, activos(nombre), estados(nombre)`)
-      .or(orFilter)
       .order("created_at", { ascending: false });
+
+    if (p.tipo === "Interno") {
+      const normalizedName = p.nombre.trim().toLowerCase().replace(/\s+/g, '.');
+      // Usar comillas dobles para nombres con espacios en el filtro OR de Supabase
+      query = query.or(`tecnico_asignado.eq."${p.nombre}",tecnico_asignado.eq."${normalizedName}"`);
+    } else if (p.id) {
+      query = query.eq("proveedor_id", p.id);
+    }
+
+    const { data, error } = await query;
+    
+    if (error) {
+      console.error("Error cargando historial:", error);
+    }
 
     setHistory(data || []);
     setHistoryLoading(false);

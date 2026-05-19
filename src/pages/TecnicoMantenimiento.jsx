@@ -23,6 +23,7 @@ export default function TecnicoMantenimiento() {
   const [saving, setSaving] = useState(false);
   const [filtro, setFiltro] = useState("");
   const [activeTab, setActiveTab] = useState("info");
+  const [showHistory, setShowHistory] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -250,8 +251,11 @@ export default function TecnicoMantenimiento() {
             <h1 className="mant-title">Mis Órdenes de Mantenimiento</h1>
             <p className="mant-subtitle">Tablero del Técnico — {new Date().toLocaleDateString("es-CO", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</p>
           </div>
-          <div className="mant-hero-img-container">
-            <img src="/mantenimiento_hero.png" alt="Mantenimiento" className="mant-hero-mini-img" />
+          <div style={{ display: "flex", gap: "20px", alignItems: "center" }}>
+            <button className="mant-btn-action secondary" onClick={() => setShowHistory(true)}>📜 Ver Mi Historial</button>
+            <div className="mant-hero-img-container">
+              <img src="/mantenimiento_hero.png" alt="Mantenimiento" className="mant-hero-mini-img" />
+            </div>
           </div>
         </header>
 
@@ -414,6 +418,48 @@ export default function TecnicoMantenimiento() {
                 <button className="mant-btn-action primary" onClick={avanzarEstado} disabled={saving}>
                   {saving ? "Guardando..." : selected.estado_id === 1 ? "Iniciar Trabajo →" : "Finalizar y Cerrar Orden ✓"}
                 </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL HISTORIAL COMPLETO */}
+      {showHistory && (
+        <div className="mant-modal-overlay-v2" onClick={() => setShowHistory(false)}>
+          <div className="mant-modal-content-centered wide-v2" onClick={e => e.stopPropagation()}>
+            <div className="modal-v2-header">
+              <h3>📜 Mi Historial de Intervenciones</h3>
+              <button className="close-btn-v2" onClick={() => setShowHistory(false)}>✖</button>
+            </div>
+            <div className="modal-v2-body scroll-v2" style={{ maxHeight: "70vh" }}>
+              {filtered.length === 0 ? <p>No hay intervenciones registradas en tu historial.</p> : (
+                <table className="anual-table">
+                  <thead>
+                    <tr>
+                      <th>Fecha</th>
+                      <th>OT</th>
+                      <th>Estado</th>
+                      <th>Equipo</th>
+                      <th>Descripción</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtered.map(h => (
+                      <tr key={h.id}>
+                        <td>{new Date(h.fecha_cierre || h.created_at).toLocaleDateString()}</td>
+                        <td>M-{h.consecutivo}</td>
+                        <td>
+                          <span className={`v2-status-mini ${h.estados?.nombre?.toLowerCase()}`}>
+                            {h.estados?.nombre}
+                          </span>
+                        </td>
+                        <td>{h.activos?.nombre}</td>
+                        <td style={{ fontSize: "0.85rem" }}>{h.descripcion}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               )}
             </div>
           </div>
