@@ -254,7 +254,6 @@ export default function Bodega() {
   async function seleccionarPedido(p) {
     setSelected(p);
     setItemsDetallados([]);
-    setShowHiddenList(false); // Reset to hidden
 
     // Cargar Observaciones
     cargarObservaciones(p.id);
