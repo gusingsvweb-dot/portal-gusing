@@ -208,65 +208,61 @@ export default function CalendarioProduccion() {
                 </div>
             </div>
 
-            {showModal && (
-                <div className="cal-modal-backdrop" onClick={closeModal}>
-                    <div className="cal-modal" onClick={e => e.stopPropagation()}>
-                        <h3>📅 Tareas del {selectedDate}</h3>
+            {showModal && (() => {
+                const d = new Date(selectedDate + "T00:00:00");
+                const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+                const isPast = selectedDate < new Date().toISOString().slice(0, 10);
+                const isHoliday = !!FESTIVOS[selectedDate.slice(5)];
+                const mostrarFormulario = esProduccion && !isPast && !isWeekend && !isHoliday;
 
-                        {/* LISTA DE TAREAS EXISTENTES */}
-                        <div className="cal-task-list">
-                            {tareasDelDiaSeleccionado.length === 0 && <p style={{ color: "#888", fontSize: "14px" }}>No hay tareas programadas.</p>}
-                            {tareasDelDiaSeleccionado.map(t => (
-                                <div key={t.id} className="cal-task-item">
-                                    <h4>{t.titulo}</h4>
-                                    {t.descripcion && <p>{t.descripcion}</p>}
-                                </div>
-                            ))}
-                        </div>
+                return (
+                    <div className="cal-modal-backdrop" onClick={closeModal}>
+                        <div className="cal-modal" onClick={e => e.stopPropagation()}>
+                            <h3>📅 Tareas del {selectedDate}</h3>
 
-                        {/* FORMULARIO SOLO PARA PRODUCCIÓN Y SI NO ES FECHA PASADA NI FIN DE SEMANA */}
-                        {(() => {
-                            const d = new Date(selectedDate + "T00:00:00");
-                            const isWeekend = d.getDay() === 0 || d.getDay() === 6;
-                            const isPast = selectedDate < new Date().toISOString().slice(0, 10);
-                            const isHoliday = !!FESTIVOS[selectedDate.slice(5)];
-
-                            if (esProduccion && !isPast && !isWeekend && !isHoliday) {
-                                return (
-                                    <form onSubmit={guardarTarea} className="cal-form">
-                                        <label>Nueva Tarea</label>
-                                        <input
-                                            type="text"
-                                            placeholder="Título..."
-                                            value={form.titulo}
-                                            onChange={e => setForm({ ...form, titulo: e.target.value })}
-                                            required
-                                        />
-                                        <textarea
-                                            rows="2"
-                                            placeholder="Detalles (opcional)..."
-                                            value={form.descripcion}
-                                            onChange={e => setForm({ ...form, descripcion: e.target.value })}
-                                        />
-                                        <div className="cal-actions">
-                                            <button type="button" className="cal-btn cancel" onClick={closeModal}>Cerrar</button>
-                                            <button type="submit" className="cal-btn save">Guardar</button>
-                                        </div>
-                                    </form>
-                                );
-                            }
-                            return null;
-                        })()}
-
-                        {!esProduccion && (
-                            <div className="cal-actions">
-                                <button type="button" className="cal-btn cancel" onClick={closeModal}>Cerrar</button>
+                            {/* LISTA DE TAREAS EXISTENTES */}
+                            <div className="cal-task-list">
+                                {tareasDelDiaSeleccionado.length === 0 && <p style={{ color: "#888", fontSize: "14px" }}>No hay tareas programadas.</p>}
+                                {tareasDelDiaSeleccionado.map(t => (
+                                    <div key={t.id} className="cal-task-item">
+                                        <h4>{t.titulo}</h4>
+                                        {t.descripcion && <p>{t.descripcion}</p>}
+                                    </div>
+                                ))}
                             </div>
-                        )}
 
+                            {/* FORMULARIO SOLO PARA PRODUCCIÓN Y SI NO ES FECHA PASADA NI FIN DE SEMANA */}
+                            {mostrarFormulario ? (
+                                <form onSubmit={guardarTarea} className="cal-form">
+                                    <label>Nueva Tarea</label>
+                                    <input
+                                        type="text"
+                                        placeholder="Título..."
+                                        value={form.titulo}
+                                        onChange={e => setForm({ ...form, titulo: e.target.value })}
+                                        required
+                                    />
+                                    <textarea
+                                        rows="2"
+                                        placeholder="Detalles (opcional)..."
+                                        value={form.descripcion}
+                                        onChange={e => setForm({ ...form, descripcion: e.target.value })}
+                                    />
+                                    <div className="cal-actions">
+                                        <button type="button" className="cal-btn cancel" onClick={closeModal}>Cerrar</button>
+                                        <button type="submit" className="cal-btn save">Guardar</button>
+                                    </div>
+                                </form>
+                            ) : (
+                                <div className="cal-actions">
+                                    <button type="button" className="cal-btn cancel" onClick={closeModal}>Cerrar</button>
+                                </div>
+                            )}
+
+                        </div>
                     </div>
-                </div>
-            )}
+                );
+            })()}
         </>
     );
 }
