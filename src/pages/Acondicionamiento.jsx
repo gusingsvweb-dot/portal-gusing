@@ -26,9 +26,12 @@ export default function Acondicionamiento() {
   const [pagina, setPagina] = useState(1);
   const ITEMS = 8;
 
-  // NUEVO: Modal de confirmación
+  // Modal de confirmación
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [loadingAction, setLoadingAction] = useState(false);
+
+  // Solicitud Material Impreso
+  const [solicitudMIText, setSolicitudMIText] = useState("");
 
   async function loadHistorial() {
     const { data, error } = await supabase
@@ -194,6 +197,45 @@ export default function Acondicionamiento() {
     }
 
     setNewObs("");
+    cargarObservaciones(selected.id);
+  }
+
+  /* ===========================================================
+      SOLICITUD MATERIAL IMPRESO
+  ============================================================ */
+  async function enviarSolicitudMaterialImpreso() {
+    if (!solicitudMIText.trim() || !selected) return;
+
+    const { error } = await supabase
+      .from(st("pedidos_produccion"))
+      .update({
+        solicitud_material_impreso: solicitudMIText.trim(),
+        solicitud_material_impreso_atendida: false,
+      })
+      .eq("id", selected.id);
+
+    if (error) { alert("Error enviando solicitud"); return; }
+
+    await supabase.from(st("observaciones_pedido")).insert({
+      pedido_id: selected.id,
+      usuario: rolUsuario || "acondicionamiento",
+      observacion: `📦 SOLICITUD MATERIAL IMPRESO: ${solicitudMIText.trim()}`,
+    });
+
+    try {
+      const { notifyRoles } = await import("../api/notifications");
+      await notifyRoles(
+        ["bodega", "bodega_mp"],
+        "Solicitud Material Impreso",
+        `Acondicionamiento solicitó material impreso para Pedido #${selected.id}`,
+        selected.id,
+        "accion_requerida"
+      );
+    } catch (e) { console.error(e); }
+
+    const texto = solicitudMIText.trim();
+    setSolicitudMIText("");
+    setSelected(prev => ({ ...prev, solicitud_material_impreso: texto, solicitud_material_impreso_atendida: false }));
     cargarObservaciones(selected.id);
   }
 
@@ -526,6 +568,94 @@ export default function Acondicionamiento() {
             )}
 
             {renderEtapa()}
+
+            {/* SOLICITUD MATERIAL IMPRESO */}
+            <div style={{
+              marginTop: 20,
+              borderRadius: 16,
+              border: selected.solicitud_material_impreso ? "1.5px solid #a78bfa" : "1.5px solid #e2e8f0",
+              background: selected.solicitud_material_impreso ? "#faf5ff" : "white",
+              overflow: "hidden",
+            }}>
+              <div style={{
+                padding: "14px 20px",
+                background: selected.solicitud_material_impreso ? "linear-gradient(135deg,#7c3aed,#6d28d9)" : "linear-gradient(135deg,#6366f1,#4f46e5)",
+                display: "flex", alignItems: "center", gap: 10,
+              }}>
+                <span style={{ fontSize: "1.2rem" }}>📦</span>
+                <div>
+                  <p style={{ margin: 0, fontWeight: 800, color: "white", fontSize: "0.95rem" }}>
+                    Solicitud de Material Impreso
+                  </p>
+                  <p style={{ margin: 0, fontSize: "0.75rem", color: "rgba(255,255,255,0.75)" }}>
+                    Etiquetas, cajas, insertos, estuches u otros materiales impresos
+                  </p>
+                </div>
+                {selected.solicitud_material_impreso && (
+                  <span style={{
+                    marginLeft: "auto", fontSize: "0.7rem", fontWeight: 800,
+                    background: selected.solicitud_material_impreso_atendida ? "#10b981" : "#f59e0b",
+                    color: "white", padding: "3px 10px", borderRadius: 99,
+                  }}>
+                    {selected.solicitud_material_impreso_atendida ? "✔ Atendida" : "⏳ Pendiente"}
+                  </span>
+                )}
+              </div>
+
+              <div style={{ padding: "16px 20px" }}>
+                {selected.solicitud_material_impreso ? (
+                  <div>
+                    <p style={{ fontSize: "0.78rem", fontWeight: 700, color: "#6d28d9", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                      Solicitud enviada
+                    </p>
+                    <p style={{
+                      fontSize: "0.9rem", color: "#1e293b", background: "#ede9fe",
+                      border: "1px solid #c4b5fd", borderRadius: 10, padding: "10px 14px",
+                      lineHeight: 1.6, margin: 0,
+                    }}>
+                      {selected.solicitud_material_impreso}
+                    </p>
+                    {!selected.solicitud_material_impreso_atendida && (
+                      <p style={{ marginTop: 10, fontSize: "0.78rem", color: "#7c3aed" }}>
+                        Bodega o Bodega MP recibirán esta solicitud y confirmarán la entrega.
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    <p style={{ fontSize: "0.85rem", color: "#475569", marginBottom: 12 }}>
+                      Describe los materiales impresos que necesitas para este pedido:
+                    </p>
+                    <textarea
+                      rows={3}
+                      placeholder="Ej: 1000 etiquetas producto X, 500 cajas ref. 12B, insertos informativos…"
+                      value={solicitudMIText}
+                      onChange={e => setSolicitudMIText(e.target.value)}
+                      style={{
+                        width: "100%", padding: "10px 14px", borderRadius: 10,
+                        border: "1.5px solid #c4b5fd", fontSize: "0.875rem",
+                        background: "#faf5ff", color: "#1e293b", resize: "vertical",
+                        fontFamily: "inherit", boxSizing: "border-box",
+                      }}
+                    />
+                    <button
+                      onClick={enviarSolicitudMaterialImpreso}
+                      disabled={!solicitudMIText.trim()}
+                      style={{
+                        marginTop: 10, width: "100%", padding: "11px",
+                        background: solicitudMIText.trim() ? "linear-gradient(135deg,#7c3aed,#6d28d9)" : "#e2e8f0",
+                        color: solicitudMIText.trim() ? "white" : "#94a3b8",
+                        border: "none", borderRadius: 10, fontWeight: 700,
+                        fontSize: "0.875rem", cursor: solicitudMIText.trim() ? "pointer" : "default",
+                        transition: "all 0.2s",
+                      }}
+                    >
+                      Enviar solicitud a Bodega
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
 
             {/* OBSERVACIONES */}
             <h3 style={{ marginTop: 20 }}>📝 Observaciones</h3>

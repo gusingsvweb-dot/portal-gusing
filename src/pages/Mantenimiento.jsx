@@ -104,7 +104,7 @@ export default function Mantenimiento() {
 
   const stats = useMemo(() => {
     const tickets = solicitudes.filter(s => s.tipo_solicitud_id !== 5);
-    const calificados = tickets.filter(s => s.estado_id === 15 && s.calificacion);
+    const calificados = tickets.filter(s => s.estado_id === 15 && s.calificacion && !isNaN(parseFloat(s.calificacion)));
     const sumCalificacion = calificados.reduce((sum, s) => sum + parseFloat(s.calificacion), 0);
     const promedio = calificados.length ? (sumCalificacion / calificados.length).toFixed(1) : "0.0";
 

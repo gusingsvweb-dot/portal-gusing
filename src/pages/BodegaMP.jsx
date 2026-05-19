@@ -22,12 +22,64 @@ export default function BodegaMP() {
     const [obs, setObs] = useState([]);
     const [newObs, setNewObs] = useState("");
 
+    // MATERIAL IMPRESO
+    const [pedidosMI, setPedidosMI] = useState([]);
+    const [obsMIResponse, setObsMIResponse] = useState("");
+    const [loadingMI, setLoadingMI] = useState(false);
+
     useEffect(() => {
         const user = JSON.parse(localStorage.getItem("usuarioActual"));
         setUsuarioActual(user);
         loadPedidos();
         loadHistorial();
+        loadSolicitudesMI();
     }, []);
+
+    async function loadSolicitudesMI() {
+        const { data, error } = await supabase
+            .from(st("pedidos_produccion"))
+            .select(ss("*, productos(articulo), clientes(nombre), estados(nombre)"))
+            .not("solicitud_material_impreso", "is", null)
+            .neq("solicitud_material_impreso_atendida", true)
+            .order("id", { ascending: false });
+        if (!error) setPedidosMI(data || []);
+    }
+
+    async function confirmarMaterialImpreso() {
+        if (!selected) return;
+        setLoadingMI(true);
+
+        const { error } = await supabase
+            .from(st("pedidos_produccion"))
+            .update({ solicitud_material_impreso_atendida: true })
+            .eq("id", selected.id);
+
+        if (error) { alert("Error al confirmar entrega"); setLoadingMI(false); return; }
+
+        const obsText = obsMIResponse.trim() || "Material impreso entregado.";
+        await supabase.from(st("observaciones_pedido")).insert({
+            pedido_id: selected.id,
+            usuario: usuarioActual?.usuario || "BodegaMP",
+            observacion: `✔ MATERIAL IMPRESO ENTREGADO: ${obsText}`,
+        });
+
+        try {
+            const { notifyRoles } = await import("../api/notifications");
+            await notifyRoles(
+                ["acondicionamiento"],
+                "Material Impreso Entregado",
+                `Bodega MP entregó el material impreso para el Pedido #${selected.id}`,
+                selected.id,
+                "accion_requerida"
+            );
+        } catch (e) { console.error(e); }
+
+        setObsMIResponse("");
+        setSelected(null);
+        setLoadingMI(false);
+        loadSolicitudesMI();
+        loadPedidos();
+    }
 
     // Cargar Observaciones
     async function cargarObservaciones(pedidoId) {

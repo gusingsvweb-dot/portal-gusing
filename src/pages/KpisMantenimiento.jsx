@@ -94,7 +94,7 @@ export default function KpisMantenimiento() {
     const promedioAnual = Math.round((kpi1Año + kpi2Año + kpi3) / 3);
 
     // Calificación promedio
-    const calificados = solicitudes.filter(s => s.estado_id === 15 && s.calificacion);
+    const calificados = solicitudes.filter(s => s.estado_id === 15 && s.calificacion && !isNaN(parseFloat(s.calificacion)));
     const sumCalificacion = calificados.reduce((sum, s) => sum + parseFloat(s.calificacion), 0);
     const promedioCalificacion = calificados.length ? (sumCalificacion / calificados.length).toFixed(1) : "0.0";
 
