@@ -43,7 +43,7 @@ export default function CalendarioProduccion() {
     const [showModal, setShowModal] = useState(false);
     const [form, setForm] = useState({ titulo: "", descripcion: "" });
 
-    const esProduccion = usuarioActual?.rol?.toLowerCase() === "produccion";
+    const esProduccion = ["produccion", "planeacion"].includes(usuarioActual?.rol?.toLowerCase());
 
     // Cargar tareas al cambiar de mes
     useEffect(() => {
