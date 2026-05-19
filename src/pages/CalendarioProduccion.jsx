@@ -32,6 +32,12 @@ const FESTIVOS = {
     "12-25": "Navidad"
 };
 
+const isValidUUID = (str) => {
+    if (!str) return false;
+    const regex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return regex.test(str);
+};
+
 export default function CalendarioProduccion() {
     const { usuarioActual } = useAuth();
     const [currentDate, setCurrentDate] = useState(new Date());
@@ -139,13 +145,13 @@ export default function CalendarioProduccion() {
             fecha: selectedDate,
             titulo: form.titulo,
             descripcion: form.descripcion,
-            created_by: usuarioActual?.id
+            created_by: isValidUUID(usuarioActual?.id) ? usuarioActual.id : null
         };
 
         const { error } = await supabase.from(st("tareas_produccion")).insert([nuevaTarea]);
 
         if (error) {
-            alert("Error al guardar tarea");
+            alert("Error al guardar tarea: " + (error.message || JSON.stringify(error)));
             console.error(error);
         } else {
             // Recargar y cerrar
