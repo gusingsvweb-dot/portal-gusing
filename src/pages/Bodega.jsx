@@ -16,7 +16,6 @@ export default function Bodega() {
   const [historial, setHistorial] = useState([]);
   const [itemsDetallados, setItemsDetallados] = useState([]);
   const [itemsLoading, setItemsLoading] = useState(false);
-  const [showHiddenList, setShowHiddenList] = useState(false);
 
   // OBSERVACIONES
   const [obs, setObs] = useState([]);
@@ -388,7 +387,6 @@ export default function Bodega() {
       return;
     }
 
-    const hoy = new Date().toISOString().slice(0, 10);
     let avanzarAProduccion = false;
 
     // 2. Determinar si se avanza
@@ -544,18 +542,21 @@ export default function Bodega() {
 
         {selected && (
           <div className="pc-detail fadeIn">
-            <h3
-              onClick={(e) => {
-                if (e.shiftKey) setShowHiddenList(!showHiddenList);
-              }}
-              style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
-              title="Shift + Click para ver lista de insumos"
-            >
+            <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
               📄 Detalle del Pedido
               <span style={{ fontSize: '12px', background: 'var(--bg-input)', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--border-color)', color: 'var(--text-sub)' }}>
                 #{selected.id}
               </span>
-              {itemsDetallados.length > 0 && <span style={{ fontSize: '10px', verticalAlign: 'middle' }}>●</span>}
+              {selected.tipo_solicitud_mp && (
+                <span style={{
+                  fontSize: '11px', fontWeight: 800, padding: '2px 10px', borderRadius: 99,
+                  ...(selected.tipo_solicitud_mp === 'parcial'
+                    ? { background: '#fef3c7', color: '#92400e', border: '1px solid #fcd34d' }
+                    : { background: '#eff6ff', color: '#1d4ed8', border: '1px solid #93c5fd' })
+                }}>
+                  {selected.tipo_solicitud_mp === 'parcial' ? '📦 PARCIAL' : '📋 COMPLETA'}
+                </span>
+              )}
             </h3>
 
             <div className="pc-detail-grid">
@@ -640,96 +641,81 @@ export default function Bodega() {
             {selected.estado_id < 11 ? (
               <>
                 <h3 style={{ marginTop: 20 }}>📦 Registrar entrega MP</h3>
-                <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '10px', fontStyle: 'italic' }}>
-                  (Shift + Click en "Detalle del Pedido" para ver/editar la lista de insumos)
-                </p>
 
-                {itemsDetallados.length > 0 && showHiddenList && (
-                  <div style={{ marginBottom: '20px', backgroundColor: 'var(--bg-app)', padding: '15px', borderRadius: '8px', border: '1px solid var(--border-color)', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
-                    <h4 style={{ marginBottom: '10px', fontSize: '14px', color: 'var(--text-main)' }}>📋 Lista de Insumos</h4>
-                    {itemsLoading ? (
-                      <p>Cargando insumos...</p>
-                    ) : (
-                      <div style={{ overflowX: 'auto' }}>
-                        <table className="ac-bulk-table" style={{ fontSize: '12px' }}>
-                          <thead>
-                            <tr>
-                              <th>Insumo</th>
-                              <th title="Crítico">⚠️</th>
-                              <th>Cant. Solicitada</th>
-                              <th>Cant. Entregada</th>
-                              <th>Observación</th>
-                              <th style={{ textAlign: 'center' }}>Entregado</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {itemsDetallados.map(it => {
-                              const esBajo = it.es_critico && it.cantidad_entregada && Number(it.cantidad_entregada) < Number(it.cantidad);
-                              return (
-                                <tr key={it.id} style={it.es_critico ? { background: '#fff1f2' } : {}}>
-                                  <td>
-                                    <strong>{it.materia_prima?.ARTICULO}</strong>
-                                    <div style={{ fontSize: '10px', color: '#64748b' }}>{it.materia_prima?.UNIDAD}</div>
-                                    {esBajo && (
-                                      <div style={{ color: '#e11d48', fontSize: '10px', fontWeight: 'bold', marginTop: '4px' }}>
-                                        ⚠️ Cantidad menor a la solicitada
-                                      </div>
-                                    )}
-                                  </td>
-                                  <td style={{ textAlign: 'center' }}>{it.es_critico ? "🔴" : ""}</td>
-                                  <td>{it.cantidad}</td>
-                                  <td>
-                                    <input
-                                      type="number"
-                                      value={it.cantidad_entregada || ""}
-                                      onChange={(e) => updateItemField(it.id, 'cantidad_entregada', e.target.value)}
-                                      onBlur={() => saveItem(it)}
-                                      style={{ width: '60px', padding: '4px', border: esBajo ? '1px solid #e11d48' : '1px solid #cbd5e1', borderRadius: '4px' }}
-                                    />
-                                  </td>
-                                  <td>
-                                    <input
-                                      type="text"
-                                      value={it.observacion || ""}
-                                      onChange={(e) => updateItemField(it.id, 'observacion', e.target.value)}
-                                      onBlur={() => saveItem(it)}
-                                      placeholder="..."
-                                      style={{ width: '100%', padding: '4px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
-                                    />
-                                  </td>
-                                  <td style={{ textAlign: 'center' }}>
-                                    <input
-                                      type="checkbox"
-                                      checked={!!it.completado}
-                                      onChange={() => toggleItemCompletado(it)}
-                                      style={{ transform: 'scale(1.2)' }}
-                                    />
-                                  </td>
+                {selected.tipo_solicitud_mp === 'parcial' ? (
+                  /* ── PARCIAL: sin discriminar insumos ── */
+                  <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 10, padding: 16, marginTop: 10 }}>
+                    <p style={{ color: '#0369a1', fontSize: 13, marginBottom: 14 }}>
+                      Solicitud <strong>PARCIAL</strong> — No hay insumos discriminados. Confirma la entrega para avanzar el pedido a Producción.
+                    </p>
+                    <button className="pc-btn" style={{ background: '#0369a1', width: '100%' }} onClick={confirmarEntrega}>
+                      ✔️ Confirmar entrega y avanzar a Producción
+                    </button>
+                  </div>
+                ) : (
+                  /* ── COMPLETA / LEGACY: con tabla de insumos ── */
+                  <>
+                    {itemsDetallados.length > 0 && (
+                      <div style={{ marginBottom: '20px', backgroundColor: 'var(--bg-app)', padding: '15px', borderRadius: '8px', border: '1px solid var(--border-color)', marginTop: 10 }}>
+                        <h4 style={{ marginBottom: '10px', fontSize: '14px', color: 'var(--text-main)' }}>📋 Lista de Insumos</h4>
+                        {itemsLoading ? (
+                          <p>Cargando insumos...</p>
+                        ) : (
+                          <div style={{ overflowX: 'auto' }}>
+                            <table className="ac-bulk-table" style={{ fontSize: '12px' }}>
+                              <thead>
+                                <tr>
+                                  <th>Insumo</th>
+                                  <th title="Crítico">⚠️</th>
+                                  <th>Cant. Solicitada</th>
+                                  <th>Cant. Entregada</th>
+                                  <th>Observación</th>
+                                  <th style={{ textAlign: 'center' }}>Entregado</th>
                                 </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
+                              </thead>
+                              <tbody>
+                                {itemsDetallados.map(it => {
+                                  const esBajo = it.es_critico && it.cantidad_entregada && Number(it.cantidad_entregada) < Number(it.cantidad);
+                                  return (
+                                    <tr key={it.id} style={it.es_critico ? { background: '#fff1f2' } : {}}>
+                                      <td>
+                                        <strong>{it.materia_prima?.ARTICULO}</strong>
+                                        <div style={{ fontSize: '10px', color: '#64748b' }}>{it.materia_prima?.UNIDAD}</div>
+                                        {esBajo && <div style={{ color: '#e11d48', fontSize: '10px', fontWeight: 'bold', marginTop: '4px' }}>⚠️ Cantidad menor a la solicitada</div>}
+                                      </td>
+                                      <td style={{ textAlign: 'center' }}>{it.es_critico ? "🔴" : ""}</td>
+                                      <td>{it.cantidad}</td>
+                                      <td>
+                                        <input type="number" value={it.cantidad_entregada || ""} onChange={(e) => updateItemField(it.id, 'cantidad_entregada', e.target.value)} onBlur={() => saveItem(it)} style={{ width: '60px', padding: '4px', border: esBajo ? '1px solid #e11d48' : '1px solid #cbd5e1', borderRadius: '4px' }} />
+                                      </td>
+                                      <td>
+                                        <input type="text" value={it.observacion || ""} onChange={(e) => updateItemField(it.id, 'observacion', e.target.value)} onBlur={() => saveItem(it)} placeholder="..." style={{ width: '100%', padding: '4px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
+                                      </td>
+                                      <td style={{ textAlign: 'center' }}>
+                                        <input type="checkbox" checked={!!it.completado} onChange={() => toggleItemCompletado(it)} style={{ transform: 'scale(1.2)' }} />
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
                       </div>
                     )}
-                  </div>
+                    <p style={{ marginTop: 10, fontStyle: "italic", color: "#444", fontSize: 13 }}>
+                      Al confirmar, se registrará la fecha actual como fecha de entrega.
+                    </p>
+                    {(() => {
+                      const bloqueado = itemsDetallados.length > 0 && itemsDetallados.some(i => i.es_critico && (!i.completado || (i.cantidad_entregada && Number(i.cantidad_entregada) < Number(i.cantidad))));
+                      return (
+                        <button className="pc-btn" onClick={confirmarEntrega} disabled={bloqueado} style={{ marginTop: '16px', width: '100%', ...(bloqueado ? { opacity: 0.5, cursor: 'not-allowed' } : {}) }}>
+                          ✔️ Confirmar entrega y avanzar etapa
+                        </button>
+                      );
+                    })()}
+                  </>
                 )}
-
-                {/* Eliminamos el input tipo date que solo muestra fecha y estaba duplicado */}
-
-
-                <p style={{ marginTop: 10, fontStyle: "italic", color: "#444" }}>
-                  Al confirmar, se registrará la fecha actual como fecha de entrega.
-                </p>
-
-                <button
-                  className="pc-btn"
-                  onClick={confirmarEntrega}
-                  disabled={itemsDetallados.length > 0 && itemsDetallados.some(i => i.es_critico && (!i.completado || (i.cantidad_entregada && Number(i.cantidad_entregada) < Number(i.cantidad))))}
-                  style={itemsDetallados.length > 0 && itemsDetallados.some(i => i.es_critico && (!i.completado || (i.cantidad_entregada && Number(i.cantidad_entregada) < Number(i.cantidad)))) ? { opacity: 0.5, cursor: 'not-allowed', marginTop: '20px', width: '100%' } : { marginTop: '20px', width: '100%' }}
-                >
-                  ✔️ Confirmar entrega y avanzar etapa
-                </button>
               </>
             ) : (
               <>

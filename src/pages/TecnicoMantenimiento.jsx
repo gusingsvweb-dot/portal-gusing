@@ -329,6 +329,7 @@ export default function TecnicoMantenimiento() {
                   <div className="modal-info-grid">
                     <InfoBox label="Tipo" value={selected.tipos_solicitud?.nombre} />
                     <InfoBox label="Prioridad" value={selected.prioridades?.nombre} />
+                    <InfoBox label="Solicitante" value={selected.usuario_id || "Desconocido"} />
                     <InfoBox label="Área Solicitante" value={selected.area_solicitante} />
                     <InfoBox label="Equipo" value={selected.activos?.nombre || "N/A"} />
                   </div>
