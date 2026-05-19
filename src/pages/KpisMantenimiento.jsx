@@ -35,7 +35,7 @@ export default function KpisMantenimiento() {
     async function load() {
       const [{ data: sol }, { data: pls }, { data: proy }, { data: rep }] = await Promise.all([
         supabase.from(st("solicitudes")).select(ss(
-          "id, estado_id, tipo_solicitud_id, area_solicitante, created_at, activos(criticidad, nombre)"
+          "id, estado_id, tipo_solicitud_id, area_solicitante, created_at, calificacion, activos(criticidad, nombre)"
         )).eq("area_id", 1),
         supabase.from(st("planes_preventivos")).select("id, proxima_fecha, ultima_fecha"),
         supabase.from(st("proyectos_mant")).select("id, estado"),
