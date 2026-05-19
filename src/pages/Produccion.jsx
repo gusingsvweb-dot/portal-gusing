@@ -1627,16 +1627,13 @@ export default function Produccion() {
 
     // Estado 2: Registro de lote
     if (estadoId === 2) {
-      const { op, lote, fecha_vencimiento, tamano_lote } = formData;
+      const { tamano_lote } = formData;
 
-      if (!op || !lote || !fecha_vencimiento || !tamano_lote) {
-        alert("Complete OP, Lote, Fecha de vencimiento y Tamaño de lote.");
+      if (!tamano_lote) {
+        alert("Complete el Tamaño de lote.");
         return;
       }
 
-      update.op = Math.floor(Number(op));
-      update.lote = String(lote).trim();
-      update.fecha_vencimiento = fecha_vencimiento;
       update.tamano_lote = Math.floor(Number(tamano_lote));
 
       const desp = Number(tamano_lote) * 0.03;
@@ -2017,7 +2014,6 @@ export default function Produccion() {
     }
 
     const e = selected.estado_id;
-    const prod = selected.productos || {};
 
     if (e === 1) {
       return (
@@ -2036,30 +2032,6 @@ export default function Produccion() {
     const inputs = {
       2: (
         <>
-          <label>OP</label>
-          <input
-            type="number"
-            value={formData.op ?? selected.op ?? ""}
-            onChange={(ev) => setFormData({ ...formData, op: ev.target.value })}
-            disabled={!puedeEditar}
-          />
-
-          <label>Lote</label>
-          <input
-            type="text"
-            value={formData.lote ?? selected.lote ?? ""}
-            onChange={(ev) => setFormData({ ...formData, lote: ev.target.value })}
-            disabled={!puedeEditar}
-          />
-
-          <label>Fecha de vencimiento (MM-AAAA)</label>
-          <input
-            type="month"
-            value={formData.fecha_vencimiento ?? selected.fecha_vencimiento ?? ""}
-            onChange={(ev) => setFormData({ ...formData, fecha_vencimiento: ev.target.value })}
-            disabled={!puedeEditar}
-          />
-
           <label>Tamaño de lote</label>
           <input
             type="number"
@@ -2078,17 +2050,6 @@ export default function Produccion() {
                 : selected.porcentaje_desperdicio ?? ""
             }
           />
-
-          <hr />
-
-          <label>Nombre para registro de lote</label>
-          <input type="text" value={prod.nombre_registro_lote || ""} disabled />
-
-          <label>Presentación comercial</label>
-          <input type="text" value={prod.presentacion_comercial || ""} disabled />
-
-          <label>Forma farmacéutica</label>
-          <input type="text" value={prod.forma_farmaceutica || ""} disabled />
         </>
       ),
 
