@@ -71,7 +71,10 @@ export default function KpisMantenimiento() {
     const kpi1 = ticketsMes.length > 0 ? Math.round((ticketsCerradosMes.length / ticketsMes.length) * 100) : 0;
 
     // KPI 2: cumplimiento preventivos programados del mes (desde planes_preventivos)
-    const prevMes = planes.filter(p => isThisMonth(p.proxima_fecha));
+    // Para medir correctamente los completados del mes actual, el total de preventivos esperados/realizados 
+    // en este mes son aquellos con fecha de próxima intervención en este mes (pendientes) 
+    // o con fecha de última intervención en este mes (ya completados).
+    const prevMes = planes.filter(p => isThisMonth(p.proxima_fecha) || isThisMonth(p.ultima_fecha));
     const prevCompletadosMes = prevMes.filter(p => isThisMonth(p.ultima_fecha));
     const kpi2 = prevMes.length > 0 ? Math.round((prevCompletadosMes.length / prevMes.length) * 100) : 0;
 
@@ -84,11 +87,16 @@ export default function KpisMantenimiento() {
     const ticketsAñoCerrados = ticketsAño.filter(s => [14, 15].includes(s.estado_id));
     const kpi1Año = ticketsAño.length > 0 ? Math.round((ticketsAñoCerrados.length / ticketsAño.length) * 100) : 0;
 
-    const prevAño = planes.filter(p => isThisYear(p.proxima_fecha));
+    const prevAño = planes.filter(p => isThisYear(p.proxima_fecha) || isThisYear(p.ultima_fecha));
     const prevAñoCompletados = prevAño.filter(p => isThisYear(p.ultima_fecha));
     const kpi2Año = prevAño.length > 0 ? Math.round((prevAñoCompletados.length / prevAño.length) * 100) : 0;
 
     const promedioAnual = Math.round((kpi1Año + kpi2Año + kpi3) / 3);
+
+    // Calificación promedio
+    const calificados = solicitudes.filter(s => s.estado_id === 15 && s.calificacion);
+    const sumCalificacion = calificados.reduce((sum, s) => sum + parseFloat(s.calificacion), 0);
+    const promedioCalificacion = calificados.length ? (sumCalificacion / calificados.length).toFixed(1) : "0.0";
 
     // Repuestos bajo stock (comparado contra stock_minimo configurable)
     const bajoStock = repuestos.filter(r => r.stock <= (r.stock_minimo ?? 5));
@@ -115,7 +123,7 @@ export default function KpisMantenimiento() {
     };
 
     return {
-      kpi1, kpi2, kpi3, promedioAnual,
+      kpi1, kpi2, kpi3, promedioAnual, promedioCalificacion,
       kpi1Detail: { total: ticketsMes.length, done: ticketsCerradosMes.length },
       kpi2Detail: { total: prevMes.length, done: prevCompletadosMes.length },
       kpi3Detail: { total: proyectos.length, done: proyFinalizados },
@@ -195,6 +203,10 @@ export default function KpisMantenimiento() {
           <KpiCard
             icon="📊" title="Promedio Anual" value={`${stats.promedioAnual}%`}
             sub="Promedio de los 3 indicadores" color="#8b5cf6"
+          />
+          <KpiCard
+            icon="🏆" title="Calificación Prom." value={stats.promedioCalificacion}
+            sub="Satisfacción del servicio" color="#eab308"
           />
         </div>
 
