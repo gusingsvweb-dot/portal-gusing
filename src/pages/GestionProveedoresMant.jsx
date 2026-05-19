@@ -109,7 +109,7 @@ export default function GestionProveedoresMant() {
     
     let query = supabase
       .from(st("solicitudes"))
-      .select(`id, consecutivo, descripcion, fecha_cierre, created_at, activos(nombre), estados(nombre)`)
+      .select(`id, consecutivo, descripcion, fecha_cierre, created_at, activo_id, estado_id, activos(nombre)`)
       .order("created_at", { ascending: false });
 
     if (p.tipo === "Interno") {
@@ -120,13 +120,23 @@ export default function GestionProveedoresMant() {
       query = query.eq("proveedor_id", p.id);
     }
 
-    const { data, error } = await query;
+    const [ { data: solData, error }, { data: estadosData } ] = await Promise.all([
+      query,
+      supabase.from(st("estados")).select("id, nombre")
+    ]);
     
     if (error) {
       console.error("Error cargando historial:", error);
     }
 
-    setHistory(data || []);
+    // Mapear el nombre del estado en memoria
+    const eMap = new Map(estadosData?.map(e => [e.id, e.nombre]));
+    const hydrated = (solData || []).map(s => ({
+      ...s,
+      estados: { nombre: eMap.get(s.estado_id) || "Desconocido" }
+    }));
+
+    setHistory(hydrated);
     setHistoryLoading(false);
   }
 
