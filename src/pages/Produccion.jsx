@@ -602,6 +602,11 @@ export default function Produccion() {
         }
       });
 
+      // Para pedidos en estado 8 sin etapas pendientes → flujo completo (Entrada Acondicionamiento)
+      pedidosEnEtapas.forEach(pid => {
+        if (!(pid in newDict) && !(String(pid) in newDict)) newDict[pid] = "";
+      });
+
       setEtapasDict(prev => ({ ...prev, ...newDict }));
     }
 
@@ -2560,7 +2565,8 @@ export default function Produccion() {
                     {p.estado_id === 8 ? (
                       (() => {
                         const raw = etapasDict[p.id];
-                        if (!raw) return "Cargando etapa...";
+                        if (raw === undefined) return "Cargando etapa...";
+                        if (raw === "") return "Entrada Acondicionamiento";
                         return `Etapa: ${raw}`;
                       })()
                     ) : (
