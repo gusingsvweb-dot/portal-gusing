@@ -153,6 +153,17 @@ export default function TecnicoMantenimiento() {
         .update({ justificacion: justificacion || "N/A", accion_realizada: accion })
         .eq("id", selected.id);
       if (updErr) throw updErr;
+
+      // Notificar al usuario sobre el avance/novedad
+      if (selected.usuario_id) {
+        await notifyUserByUsername(
+          selected.usuario_id,
+          "📝 Novedad en tu solicitud",
+          `Se ha registrado un avance o novedad en tu solicitud M-${selected.consecutivo || selected.id}. Revisa los detalles.`,
+          selected.id
+        );
+      }
+
       await loadData();
       setError("✅ Novedades y avances guardados exitosamente.");
     } catch (err) {
