@@ -213,7 +213,7 @@ export default function MisSolicitudes() {
                   </span>
                 </div>
 
-                <h4>{s.tipos_solicitud?.nombre}</h4>
+                <h4>{s.tipos_solicitud?.nombre?.replace("_antiguo", "").trim()}</h4>
 
                 <div className="ms-item-footer">
                   <div className="ms-area-label">
@@ -243,7 +243,7 @@ export default function MisSolicitudes() {
             <div className="ms-card-main">
               <div className="ms-detail-header">
                 <div className="ms-detail-title">
-                  <h1>{selected.tipos_solicitud?.nombre}</h1>
+                  <h1>{selected.tipos_solicitud?.nombre?.replace("_antiguo", "").trim()}</h1>
                   <div className="ms-detail-meta">
                     Solicitado el {new Date(selected.created_at).toLocaleString()}
                   </div>
