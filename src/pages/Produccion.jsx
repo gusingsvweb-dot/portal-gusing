@@ -2053,25 +2053,51 @@ export default function Produccion() {
         </>
       ),
 
-      3: (
-        <>
-          <label>Fecha máxima de entrega (28 días hábiles)</label>
-          <input
-            type="date"
-            value={formData.fecha_maxima_entrega || selected.fecha_maxima_entrega || ""}
-            readOnly
-            style={{ backgroundColor: "#f0f0f0", cursor: "not-allowed" }}
-          />
+      3: (() => {
+        const fmt = (d) => d ? new Date(d).toLocaleDateString("es-CO", { day: "2-digit", month: "short", year: "numeric" }) : "—";
+        const diffDays = (a, b) => {
+          if (!a || !b) return null;
+          return Math.round((new Date(b) - new Date(a)) / (1000 * 60 * 60 * 24));
+        };
+        const cola = diffDays(selected.created_at, selected.fecha_ingreso_produccion);
+        const today = new Date().toISOString().split("T")[0];
+        return (
+          <>
+            {/* Panel de resumen de tiempos */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "18px" }}>
+              {[
+                { label: "Objetivo inicial", value: fmt(selected.fecha_maxima_entrega), icon: "🎯", color: "#3b82f6" },
+                { label: "Inicio producción", value: fmt(selected.fecha_inicio_produccion), icon: "▶️", color: "#10b981" },
+                { label: "Entrega propuesta", value: fmt(selected.fecha_propuesta_entrega), icon: "📦", color: "#8b5cf6" },
+                { label: "Cola (montado → aceptado)", value: cola !== null ? `${cola} día${cola !== 1 ? "s" : ""}` : "—", icon: "⏱️", color: "#f59e0b" },
+              ].map(({ label, value, icon, color }) => (
+                <div key={label} style={{ background: "#f8fafc", border: `1px solid #e2e8f0`, borderLeft: `4px solid ${color}`, borderRadius: "10px", padding: "10px 14px" }}>
+                  <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>{icon} {label}</div>
+                  <div style={{ fontSize: "1rem", fontWeight: 800, color: "#1e293b", marginTop: "4px" }}>{value}</div>
+                </div>
+              ))}
+            </div>
 
-          <label>Fecha propuesta de entrega (Producción)</label>
-          <input
-            type="date"
-            value={formData.fecha_propuesta_entrega ?? selected.fecha_propuesta_entrega ?? ""}
-            onChange={(ev) => setFormData({ ...formData, fecha_propuesta_entrega: ev.target.value })}
-            disabled={!puedeEditar}
-          />
-        </>
-      ),
+            <label>Fecha máxima de entrega (28 días hábiles)</label>
+            <input
+              type="date"
+              value={formData.fecha_maxima_entrega || selected.fecha_maxima_entrega || ""}
+              readOnly
+              style={{ backgroundColor: "#f0f0f0", cursor: "not-allowed" }}
+            />
+
+            <label>📅 Fecha propuesta de entrega (Producción)</label>
+            <input
+              type="date"
+              min={today}
+              value={formData.fecha_propuesta_entrega ?? selected.fecha_propuesta_entrega ?? ""}
+              onChange={(ev) => setFormData({ ...formData, fecha_propuesta_entrega: ev.target.value })}
+              disabled={!puedeEditar}
+              style={{ cursor: puedeEditar ? "pointer" : "not-allowed" }}
+            />
+          </>
+        );
+      })(),
 
       4: (
         <div style={{ textAlign: "center", fontStyle: "italic", color: "#64748b" }}>
