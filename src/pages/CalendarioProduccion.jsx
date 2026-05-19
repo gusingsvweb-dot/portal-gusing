@@ -44,6 +44,22 @@ export default function CalendarioProduccion() {
     const [form, setForm] = useState({ titulo: "", descripcion: "" });
 
     const esProduccion = ["produccion", "planeacion"].includes(usuarioActual?.rol?.toLowerCase());
+    const [usuariosDict, setUsuariosDict] = useState({});
+
+    useEffect(() => {
+        cargarUsuarios();
+    }, []);
+
+    async function cargarUsuarios() {
+        const { data, error } = await supabase.from(st("usuarios")).select("id, usuario, rol");
+        if (!error && data) {
+            const dict = {};
+            data.forEach(u => {
+                dict[u.id] = { usuario: u.usuario, rol: u.rol };
+            });
+            setUsuariosDict(dict);
+        }
+    }
 
     // Cargar tareas al cambiar de mes
     useEffect(() => {
@@ -123,7 +139,7 @@ export default function CalendarioProduccion() {
             fecha: selectedDate,
             titulo: form.titulo,
             descripcion: form.descripcion,
-            created_by: usuarioActual?.usuario?.id
+            created_by: usuarioActual?.id
         };
 
         const { error } = await supabase.from(st("tareas_produccion")).insert([nuevaTarea]);
@@ -174,11 +190,15 @@ export default function CalendarioProduccion() {
                     {isHoliday && <span className="holiday-label">Festivo</span>}
                 </div>
                 {isHoliday && <div className="holiday-name">{holidayName}</div>}
-                {dayTasks.map(t => (
-                    <div key={t.id} className="task-chip" title={t.titulo}>
-                        {t.titulo}
-                    </div>
-                ))}
+                {dayTasks.map(t => {
+                    const creador = usuariosDict[t.created_by];
+                    const labelCreador = creador ? ` (${creador.rol === "planeacion" ? "Plan." : "Prod."})` : "";
+                    return (
+                        <div key={t.id} className="task-chip" title={`${t.titulo}${t.descripcion ? '\n' + t.descripcion : ''}${creador ? '\nCreado por: ' + creador.usuario + ' (' + creador.rol + ')' : ''}`}>
+                            {t.titulo}{labelCreador}
+                        </div>
+                    );
+                })}
             </div>
         );
     };
@@ -223,12 +243,22 @@ export default function CalendarioProduccion() {
                             {/* LISTA DE TAREAS EXISTENTES */}
                             <div className="cal-task-list">
                                 {tareasDelDiaSeleccionado.length === 0 && <p style={{ color: "#888", fontSize: "14px" }}>No hay tareas programadas.</p>}
-                                {tareasDelDiaSeleccionado.map(t => (
-                                    <div key={t.id} className="cal-task-item">
-                                        <h4>{t.titulo}</h4>
-                                        {t.descripcion && <p>{t.descripcion}</p>}
-                                    </div>
-                                ))}
+                                {tareasDelDiaSeleccionado.map(t => {
+                                    const creador = usuariosDict[t.created_by];
+                                    return (
+                                        <div key={t.id} className="cal-task-item">
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <h4 style={{ margin: 0 }}>{t.titulo}</h4>
+                                                {creador && (
+                                                    <span style={{ fontSize: '11px', color: '#64748b', background: '#e2e8f0', padding: '2px 6px', borderRadius: '4px', textTransform: 'capitalize' }}>
+                                                        👤 {creador.usuario} ({creador.rol === "planeacion" ? "Planeación" : "Producción"})
+                                                    </span>
+                                                )}
+                                            </div>
+                                            {t.descripcion && <p style={{ marginTop: '5px' }}>{t.descripcion}</p>}
+                                        </div>
+                                    );
+                                })}
                             </div>
 
                             {/* FORMULARIO SOLO PARA PRODUCCIÓN Y SI NO ES FECHA PASADA NI FIN DE SEMANA */}
