@@ -24,6 +24,7 @@ export default function TecnicoMantenimiento() {
   const [filtro, setFiltro] = useState("");
   const [activeTab, setActiveTab] = useState("info");
   const [showHistory, setShowHistory] = useState(false);
+  const [justificacion, setJustificacion] = useState("");
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -110,6 +111,7 @@ export default function TecnicoMantenimiento() {
   const openModal = async (s) => {
     setSelected(s);
     setAccion(s.accion_realizada || "");
+    setJustificacion(s.justificacion === "N/A" ? "" : s.justificacion || "");
     setConsumos([]);
     setError("");
     
@@ -135,9 +137,29 @@ export default function TecnicoMantenimiento() {
   const closeModal = () => {
     setSelected(null);
     setAccion("");
+    setJustificacion("");
     setConsumos([]);
     setConsumosGuardados([]);
     setActiveTab("info");
+  };
+
+  const guardarNovedad = async () => {
+    if (!selected) return;
+    setSaving(true);
+    setError("");
+    try {
+      const { error: updErr } = await supabase
+        .from(st("solicitudes"))
+        .update({ justificacion: justificacion || "N/A", accion_realizada: accion })
+        .eq("id", selected.id);
+      if (updErr) throw updErr;
+      await loadData();
+      setError("✅ Novedades y avances guardados exitosamente.");
+    } catch (err) {
+      setError("Error al guardar novedad: " + err.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const addConsumo = () => setConsumos([...consumos, { repuesto_id: "", cantidad: "" }]);
@@ -169,6 +191,7 @@ export default function TecnicoMantenimiento() {
 
       if (isEnProceso) {
         updates.accion_realizada = accion;
+        updates.justificacion = justificacion || "N/A";
         updates.fecha_cierre = new Date().toISOString();
         notifMsg = `El técnico ha finalizado el trabajo.`;
       }
@@ -342,20 +365,43 @@ export default function TecnicoMantenimiento() {
 
               {/* TAB: RESOLUCIÓN */}
               {activeTab === "accion" && (
-                <div className="modal-section">
-                  <span className="modal-section-label">Trabajo Realizado</span>
-                  {selected.estado_id < 14 ? (
-                    <textarea 
-                      className="v2-input" 
-                      rows={5} 
-                      placeholder="Describe qué se le hizo al equipo, repuestos cambiados o acciones tomadas..."
-                      value={accion}
-                      onChange={e => setAccion(e.target.value)}
-                    />
-                  ) : (
-                    <div className="modal-text-box success-tint">{selected.accion_realizada || "No se registró descripción."}</div>
-                  )}
-                </div>
+                <>
+                  <div className="modal-section" style={{ marginBottom: "15px" }}>
+                    <span className="modal-section-label">Observaciones Adicionales / Diagnóstico (Opcional)</span>
+                    <p style={{ fontSize: "0.85rem", color: "#64748b", margin: "0 0 8px 0" }}>
+                      Úsalo para justificar retrasos, cambio de prioridad, si requiere romper zona, pasar a contratista externo, etc.
+                    </p>
+                    {selected.estado_id < 14 ? (
+                      <textarea 
+                        className="v2-input" 
+                        rows={3} 
+                        placeholder="Ej: Se detectó humedad interna, toca romper la pared para reparar la fuga de modo que esto pasaría a un contratista civil..."
+                        value={justificacion}
+                        onChange={e => setJustificacion(e.target.value)}
+                        style={{ borderLeft: "3px solid #f59e0b" }}
+                      />
+                    ) : (
+                      <div className="modal-text-box" style={{ borderLeft: "3px solid #f59e0b", backgroundColor: "#fffbeb" }}>
+                        {selected.justificacion && selected.justificacion !== "N/A" ? selected.justificacion : "Sin observaciones adicionales."}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="modal-section">
+                    <span className="modal-section-label">Trabajo Realizado (Resolución)</span>
+                    {selected.estado_id < 14 ? (
+                      <textarea 
+                        className="v2-input" 
+                        rows={5} 
+                        placeholder="Describe qué se le hizo al equipo, repuestos cambiados o acciones tomadas..."
+                        value={accion}
+                        onChange={e => setAccion(e.target.value)}
+                      />
+                    ) : (
+                      <div className="modal-text-box success-tint">{selected.accion_realizada || "No se registró descripción."}</div>
+                    )}
+                  </div>
+                </>
               )}
 
               {/* TAB: REPUESTOS */}
@@ -415,6 +461,16 @@ export default function TecnicoMantenimiento() {
             {/* Modal Footer */}
             <div className="modal-box-footer">
               <button className="mant-btn-action secondary" onClick={closeModal}>Cerrar</button>
+              {selected.estado_id === 13 && (
+                <button 
+                  className="mant-btn-action" 
+                  style={{ background: "#f8fafc", color: "#475569", border: "1px solid #cbd5e1" }} 
+                  onClick={guardarNovedad} 
+                  disabled={saving}
+                >
+                  {saving ? "..." : "💾 Guardar Novedad/Avance"}
+                </button>
+              )}
               {selected.estado_id < 14 && (
                 <button className="mant-btn-action primary" onClick={avanzarEstado} disabled={saving}>
                   {saving ? "Guardando..." : selected.estado_id === 1 ? "Iniciar Trabajo →" : "Finalizar y Cerrar Orden ✓"}
