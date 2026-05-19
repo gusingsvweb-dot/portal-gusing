@@ -38,6 +38,23 @@ const isValidUUID = (str) => {
     return regex.test(str);
 };
 
+const parseCreadorFirma = (desc) => {
+    if (!desc) return null;
+    const match = desc.match(/\[Creador:\s*([^|\]]+?)(?:\s*\|\s*Rol:\s*([^\]]+))?\]/);
+    if (match) {
+        return {
+            usuario: match[1].trim(),
+            rol: match[2] ? match[2].trim() : ''
+        };
+    }
+    return null;
+};
+
+const cleanDescripcion = (desc) => {
+    if (!desc) return "";
+    return desc.replace(/\s*\[Creador:.*?\]/g, "").trim();
+};
+
 export default function CalendarioProduccion() {
     const { usuarioActual } = useAuth();
     const [currentDate, setCurrentDate] = useState(new Date());
@@ -48,6 +65,13 @@ export default function CalendarioProduccion() {
     const [selectedDate, setSelectedDate] = useState(null);
     const [showModal, setShowModal] = useState(false);
     const [form, setForm] = useState({ titulo: "", descripcion: "" });
+
+    const getCreadorInfo = (t) => {
+        if (t.created_by && usuariosDict[t.created_by]) {
+            return usuariosDict[t.created_by];
+        }
+        return parseCreadorFirma(t.descripcion);
+    };
 
     const esProduccion = ["produccion", "planeacion"].includes(usuarioActual?.rol?.toLowerCase());
     const [usuariosDict, setUsuariosDict] = useState({});
@@ -141,14 +165,28 @@ export default function CalendarioProduccion() {
         e.preventDefault();
         if (!form.titulo.trim()) return;
 
+        const creadorNombre = usuarioActual?.usuario || 'Desconocido';
+        const creadorRol = usuarioActual?.rol || '';
+        const firma = `\n\n[Creador: ${creadorNombre} | Rol: ${creadorRol}]`;
+        const descripcionConFirma = (form.descripcion.trim() + firma).trim();
+
         const nuevaTarea = {
             fecha: selectedDate,
             titulo: form.titulo,
-            descripcion: form.descripcion,
+            descripcion: descripcionConFirma,
             created_by: isValidUUID(usuarioActual?.id) ? usuarioActual.id : null
         };
 
-        const { error } = await supabase.from(st("tareas_produccion")).insert([nuevaTarea]);
+        let { error } = await supabase.from(st("tareas_produccion")).insert([nuevaTarea]);
+
+        // Si falla por violación de llave foránea (código 23503), reintentamos guardar sin created_by (será null)
+        // pero la autoría quedará preservada en la firma dentro de la descripción.
+        if (error && error.code === '23503') {
+            console.warn("Falla de foreign key detectada. Reintentando guardar sin created_by...");
+            const tareaSinCreadorId = { ...nuevaTarea, created_by: null };
+            const retryResult = await supabase.from(st("tareas_produccion")).insert([tareaSinCreadorId]);
+            error = retryResult.error;
+        }
 
         if (error) {
             alert("Error al guardar tarea: " + (error.message || JSON.stringify(error)));
@@ -156,11 +194,8 @@ export default function CalendarioProduccion() {
         } else {
             // Recargar y cerrar
             cargarTareasMes();
-            setForm({ titulo: "", descripcion: "" }); // Limpiar para agregar otra si se desea
-            // No cerramos modal para verla agregada? Mejor cerrar
-            // Opcional: mantener abierto para agregar más. Cerremos por UX simple.
-            // Pero si queremos ver la lista, mejor solo limpiar form.
-            // Vamos a recargar y mantener abierto mostrando la lista actualizada.
+            setForm({ titulo: "", descripcion: "" });
+            setShowModal(false);
         }
     };
 
@@ -197,10 +232,11 @@ export default function CalendarioProduccion() {
                 </div>
                 {isHoliday && <div className="holiday-name">{holidayName}</div>}
                 {dayTasks.map(t => {
-                    const creador = usuariosDict[t.created_by];
+                    const creador = getCreadorInfo(t);
                     const labelCreador = creador ? ` (${creador.rol === "planeacion" ? "Plan." : "Prod."})` : "";
+                    const descLimpia = cleanDescripcion(t.descripcion);
                     return (
-                        <div key={t.id} className="task-chip" title={`${t.titulo}${t.descripcion ? '\n' + t.descripcion : ''}${creador ? '\nCreado por: ' + creador.usuario + ' (' + creador.rol + ')' : ''}`}>
+                        <div key={t.id} className="task-chip" title={`${t.titulo}${descLimpia ? '\n' + descLimpia : ''}${creador ? '\nCreado por: ' + creador.usuario + ' (' + (creador.rol === "planeacion" ? "Planeación" : "Producción") + ')' : ''}`}>
                             {t.titulo}{labelCreador}
                         </div>
                     );
@@ -250,7 +286,8 @@ export default function CalendarioProduccion() {
                             <div className="cal-task-list">
                                 {tareasDelDiaSeleccionado.length === 0 && <p style={{ color: "#888", fontSize: "14px" }}>No hay tareas programadas.</p>}
                                 {tareasDelDiaSeleccionado.map(t => {
-                                    const creador = usuariosDict[t.created_by];
+                                    const creador = getCreadorInfo(t);
+                                    const descLimpia = cleanDescripcion(t.descripcion);
                                     return (
                                         <div key={t.id} className="cal-task-item">
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -261,7 +298,7 @@ export default function CalendarioProduccion() {
                                                     </span>
                                                 )}
                                             </div>
-                                            {t.descripcion && <p style={{ marginTop: '5px' }}>{t.descripcion}</p>}
+                                            {descLimpia && <p style={{ marginTop: '5px' }}>{descLimpia}</p>}
                                         </div>
                                     );
                                 })}
