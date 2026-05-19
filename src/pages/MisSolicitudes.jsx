@@ -11,6 +11,8 @@ export default function MisSolicitudes() {
   const [selected, setSelected] = useState(null);
   const [activeTab, setActiveTab] = useState("Todas");
   const [filtro, setFiltro] = useState("");
+  const [filtroEstado, setFiltroEstado] = useState("Todos");
+  const [soloCalificar, setSoloCalificar] = useState(false);
 
   const [puntos, setPuntos] = useState(0);
   const [comentario, setComentario] = useState("");
@@ -87,7 +89,16 @@ export default function MisSolicitudes() {
         if (tab.includes("calidad") && !areaDB.includes("calidad")) return false;
       }
 
-      // 2. Filtro de Texto
+      // 2. Filtro por Estado y Pendiente Calificar
+      if (soloCalificar && s.estado_id !== 14) return false;
+      if (!soloCalificar && filtroEstado !== "Todos") {
+        if (filtroEstado === "Pendientes" && s.estado_id !== 1) return false;
+        if (filtroEstado === "En Proceso" && s.estado_id !== 13) return false;
+        if (filtroEstado === "Finalizadas" && s.estado_id !== 14) return false;
+        if (filtroEstado === "Cerradas" && s.estado_id !== 15) return false;
+      }
+
+      // 3. Filtro de Texto
       if (!filtro) return true;
       const buscar =
         `${s.tipos_solicitud?.nombre ?? ""} ${s.descripcion ?? ""} ${s.areas?.nombre ?? ""
@@ -95,7 +106,7 @@ export default function MisSolicitudes() {
 
       return buscar.includes(filtro.toLowerCase());
     });
-  }, [solicitudes, activeTab, filtro]);
+  }, [solicitudes, activeTab, filtro, filtroEstado, soloCalificar]);
 
   // ============================
   // Helper de Clases y Formato
@@ -173,10 +184,37 @@ export default function MisSolicitudes() {
               <input
                 className="ms-filter"
                 type="text"
-                placeholder="🔍 Buscar..."
+                placeholder="🔍 Buscar solicitud..."
                 value={filtro}
                 onChange={(e) => setFiltro(e.target.value)}
+                style={{ marginBottom: "12px" }}
               />
+              <div style={{ display: "flex", gap: "10px", marginBottom: "12px" }}>
+                <select 
+                  className="ms-filter" 
+                  style={{ flex: 1, padding: "8px 12px" }} 
+                  value={filtroEstado} 
+                  onChange={e => setFiltroEstado(e.target.value)}
+                  disabled={soloCalificar}
+                >
+                  <option value="Todos">Todos los Estados</option>
+                  <option value="Pendientes">Pendientes</option>
+                  <option value="En Proceso">En Proceso</option>
+                  <option value="Finalizadas">Finalizadas</option>
+                  <option value="Cerradas">Cerradas</option>
+                </select>
+              </div>
+              <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.85rem", color: "#64748b", cursor: "pointer", fontWeight: "600" }}>
+                <input 
+                  type="checkbox" 
+                  checked={soloCalificar} 
+                  onChange={e => {
+                    setSoloCalificar(e.target.checked);
+                    if (e.target.checked) setFiltroEstado("Todos");
+                  }} 
+                />
+                ⭐ Pendientes por Calificar
+              </label>
             </div>
           </div>
 

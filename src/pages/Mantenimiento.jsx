@@ -104,11 +104,17 @@ export default function Mantenimiento() {
 
   const stats = useMemo(() => {
     const tickets = solicitudes.filter(s => s.tipo_solicitud_id !== 5);
+    const calificados = tickets.filter(s => s.estado_id === 15 && s.calificacion);
+    const sumCalificacion = calificados.reduce((sum, s) => sum + parseFloat(s.calificacion), 0);
+    const promedio = calificados.length ? (sumCalificacion / calificados.length).toFixed(1) : "0.0";
+
     return {
       total: tickets.length,
       pendientes: tickets.filter(s => s.estado_id === 1).length,
       proceso: tickets.filter(s => s.estado_id === 13).length,
       finalizados: tickets.filter(s => [14, 15].includes(s.estado_id)).length,
+      pendientesCalificar: tickets.filter(s => s.estado_id === 14).length,
+      promedioCalificacion: promedio
     };
   }, [solicitudes]);
 
@@ -428,7 +434,8 @@ export default function Mantenimiento() {
           <StatCard label="Total Órdenes" value={stats.total} icon="🔧" accent="#6366f1" />
           <StatCard label="Pendientes" value={stats.pendientes} icon="⏳" accent="#f59e0b" />
           <StatCard label="En Proceso" value={stats.proceso} icon="⚙️" accent="#3b82f6" />
-          <StatCard label="Finalizadas" value={stats.finalizados} icon="✅" accent="#10b981" />
+          <StatCard label="Por Calificar" value={stats.pendientesCalificar} icon="⭐" accent="#ec4899" />
+          <StatCard label="Calificación Prom." value={stats.promedioCalificacion} icon="🏆" accent="#10b981" />
         </div>
 
         {/* FILTER BAR */}
