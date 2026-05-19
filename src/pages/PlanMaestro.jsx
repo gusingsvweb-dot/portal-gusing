@@ -274,7 +274,8 @@ export default function PlanMaestro() {
   }
 
   async function toggleMonthStatus(monthEntry) {
-    const newStatus = monthEntry.status === "Ejecutado" ? "Pendiente" : "Ejecutado";
+    const isEj = monthEntry.status?.toLowerCase() === "ejecutado" || monthEntry.status?.toLowerCase() === "completado";
+    const newStatus = isEj ? "Pendiente" : "Ejecutado";
     await supabase.from(st("maintenance_schedule_months")).update({ status: newStatus }).eq("id", monthEntry.id);
     setCronogramaAnual(prev => prev.map(item => ({
       ...item,
@@ -689,7 +690,7 @@ export default function PlanMaestro() {
                   {cronogramaFiltrado.map(item => {
                     const mesEntry = item.maintenance_schedule_months?.find(m => m.month_number === parseInt(filtroMesAnual));
                     if (!mesEntry) return null;
-                    const isCompletado = mesEntry.status === "completado";
+                    const isCompletado = mesEntry.status?.toLowerCase() === "ejecutado" || mesEntry.status?.toLowerCase() === "completado";
                     return (
                       <div key={item.id} className={`anual-mes-card ${isCompletado ? "anual-mes-completado" : "anual-mes-pendiente"}`}>
                         <div className="anual-mes-card-top">
