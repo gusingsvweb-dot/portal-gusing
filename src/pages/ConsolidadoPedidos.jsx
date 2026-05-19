@@ -9,6 +9,7 @@ export default function ConsolidadoPedidos() {
     const { usuarioActual } = useAuth();
     const [pedidos, setPedidos] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [etapasDict, setEtapasDict] = useState({});
 
     // Estado para los filtros de cada columna
     const [filtros, setFiltros] = useState({
@@ -36,6 +37,36 @@ export default function ConsolidadoPedidos() {
     useEffect(() => {
         fetchPedidos();
     }, []);
+
+    useEffect(() => {
+        if (pedidos.length === 0) return;
+        const en8 = pedidos.filter(p => p.estado_id === 8).map(p => p.id);
+        if (en8.length === 0) { setEtapasDict({}); return; }
+
+        async function loadEtapas() {
+            const { data } = await supabase
+                .from(st("pedido_etapas"))
+                .select("pedido_id, nombre, orden, estado")
+                .in("pedido_id", en8)
+                .neq("estado", "completada");
+            if (!data) return;
+            const groups = {};
+            data.forEach(d => {
+                if (!groups[d.pedido_id]) groups[d.pedido_id] = [];
+                groups[d.pedido_id].push(d);
+            });
+            const dict = {};
+            Object.keys(groups).forEach(pid => {
+                const list = groups[pid].sort((a, b) => (a.orden || 0) - (b.orden || 0));
+                if (list.length > 0) dict[pid] = list[0].nombre;
+            });
+            en8.forEach(pid => {
+                if (!(pid in dict) && !(String(pid) in dict)) dict[pid] = "Entrada Acond.";
+            });
+            setEtapasDict(dict);
+        }
+        loadEtapas();
+    }, [pedidos]);
 
     async function fetchPedidos() {
         setLoading(true);
@@ -244,30 +275,28 @@ export default function ConsolidadoPedidos() {
                                         Producto
                                         <input className="filter-input" placeholder="Producto..." onChange={e => handleFilterChange("producto", e.target.value)} />
                                     </th>
-
-                                    <th>Prioridad <input className="filter-input" placeholder="Filtro..." onChange={e => handleFilterChange("prioridad", e.target.value)} /></th>
                                     <th>Estado <input className="filter-input" placeholder="Estado..." onChange={e => handleFilterChange("estado", e.target.value)} /></th>
+                                    <th>Etapa Actual</th>
+                                    <th>Prioridad <input className="filter-input" placeholder="Filtro..." onChange={e => handleFilterChange("prioridad", e.target.value)} /></th>
                                     <th>Cant.</th>
                                     <th>Fecha Recepción <input className="filter-input" placeholder="YYYY-MM-DD" onChange={e => handleFilterChange("fecha", e.target.value)} /></th>
-
-                                    <th>Entregado</th>
-                                    <th>F. Entrega Cliente</th>
+                                    <th>F. Planificada</th>
+                                    <th>F. Proyectada</th>
+                                    <th>F. Inicio Prod.</th>
                                     <th>F. Ingreso Prod.</th>
+                                    <th>F. Entrega Cliente</th>
                                     <th>OP</th>
                                     <th>Lote</th>
                                     <th>F. Vencimiento</th>
                                     <th>Tam. Lote</th>
                                     <th>% Desp.</th>
-                                    <th>F. Máxima</th>
-                                    <th>F. Propuesta</th>
-                                    <th>F. Inicio Prod.</th>
                                     <th>F. Entrada MB</th>
                                     <th>F. Salida MB</th>
                                     <th>F. Liberación PT</th>
                                     <th>F. Entrega Bodega</th>
-                                    <th>Planificada</th>
-                                    <th>P. Real</th>
-                                    <th>T. Entrega</th>
+                                    <th>Plan. (d)</th>
+                                    <th>Real (d)</th>
+                                    <th>T. Entrega (d)</th>
                                     <th>Días MB</th>
                                     <th>Días Acond.</th>
                                     <th>T. Muertos</th>
@@ -280,46 +309,77 @@ export default function ConsolidadoPedidos() {
                             </thead>
                             <tbody>
                                 {loading ? (
-                                    <tr><td colSpan="35" style={{ textAlign: "center", padding: "40px", color: "#64748b" }}>Cargando registros consolidados...</td></tr>
+                                    <tr><td colSpan="33" style={{ textAlign: "center", padding: "40px", color: "#64748b" }}>Cargando registros consolidados...</td></tr>
                                 ) : pedidosPaginados.length === 0 ? (
-                                    <tr><td colSpan="35" style={{ textAlign: "center", padding: "40px", color: "#64748b" }}>No se encontraron pedidos que coincidan con la búsqueda.</td></tr>
+                                    <tr><td colSpan="33" style={{ textAlign: "center", padding: "40px", color: "#64748b" }}>No se encontraron pedidos que coincidan con la búsqueda.</td></tr>
                                 ) : (
                                     pedidosPaginados.map((p) => {
                                         const c = getCalculatedValues(p);
+                                        const finalizado = p.estado_id === 12 || p.entregado_cliente;
+                                        const etapaActual = p.estado_id === 8
+                                            ? (etapasDict[p.id] || etapasDict[String(p.id)] || null)
+                                            : null;
+                                        const estadoBadgeStyle = (() => {
+                                            if (finalizado) return { background: "#dcfce7", color: "#166534", border: "1px solid #bbf7d0" };
+                                            if (p.estado_id <= 2) return { background: "#f1f5f9", color: "#475569", border: "1px solid #e2e8f0" };
+                                            if (p.estado_id <= 5) return { background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe" };
+                                            if (p.estado_id <= 9) return { background: "#fdf4ff", color: "#7c3aed", border: "1px solid #e9d5ff" };
+                                            return { background: "#fff7ed", color: "#c2410c", border: "1px solid #fed7aa" };
+                                        })();
                                         return (
-                                            <tr key={p.id}>
-                                                <td className="sticky-col col-id id-cell">#{p.id}</td>
-                                                <td className="sticky-col col-cliente">{p.clientes?.nombre || "Sin Cliente"}</td>
-                                                <td className="sticky-col col-producto" title={p.productos?.articulo}>
+                                            <tr key={p.id} style={finalizado ? { background: "linear-gradient(90deg,#f0fdf4,#f0fdf4)" } : {}}>
+                                                <td className="sticky-col col-id id-cell" style={finalizado ? { background: "#f0fdf4" } : {}}>
+                                                    {finalizado && <span style={{ color: "#16a34a", marginRight: 3, fontSize: 10 }}>●</span>}
+                                                    #{p.id}
+                                                </td>
+                                                <td className="sticky-col col-cliente" style={finalizado ? { background: "#f0fdf4" } : {}}>{p.clientes?.nombre || "Sin Cliente"}</td>
+                                                <td className="sticky-col col-producto" title={p.productos?.articulo} style={finalizado ? { background: "#f0fdf4" } : {}}>
                                                     {p.productos?.articulo || "Sin Producto"}
                                                 </td>
-
                                                 <td>
-                                                    <span className={`badge badge-${(p.prioridad || "bajo").toLowerCase()}`}>
-                                                        {p.prioridad || "BAJO"}
+                                                    <span style={{
+                                                        ...estadoBadgeStyle,
+                                                        padding: "3px 10px", borderRadius: 99, fontSize: 11,
+                                                        fontWeight: 700, whiteSpace: "nowrap", display: "inline-block",
+                                                    }}>
+                                                        {finalizado ? "✓ " : ""}{p.estados?.nombre || "-"}
                                                     </span>
                                                 </td>
                                                 <td>
-                                                    <span className="state-label">
-                                                        {p.estados?.nombre || "-"}
+                                                    {etapaActual !== null ? (
+                                                        <span style={{
+                                                            background: "#ede9fe", color: "#6d28d9",
+                                                            border: "1px solid #c4b5fd",
+                                                            padding: "2px 8px", borderRadius: 6,
+                                                            fontSize: 11, fontWeight: 600, whiteSpace: "nowrap",
+                                                        }}>
+                                                            {etapaActual}
+                                                        </span>
+                                                    ) : <span style={{ color: "#94a3b8", fontSize: 11 }}>—</span>}
+                                                </td>
+                                                <td>
+                                                    <span className={`badge badge-${(p.prioridad || "bajo").toLowerCase().replace(" ", "")}`}>
+                                                        {p.prioridad || "BAJO"}
                                                     </span>
                                                 </td>
                                                 <td style={{ textAlign: "center" }}>{p.cantidad}</td>
                                                 <td>{p.fecha_recepcion_cliente || "-"}</td>
-
-                                                <td style={{ textAlign: "center" }}>
-                                                    {p.entregado_cliente ? "✅ SI" : "❌ NO"}
+                                                <td style={{ fontWeight: p.fecha_maxima_entrega ? 600 : 400, color: p.fecha_maxima_entrega ? "#1e293b" : "#94a3b8" }}>
+                                                    {p.fecha_maxima_entrega || "-"}
                                                 </td>
-                                                <td>{p.fecha_entrega_cliente || "-"}</td>
+                                                <td style={{ color: p.fecha_propuesta_entrega ? "#7c3aed" : "#94a3b8", fontWeight: p.fecha_propuesta_entrega ? 600 : 400 }}>
+                                                    {p.fecha_propuesta_entrega || "-"}
+                                                </td>
+                                                <td style={{ color: p.fecha_inicio_produccion ? "#0369a1" : "#94a3b8", fontWeight: p.fecha_inicio_produccion ? 600 : 400 }}>
+                                                    {p.fecha_inicio_produccion || "-"}
+                                                </td>
                                                 <td>{p.fecha_ingreso_produccion || "-"}</td>
+                                                <td>{p.fecha_entrega_cliente || "-"}</td>
                                                 <td>{p.op || "-"}</td>
                                                 <td>{p.lote || "-"}</td>
                                                 <td>{p.fecha_vencimiento || "-"}</td>
                                                 <td>{p.tamano_lote || "-"}</td>
                                                 <td style={{ textAlign: "right" }}>{p.porcentaje_desperdicio ? `${p.porcentaje_desperdicio}%` : "-"}</td>
-                                                <td>{p.fecha_maxima_entrega || "-"}</td>
-                                                <td>{p.fecha_propuesta_entrega || "-"}</td>
-                                                <td>{p.fecha_inicio_produccion || "-"}</td>
                                                 <td>{p.fecha_entrada_mb || "-"}</td>
                                                 <td>{p.fecha_salida_mb || "-"}</td>
                                                 <td>{p.fecha_liberacion_pt || "-"}</td>

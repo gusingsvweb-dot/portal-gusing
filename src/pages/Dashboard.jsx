@@ -35,6 +35,7 @@ ChartJS.register(
 
 export default function Dashboard() {
   const [pedidos, setPedidos] = useState([]);
+  const [etapasDict, setEtapasDict] = useState({});
 
   // Filtros
   const [filtroTexto, setFiltroTexto] = useState("");
@@ -129,6 +130,36 @@ export default function Dashboard() {
   useEffect(() => {
     loadPedidos();
   }, []);
+
+  useEffect(() => {
+    if (pedidos.length === 0) return;
+    const en8 = pedidos.filter(p => p.estado_id === 8).map(p => p.id);
+    if (en8.length === 0) { setEtapasDict({}); return; }
+
+    async function loadEtapas() {
+      const { data } = await supabase
+        .from(st("pedido_etapas"))
+        .select("pedido_id, nombre, orden, estado")
+        .in("pedido_id", en8)
+        .neq("estado", "completada");
+      if (!data) return;
+      const groups = {};
+      data.forEach(d => {
+        if (!groups[d.pedido_id]) groups[d.pedido_id] = [];
+        groups[d.pedido_id].push(d);
+      });
+      const dict = {};
+      Object.keys(groups).forEach(pid => {
+        const list = groups[pid].sort((a, b) => (a.orden || 0) - (b.orden || 0));
+        if (list.length > 0) dict[pid] = list[0].nombre;
+      });
+      en8.forEach(pid => {
+        if (!(pid in dict) && !(String(pid) in dict)) dict[pid] = "Entrada Acond.";
+      });
+      setEtapasDict(dict);
+    }
+    loadEtapas();
+  }, [pedidos]);
 
   // =============================
   // Filtros combinados
@@ -720,13 +751,15 @@ export default function Dashboard() {
                   <th>Producto</th>
                   <th>Cliente</th>
                   <th>Estado</th>
+                  <th>Etapa</th>
                   <th>Asignado a</th>
                   <th>Recepción</th>
-                  <th>F. máxima</th>
-                  <th>Entrega bodega</th>
-                  <th>Prod. Planificada</th>
-                  <th>Prod. Real</th>
-                  <th>T. Entrega</th>
+                  <th>F. Planificada</th>
+                  <th>F. Proyectada</th>
+                  <th>F. Inicio Prod.</th>
+                  <th>Plan. (d)</th>
+                  <th>Real (d)</th>
+                  <th>T. Entrega (d)</th>
                   <th>Días MB</th>
                   <th>Días Acond.</th>
                   <th>T. Muertos</th>
@@ -743,39 +776,49 @@ export default function Dashboard() {
                 ) : (
                   tablaPedidos.map((p) => {
                     const c = getCalculatedValues(p);
+                    const finalizado = p.estado_id === 12;
+                    const etapaActual = p.estado_id === 8
+                      ? (etapasDict[p.id] || etapasDict[String(p.id)] || null)
+                      : null;
                     const cumplio = p.fecha_entrega_bodega && p.fecha_maxima_entrega
                       ? (p.fecha_entrega_bodega <= p.fecha_maxima_entrega ? "A tiempo" : "Tarde")
                       : "-";
 
                     return (
-                      <tr key={p.id}>
-                        <td style={{ fontWeight: "600", color: "var(--text-main)" }}>#{p.id}</td>
+                      <tr key={p.id} style={finalizado ? { background: "rgba(220,252,231,0.45)" } : {}}>
+                        <td style={{ fontWeight: "600", color: "var(--text-main)" }}>
+                          {finalizado && <span style={{ color: "#16a34a", marginRight: 4, fontSize: 10 }}>●</span>}
+                          #{p.id}
+                        </td>
                         <td style={{ fontWeight: "500", color: "var(--text-main)" }}>{p.productos?.articulo || "-"}</td>
                         <td>{p.clientes?.nombre || "-"}</td>
                         <td>
                           <span className={`state-badge ${getStateClass(p.estados?.nombre)}`}>
-                            {p.estados?.nombre || "Pendiente"}
+                            {finalizado ? "✓ " : ""}{p.estados?.nombre || "Pendiente"}
                           </span>
+                        </td>
+                        <td>
+                          {etapaActual !== null ? (
+                            <span style={{
+                              background: "#ede9fe", color: "#6d28d9", border: "1px solid #c4b5fd",
+                              padding: "2px 8px", borderRadius: 6, fontSize: 11, fontWeight: 600,
+                            }}>
+                              {etapaActual}
+                            </span>
+                          ) : <span style={{ color: "var(--text-sub)", fontSize: 12 }}>—</span>}
                         </td>
                         <td>{p.asignado_a || "Sin asignar"}</td>
                         <td>{p.fecha_recepcion_cliente || "-"}</td>
-                        <td>{p.fecha_maxima_entrega || "-"}</td>
-                        <td>{p.fecha_entrega_bodega || "-"}</td>
+                        <td style={{ fontWeight: p.fecha_maxima_entrega ? 600 : 400 }}>{p.fecha_maxima_entrega || "-"}</td>
+                        <td style={{ color: p.fecha_propuesta_entrega ? "#7c3aed" : "var(--text-sub)", fontWeight: p.fecha_propuesta_entrega ? 600 : 400 }}>{p.fecha_propuesta_entrega || "-"}</td>
+                        <td style={{ color: p.fecha_inicio_produccion ? "#0369a1" : "var(--text-sub)", fontWeight: p.fecha_inicio_produccion ? 600 : 400 }}>{p.fecha_inicio_produccion || "-"}</td>
                         <td style={{ textAlign: "center" }}>{getMetricBadge(c.plan, "process")}</td>
                         <td style={{ textAlign: "center" }}>{getMetricBadge(c.real, "process")}</td>
                         <td style={{ textAlign: "center" }}>{getMetricBadge(c.entrega, "process")}</td>
                         <td style={{ textAlign: "center" }}>{getMetricBadge(c.mb, "process")}</td>
                         <td style={{ textAlign: "center" }}>{getMetricBadge(c.acond, "process")}</td>
                         <td style={{ textAlign: "center" }}>{getMetricBadge(c.tMuertos, "-")}</td>
-                        <td
-                          className={
-                            cumplio === "A tiempo"
-                              ? "badge-ok"
-                              : cumplio === "Tarde"
-                                ? "badge-late"
-                                : ""
-                          }
-                        >
+                        <td className={cumplio === "A tiempo" ? "badge-ok" : cumplio === "Tarde" ? "badge-late" : ""}>
                           {cumplio}
                         </td>
                       </tr>
