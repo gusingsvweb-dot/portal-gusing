@@ -255,17 +255,6 @@ export default function Microbiologia() {
     );
   }, [solicitudesIniciales, filtroTexto]);
 
-  const etapasFiltradas = useMemo(() => {
-    const q = filtroTexto.trim().toLowerCase();
-    if (!q) return etapas;
-    return etapas.filter(e =>
-      e.nombre.toLowerCase().includes(q) ||
-      (e.pedidos_produccion?.productos?.articulo || "").toLowerCase().includes(q) ||
-      (e.pedidos_produccion?.clientes?.nombre || "").toLowerCase().includes(q) ||
-      String(e.pedido_id).includes(q)
-    );
-  }, [etapas, filtroTexto]);
-
   /* ===========================================================
      CARGAR PENDIENTES (ETAPAS + SOLICITUDES)
   =========================================================== */
@@ -1090,29 +1079,6 @@ export default function Microbiologia() {
               ))}
           </SidebarSection>
 
-          <SidebarSection
-            title="Etapas Intermedias"
-            count={etapasFiltradas.length}
-            isOpen={expanded.intermedias}
-            onToggle={() => toggleSection("intermedias")}
-          >
-            {etapasFiltradas.map((e) => (
-              <div
-                key={e.id}
-                className={`mb-item ${selected?.id === e.id && selected?.tipoItem === 'etapa' ? 'mb-item-selected' : ''}`}
-                onClick={() => seleccionarItem(e, 'etapa')}
-              >
-                <div className="mb-item-top">
-                  <span className="mb-id">ID PED: #{e.id} | PEDIDO: #{e.pedido_id}</span>
-                  <span className="mb-chip">EN REVISIÓN</span>
-                </div>
-                <p className="mb-title">{e.pedidos_produccion?.productos?.articulo || 'Sin Producto'}</p>
-                <p className="mb-sub">
-                  <strong>Etapa:</strong> {e.nombre}
-                </p>
-              </div>
-            ))}
-          </SidebarSection>
         </div>
 
         {/* DETALLE DERECHA */}
