@@ -350,7 +350,28 @@ export default function Bodega() {
   async function confirmarEntrega() {
     if (!selected) return;
 
-    // Validar carga de items
+    // PARCIAL: sin items, solo confirmar entrega
+    if (selected.tipo_solicitud_mp === 'parcial') {
+      const ok = window.confirm("¿Confirmar entrega y avanzar el pedido a Producción?");
+      if (!ok) return;
+      const ahora = new Date().toISOString();
+      const { error } = await supabase
+        .from(st("pedidos_produccion"))
+        .update({ fecha_entrega_de_materias_primas_e_insumos: ahora, estado_id: 5, asignado_a: "produccion" })
+        .eq("id", selected.id);
+      if (error) return alert("Error guardando entrega");
+      try {
+        const { notifyRoles } = await import("../api/notifications");
+        await notifyRoles(["produccion"], "MP Entregada (Parcial)", `Bodega confirmó entrega parcial para pedido #${selected.id}`, selected.id, "accion_requerida");
+      } catch (e) { console.error(e); }
+      alert("Entrega registrada. Pedido enviado a Producción.");
+      setSelected(null);
+      loadPedidos();
+      loadHistorial();
+      return;
+    }
+
+    // COMPLETA / LEGACY: validar items
     if (itemsDetallados.length === 0) {
       alert("Error: No hay items cargados o la lista está vacía. Intente recargar el pedido.");
       return;

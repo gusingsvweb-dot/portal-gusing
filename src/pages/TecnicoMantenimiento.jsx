@@ -245,10 +245,10 @@ export default function TecnicoMantenimiento() {
   return (
     <>
       <Navbar rol="tecnicomantenimiento" />
-      <div className="mant-layout">
-        <header className="mant-header">
+      <div className="mant-container">
+        <header className="mant-header-section">
           <div>
-            <h1 className="mant-title">Mis Órdenes de Mantenimiento</h1>
+            <h2 className="mant-title">Mis Órdenes de Mantenimiento</h2>
             <p className="mant-subtitle">Tablero del Técnico — {new Date().toLocaleDateString("es-CO", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</p>
           </div>
           <div style={{ display: "flex", gap: "20px", alignItems: "center" }}>

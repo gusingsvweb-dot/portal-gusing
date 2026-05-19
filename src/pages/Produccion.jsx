@@ -167,6 +167,8 @@ export default function Produccion() {
   const [isAdditionalRequestMode, setIsAdditionalRequestMode] = useState(false); // NUEVO: flag para solicitud adicional
   const [busquedaMP, setBusquedaMP] = useState("");
   const [solicitudGranel, setSolicitudGranel] = useState(""); // NUEVO: Granel
+  const [modoSolicitudMP, setModoSolicitudMP] = useState(null); // null | 'parcial' | 'completa'
+  const [obsNuevaSolicitudMP, setObsNuevaSolicitudMP] = useState("");
 
   const materialesFiltrados = useMemo(() => {
     const search = busquedaMP.toLowerCase().trim();
@@ -905,6 +907,74 @@ export default function Produccion() {
     setIsAdditionalRequestMode(false); // Ensure reset
     await reloadSelected();
     return true;
+  }
+
+  /* ===========================================================
+     NUEVA SOLICITUD MP: PARCIAL O COMPLETA
+  ============================================================ */
+  async function enviarSolicitudMP(tipo) {
+    if (!selected) return;
+
+    // Para completa: guardar items de materialesSeleccionados
+    if (tipo === 'completa') {
+      const rawInserts = materialesSeleccionados
+        .filter(m => m.referencia && m.cantidad > 0)
+        .map(m => ({
+          pedido_id: selected.id,
+          referencia_materia_prima: m.referencia,
+          cantidad: m.cantidad,
+          es_critico: m.es_critico !== false,
+        }));
+      if (rawInserts.length > 0) {
+        const { error: errItems } = await supabase.from(st("pedidos_bodega_items")).insert(rawInserts);
+        if (errItems) { alert("Error guardando materiales."); return; }
+      }
+      // Guardar solicitudGranel del modal si existe
+      if (solicitudGranel.trim()) {
+        await supabase.from(st("observaciones_pedido")).insert([{
+          pedido_id: selected.id,
+          usuario: usuarioActual?.usuario || "Producción",
+          observacion: `📦 SOLICITUD COMPLETA (insumos): ${solicitudGranel.trim()}`,
+        }]);
+        setSolicitudGranel("");
+      }
+    }
+
+    // Guardar observación si hay texto (para parcial o completa con obs extra)
+    if (obsNuevaSolicitudMP.trim()) {
+      await supabase.from(st("observaciones_pedido")).insert([{
+        pedido_id: selected.id,
+        usuario: usuarioActual?.usuario || "Producción",
+        observacion: `📦 Solicitud ${tipo === 'parcial' ? 'PARCIAL' : 'COMPLETA'}: ${obsNuevaSolicitudMP.trim()}`,
+      }]);
+    }
+
+    const { error } = await supabase
+      .from(st("pedidos_produccion"))
+      .update({
+        fecha_solicitud_materias_primas: ahoraISO(),
+        tipo_solicitud_mp: tipo,
+        asignado_a: "bodega",
+      })
+      .eq("id", selected.id);
+
+    if (error) { alert("Error solicitando materias primas."); return; }
+
+    try {
+      await notifyRoles(
+        ["bodega", "bodega_mp", "bodegapt"],
+        `Solicitud ${tipo === 'parcial' ? 'Parcial' : 'Completa'} de MP`,
+        `Producción solicita MP (${tipo.toUpperCase()}) para Pedido #${selected.id} – ${selected.productos?.articulo || ""}`,
+        selected.id,
+        "accion_requerida"
+      );
+    } catch (e) { console.error(e); }
+
+    setModoSolicitudMP(null);
+    setObsNuevaSolicitudMP("");
+    setMaterialesSeleccionados([{ referencia: "", cantidad: 1 }]);
+    setShowMaterialModal(false);
+    await reloadSelected();
   }
 
   /* ===========================================================
@@ -2565,29 +2635,12 @@ export default function Produccion() {
               <CollapsibleSection
                 title="📦 Materias primas / insumos"
                 isOpen={expanded.materias}
-                onToggle={(e) => {
-                  if (e.shiftKey) {
-                    if (e.stopPropagation) e.stopPropagation();
-                    setShowItemsSolicitados(true);
-                  } else {
-                    toggleSection("materias");
-                  }
-                }}
+                onToggle={() => toggleSection("materias")}
               >
                 <div style={{ padding: '10px' }}>
                   {/* ESTADO: ESPERANDO ENTREGA */}
                   {selected.fecha_solicitud_materias_primas && !selected.fecha_entrega_de_materias_primas_e_insumos && (
-                    <div style={{
-                      padding: "10px",
-                      backgroundColor: "#fff7ed",
-                      border: "1px solid #fdba74",
-                      borderRadius: "6px",
-                      color: "#9a3412",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
-                      marginBottom: "15px"
-                    }}>
+                    <div style={{ padding: "10px", backgroundColor: "#fff7ed", border: "1px solid #fdba74", borderRadius: "6px", color: "#9a3412", display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
                       <span>🕒</span>
                       <strong>Esperando a que bodega entregue la materia prima...</strong>
                     </div>
@@ -2595,28 +2648,33 @@ export default function Produccion() {
 
                   {/* ESTADO: ENTREGADO */}
                   {selected.fecha_entrega_de_materias_primas_e_insumos && (
-                    <div style={{
-                      padding: "10px",
-                      backgroundColor: "#ecfdf5",
-                      border: "1px solid #6ee7b7",
-                      borderRadius: "6px",
-                      color: "#065f46",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
-                      marginBottom: "15px"
-                    }}>
+                    <div style={{ padding: "10px", backgroundColor: "#ecfdf5", border: "1px solid #6ee7b7", borderRadius: "6px", color: "#065f46", display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
                       <span>✅</span>
                       <strong>Materias primas entregadas por Bodega.</strong>
                     </div>
                   )}
 
-                  {/* DATES */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                  {/* TIPO BADGE */}
+                  {selected.fecha_solicitud_materias_primas && selected.tipo_solicitud_mp && (
+                    <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{
+                        padding: '4px 12px', fontSize: '11px', fontWeight: 800, borderRadius: 99,
+                        ...(selected.tipo_solicitud_mp === 'parcial'
+                          ? { background: '#fef3c7', color: '#92400e', border: '1px solid #fcd34d' }
+                          : { background: '#eff6ff', color: '#1d4ed8', border: '1px solid #93c5fd' })
+                      }}>
+                        {selected.tipo_solicitud_mp === 'parcial' ? '📦 PARCIAL' : '📋 COMPLETA'}
+                      </span>
+                      <span style={{ fontSize: 11, color: '#64748b' }}>
+                        {selected.tipo_solicitud_mp === 'parcial' ? 'Sin discriminar insumos' : 'Con insumos discriminados'}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* FECHAS */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: 12 }}>
                     <div>
-                      <label style={{ display: 'block', fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>
-                        Fecha solicitud
-                      </label>
+                      <label style={{ display: 'block', fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>Fecha solicitud</label>
                       <div style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#f8fafc', fontSize: '13px', minHeight: '35px', display: 'flex', alignItems: 'center' }}>
                         {selected.fecha_solicitud_materias_primas
                           ? new Date(selected.fecha_solicitud_materias_primas).toLocaleString("es-CO", { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
@@ -2624,9 +2682,7 @@ export default function Produccion() {
                       </div>
                     </div>
                     <div>
-                      <label style={{ display: 'block', fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>
-                        Fecha entrega
-                      </label>
+                      <label style={{ display: 'block', fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>Fecha entrega</label>
                       <div style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#f8fafc', fontSize: '13px', minHeight: '35px', display: 'flex', alignItems: 'center' }}>
                         {selected.fecha_entrega_de_materias_primas_e_insumos
                           ? new Date(selected.fecha_entrega_de_materias_primas_e_insumos).toLocaleString("es-CO", { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
@@ -2635,108 +2691,133 @@ export default function Produccion() {
                     </div>
                   </div>
 
-                  {/* INLINE DETAIL LIST (Secret) */}
-                  {showItemsSolicitados && (
-                    <div className="fadeIn" style={{ marginTop: '20px', borderTop: '1px dashed #cbd5e1', paddingTop: '15px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                        <h4 style={{ margin: 0, fontSize: '14px', color: '#334155' }}>📋 Detalle de Insumos</h4>
-                        <small
-                          style={{ cursor: 'pointer', color: '#ef4444', textDecoration: 'underline' }}
-                          onClick={() => setShowItemsSolicitados(false)}
-                        >
-                          Ocultar
-                        </small>
-                      </div>
-
-                      <div style={{ overflowX: 'auto' }}>
-                        <table style={{ width: '100%', fontSize: '12px', borderCollapse: 'collapse' }}>
-                          <thead>
-                            <tr style={{ textAlign: 'left', borderBottom: '1px solid #cbd5e1', color: '#64748b' }}>
-                              <th style={{ padding: '6px' }}>Insumo</th>
-                              <th style={{ padding: '6px', textAlign: 'center' }}>⚠️</th>
-                              <th style={{ padding: '6px' }}>Cant.</th>
-                              <th style={{ padding: '6px' }}>Entr.</th>
-                              <th style={{ padding: '6px' }}>Dev.</th>
-                              <th style={{ padding: '6px' }}>Obs.</th>
-                              <th style={{ padding: '6px', textAlign: 'center' }}>Estado</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {itemsSolicitados.map(it => (
-                              <tr key={it.id} style={{ borderBottom: '1px solid #f1f5f9', background: it.es_critico ? '#fff1f2' : 'transparent' }}>
-                                <td style={{ padding: '6px' }}>
-                                  <strong style={{ color: '#0f172a' }}>{it.articulo_nombre}</strong>
-                                  <div style={{ color: '#94a3b8', fontSize: '10px' }}>{it.unidad}</div>
-                                </td>
-                                <td style={{ padding: '6px', textAlign: 'center' }}>
-                                  {it.es_critico && "⚠️"}
-                                </td>
-                                <td style={{ padding: '6px' }}>{it.cantidad}</td>
-                                <td style={{ padding: '6px', fontWeight: 'bold' }}>
-                                  {it.cantidad_entregada || "-"}
-                                </td>
-                                <td style={{ padding: '6px', fontWeight: 'bold', color: it.cantidad_devuelta > 0 ? '#059669' : 'inherit' }}>
-                                  {it.cantidad_devuelta > 0 ? `-${it.cantidad_devuelta}` : "-"}
-                                </td>
-                                <td style={{ padding: '6px', fontStyle: 'italic', color: '#64748b', maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={it.observacion}>
-                                  {it.observacion || "-"}
-                                </td>
-                                <td style={{ padding: '6px', textAlign: 'center' }}>
-                                  {it.completado ? "✅" : "⏳"}
-                                </td>
-                              </tr>
-                            ))}
-                            {itemsSolicitados.length === 0 && (
-                              <tr>
-                                <td colSpan="6" style={{ padding: '10px', textAlign: 'center', color: '#94a3b8' }}>
-                                  No hay items solicitados cargados.
-                                </td>
-                              </tr>
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
+                  {/* TABLA DE INSUMOS (solo para completa, con toggle) */}
+                  {selected.tipo_solicitud_mp === 'completa' && selected.fecha_solicitud_materias_primas && (
+                    <div style={{ marginTop: 8 }}>
+                      <button
+                        style={{ fontSize: 12, background: 'none', border: '1px solid #cbd5e1', borderRadius: 6, padding: '4px 12px', cursor: 'pointer', marginBottom: 8, color: '#475569' }}
+                        onClick={() => setShowItemsSolicitados(v => !v)}
+                      >
+                        {showItemsSolicitados ? '▲ Ocultar' : '▼ Ver'} insumos ({itemsSolicitados.length})
+                      </button>
+                      {showItemsSolicitados && (
+                        <div className="fadeIn" style={{ borderTop: '1px dashed #cbd5e1', paddingTop: 12 }}>
+                          <div style={{ overflowX: 'auto' }}>
+                            <table style={{ width: '100%', fontSize: '12px', borderCollapse: 'collapse' }}>
+                              <thead>
+                                <tr style={{ textAlign: 'left', borderBottom: '1px solid #cbd5e1', color: '#64748b' }}>
+                                  <th style={{ padding: '6px' }}>Insumo</th>
+                                  <th style={{ padding: '6px', textAlign: 'center' }}>⚠️</th>
+                                  <th style={{ padding: '6px' }}>Cant.</th>
+                                  <th style={{ padding: '6px' }}>Entr.</th>
+                                  <th style={{ padding: '6px' }}>Dev.</th>
+                                  <th style={{ padding: '6px' }}>Obs.</th>
+                                  <th style={{ padding: '6px', textAlign: 'center' }}>Estado</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {itemsSolicitados.map(it => (
+                                  <tr key={it.id} style={{ borderBottom: '1px solid #f1f5f9', background: it.es_critico ? '#fff1f2' : 'transparent' }}>
+                                    <td style={{ padding: '6px' }}>
+                                      <strong style={{ color: '#0f172a' }}>{it.articulo_nombre}</strong>
+                                      <div style={{ color: '#94a3b8', fontSize: '10px' }}>{it.unidad}</div>
+                                    </td>
+                                    <td style={{ padding: '6px', textAlign: 'center' }}>{it.es_critico && "⚠️"}</td>
+                                    <td style={{ padding: '6px' }}>{it.cantidad}</td>
+                                    <td style={{ padding: '6px', fontWeight: 'bold' }}>{it.cantidad_entregada || "-"}</td>
+                                    <td style={{ padding: '6px', fontWeight: 'bold', color: it.cantidad_devuelta > 0 ? '#059669' : 'inherit' }}>
+                                      {it.cantidad_devuelta > 0 ? `-${it.cantidad_devuelta}` : "-"}
+                                    </td>
+                                    <td style={{ padding: '6px', fontStyle: 'italic', color: '#64748b', maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={it.observacion}>
+                                      {it.observacion || "-"}
+                                    </td>
+                                    <td style={{ padding: '6px', textAlign: 'center' }}>{it.completado ? "✅" : "⏳"}</td>
+                                  </tr>
+                                ))}
+                                {itemsSolicitados.length === 0 && (
+                                  <tr><td colSpan="7" style={{ padding: '10px', textAlign: 'center', color: '#94a3b8' }}>Sin insumos cargados.</td></tr>
+                                )}
+                              </tbody>
+                            </table>
+                          </div>
+                          {selected.estado_id < 12 && (
+                            <div style={{ marginTop: 10, display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                              <button className="pc-btn" style={{ background: '#059669', fontSize: 12, padding: '5px 10px', border: '1px solid #047857' }} onClick={abrirModalDevolucion}>
+                                ♻️ Devolver Sobrantes
+                              </button>
+                              <button className="pc-btn" style={{ background: '#f59e0b', fontSize: 12, padding: '5px 10px', border: 'none' }} onClick={() => { setIsAdditionalRequestMode(true); setMaterialesSeleccionados([{ referencia: "", cantidad: 1 }]); setShowMaterialModal(true); }}>
+                                ➕ Solicitar Adicionales
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
 
-                  {/* BOTÓN PARA SOLICITAR ADICIONALES (Solo visible en el menú oculto y si pedido no finalizado) */}
-                  {showItemsSolicitados && selected.estado_id < 12 && (
-                    <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                      <button
-                        className="pc-btn"
-                        style={{ background: '#059669', fontSize: '12px', padding: '5px 10px', border: '1px solid #047857' }}
-                        onClick={abrirModalDevolucion}
-                      >
-                        ♻️ Devolver Sobrantes
-                      </button>
-                      <button
-                        className="pc-btn"
-                        style={{ background: '#f59e0b', fontSize: '12px', padding: '5px 10px', border: 'none' }}
-                        onClick={() => {
-                          setIsAdditionalRequestMode(true);
-                          setMaterialesSeleccionados([{ referencia: "", cantidad: 1 }]);
-                          setShowMaterialModal(true);
-                        }}
-                      >
-                        ➕ Solicitar Insumos Adicionales
-                      </button>
-                    </div>
-                  )}
-                  {/* BOTÓN SOLICITAR (Solo si no se ha solicitado y se puede editar) */}
+                  {/* CHOOSER: solo si aún no se hizo la solicitud */}
                   {puedeEditar && !selected.fecha_solicitud_materias_primas && (
-                    <div style={{ marginTop: '15px' }}>
-                      <button
-                        className="pc-btn"
-                        onClick={(e) => {
-                          if (e.shiftKey) {
-                            setShowMaterialModal(true);
-                          } else {
-                            solicitarMateriasPrimas();
-                          }
-                        }}
-                      >
-                        Solicitar materias primas a Bodega
-                      </button>
+                    <div style={{ marginTop: 14 }}>
+                      {!modoSolicitudMP ? (
+                        <div style={{ display: 'flex', gap: 10 }}>
+                          <button
+                            className="pc-btn"
+                            style={{ flex: 1, background: '#f0f9ff', color: '#0369a1', border: '2px solid #bae6fd', borderRadius: 12, padding: '14px 10px', textAlign: 'center' }}
+                            onClick={() => setModoSolicitudMP('parcial')}
+                          >
+                            <div style={{ fontSize: 22, marginBottom: 4 }}>📦</div>
+                            <div style={{ fontWeight: 800, fontSize: 13 }}>Solicitud PARCIAL</div>
+                            <div style={{ fontSize: 11, opacity: 0.75, marginTop: 3 }}>Sin discriminar insumos</div>
+                          </button>
+                          <button
+                            className="pc-btn"
+                            style={{ flex: 1, background: '#f5f3ff', color: '#6d28d9', border: '2px solid #ddd6fe', borderRadius: 12, padding: '14px 10px', textAlign: 'center' }}
+                            onClick={() => setModoSolicitudMP('completa')}
+                          >
+                            <div style={{ fontSize: 22, marginBottom: 4 }}>📋</div>
+                            <div style={{ fontWeight: 800, fontSize: 13 }}>Solicitud COMPLETA</div>
+                            <div style={{ fontSize: 11, opacity: 0.75, marginTop: 3 }}>Especificar cada insumo</div>
+                          </button>
+                        </div>
+                      ) : modoSolicitudMP === 'parcial' ? (
+                        <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 10, padding: 16 }}>
+                          <p style={{ marginBottom: 10, color: '#0369a1', fontSize: 13 }}>
+                            <strong>Solicitud Parcial:</strong> Bodega recibe la solicitud y solo necesita confirmar la entrega, sin discriminar insumos.
+                          </p>
+                          <textarea
+                            rows={3}
+                            placeholder="Observación para Bodega (opcional)..."
+                            value={obsNuevaSolicitudMP}
+                            onChange={e => setObsNuevaSolicitudMP(e.target.value)}
+                            style={{ width: '100%', padding: 8, borderRadius: 6, border: '1px solid #bae6fd', fontSize: 13, marginBottom: 10, boxSizing: 'border-box' }}
+                          />
+                          <div style={{ display: 'flex', gap: 8 }}>
+                            <button className="pc-btn" style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', fontSize: 13 }} onClick={() => setModoSolicitudMP(null)}>← Volver</button>
+                            <button className="pc-btn" style={{ background: '#0369a1', flex: 1, fontSize: 13 }} onClick={() => enviarSolicitudMP('parcial')}>
+                              📨 Enviar solicitud parcial a Bodega
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div style={{ background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 10, padding: 16 }}>
+                          <p style={{ marginBottom: 10, color: '#6d28d9', fontSize: 13 }}>
+                            <strong>Solicitud Completa:</strong> Especifica los insumos que necesitas. Bodega los entregará uno por uno.
+                          </p>
+                          <button
+                            className="pc-btn"
+                            style={{ background: '#6d28d9', marginBottom: 10, fontSize: 13 }}
+                            onClick={() => setShowMaterialModal(true)}
+                          >
+                            📦 Gestionar lista de insumos {materialesSeleccionados.filter(m => m.referencia).length > 0 ? `(${materialesSeleccionados.filter(m => m.referencia).length} agregados)` : ''}
+                          </button>
+                          <div style={{ display: 'flex', gap: 8 }}>
+                            <button className="pc-btn" style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', fontSize: 13 }} onClick={() => setModoSolicitudMP(null)}>← Volver</button>
+                            <button className="pc-btn" style={{ background: '#6d28d9', flex: 1, fontSize: 13 }} onClick={() => enviarSolicitudMP('completa')}>
+                              📨 Enviar solicitud completa a Bodega
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -3110,8 +3191,13 @@ export default function Produccion() {
               <button
                 className="cal-btn save"
                 onClick={async () => {
-                  const success = await solicitarMateriasPrimas(true, true);
-                  if (success !== false) setBusquedaMP("");
+                  if (isAdditionalRequestMode) {
+                    const success = await solicitarMateriasPrimas(true, true);
+                    if (success !== false) setBusquedaMP("");
+                  } else {
+                    await enviarSolicitudMP('completa');
+                    setBusquedaMP("");
+                  }
                 }}
                 disabled={materialesLoading || (materialesSeleccionados.every(m => !m.referencia) && !solicitudGranel.trim())}
               >
