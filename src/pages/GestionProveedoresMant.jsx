@@ -109,31 +109,35 @@ export default function GestionProveedoresMant() {
     
     let query = supabase
       .from(st("solicitudes"))
-      .select(`id, consecutivo, descripcion, fecha_cierre, created_at, activo_id, estado_id, activos(nombre)`)
+      .select(`id, consecutivo, descripcion, fecha_cierre, created_at, activo_id, estado_id`)
       .order("created_at", { ascending: false });
 
     if (p.tipo === "Interno") {
       const normalizedName = p.nombre.trim().toLowerCase().replace(/\s+/g, '.');
-      // Usar comillas dobles para nombres con espacios en el filtro OR de Supabase
-      query = query.or(`tecnico_asignado.eq."${p.nombre}",tecnico_asignado.eq."${normalizedName}"`);
+      // Envolver los strings con espacios en dobles comillas para el formato de Supabase
+      query = query.or(`tecnico_asignado.ilike.*${p.nombre.trim()}*,tecnico_asignado.ilike.*${normalizedName}*`);
     } else if (p.id) {
       query = query.eq("proveedor_id", p.id);
     }
 
-    const [ { data: solData, error }, { data: estadosData } ] = await Promise.all([
+    const [ { data: solData, error }, { data: estadosData }, { data: activosData } ] = await Promise.all([
       query,
-      supabase.from(st("estados")).select("id, nombre")
+      supabase.from(st("estados")).select("id, nombre"),
+      supabase.from(st("activos")).select("id, nombre")
     ]);
     
     if (error) {
       console.error("Error cargando historial:", error);
     }
 
-    // Mapear el nombre del estado en memoria
+    // Mapear los nombres de estado y activo en memoria para evitar errores de Foreign Key (400)
     const eMap = new Map(estadosData?.map(e => [e.id, e.nombre]));
+    const aMap = new Map(activosData?.map(a => [a.id, a.nombre]));
+    
     const hydrated = (solData || []).map(s => ({
       ...s,
-      estados: { nombre: eMap.get(s.estado_id) || "Desconocido" }
+      estados: { nombre: eMap.get(s.estado_id) || "Desconocido" },
+      activos: { nombre: aMap.get(s.activo_id) || "N/A" }
     }));
 
     setHistory(hydrated);
