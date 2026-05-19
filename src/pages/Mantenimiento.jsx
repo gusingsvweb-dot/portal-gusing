@@ -196,6 +196,18 @@ export default function Mantenimiento() {
             costo_en_momento: rep?.costo || 0,
           }]);
           await supabase.rpc("decrement_repuesto_stock", { row_id: item.repuesto_id, amount: item.cantidad });
+          
+          // Alerta de Bajo Stock
+          const { data: updatedRep } = await supabase.from(st("repuestos")).select("stock, stock_minimo, nombre").eq("id", item.repuesto_id).single();
+          if (updatedRep && updatedRep.stock <= (updatedRep.stock_minimo || 5)) {
+              await notifyRoles(
+                ["mantenimiento", "compras", "gerencia"],
+                "⚠️ Alerta de Bajo Stock",
+                `El repuesto/insumo "${updatedRep.nombre}" ha bajado a nivel crítico (${updatedRep.stock} disponibles).`,
+                selected.id,
+                "warning"
+              );
+          }
         }
       }
     }
@@ -203,15 +215,24 @@ export default function Mantenimiento() {
     const { error: err } = await supabase.from(st("solicitudes")).update(update).eq("id", selected.id);
     if (err) { alert("Error: " + err.message); setSaving(false); return; }
 
-    if (selected.usuario_id) {
-      if (next === 13) {
+    if (next === 13) {
+      if (selected.usuario_id) {
         await notifyUserByUsername(
           selected.usuario_id,
           "⚙️ Solicitud en Proceso",
           `Tu solicitud M-${selected.consecutivo} (${selected.activos?.nombre || "equipo"}) ha sido tomada y está siendo atendida por el equipo de mantenimiento.`,
           selected.id
         );
-      } else if (next === 14) {
+      }
+      await notifyRoles(
+        ["gerencia", "mantenimiento"],
+        "⚙️ Orden en Proceso",
+        `La orden M-${selected.consecutivo} de ${selected.activos?.nombre || "equipo"} ha pasado a estado "En Proceso".`,
+        selected.id,
+        "info"
+      );
+    } else if (next === 14) {
+      if (selected.usuario_id) {
         await notifyUserByUsername(
           selected.usuario_id,
           "✅ Orden de Mantenimiento Finalizada",
@@ -219,6 +240,13 @@ export default function Mantenimiento() {
           selected.id
         );
       }
+      await notifyRoles(
+        ["gerencia", "mantenimiento"],
+        "✅ Orden Finalizada",
+        `Se ha completado la orden M-${selected.consecutivo} correspondiente al equipo ${selected.activos?.nombre || ""}.`,
+        selected.id,
+        "success"
+      );
     }
 
     closeModal();
@@ -300,6 +328,13 @@ export default function Mantenimiento() {
 
     if (err) { alert("Error: " + err.message); }
     else {
+      await notifyRoles(
+        ["mantenimiento", "gerencia"],
+        "🔔 Nueva Solicitud Manual",
+        `Se ha registrado una nueva orden manual (M-${nextConsecutivo}) para intervención técnica.`,
+        null,
+        "info"
+      );
       setShowManualForm(false);
       setManualForm({ tipo_solicitud_id: "", prioridad_id: "", descripcion: "", activo_id: "", tecnico_asignado: "" });
       loadData();
