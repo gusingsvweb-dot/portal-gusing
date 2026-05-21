@@ -14,6 +14,13 @@ const TIPO_ICON = {
   "Herramienta": "🔧" 
 };
 
+const ESTADO_COLORS = {
+  "Disponible": { bg: "#dcfce7", color: "#166534", border: "#bbf7d0" },
+  "En Uso": { bg: "#e0f2fe", color: "#0369a1", border: "#bae6fd" },
+  "En Reparación": { bg: "#ffedd5", color: "#c2410c", border: "#fed7aa" },
+  "Fuera de Servicio": { bg: "#fee2e2", color: "#991b1b", border: "#fecaca" }
+};
+
 export default function GestionHerramientas() {
   const navigate = useNavigate();
   const [activos, setEquipos] = useState([]);
@@ -27,13 +34,29 @@ export default function GestionHerramientas() {
   const [rutinaLoading, setRutinaLoading] = useState(false);
   const [filtroText, setFiltroText] = useState("");
   const [filtroCrit, setFiltroCrit] = useState("todos");
+  const [filtroEstado, setFiltroEstado] = useState("todos");
+  const [filtroCalibracion, setFiltroCalibracion] = useState("todos");
   const [saving, setSaving] = useState(false);
   const [proveedores, setProveedores] = useState([]);
   const [tiposSolicitud, setTiposSolicitud] = useState([]);
   const [defaultAreaId, setDefaultAreaId] = useState("");
 
   const [form, setForm] = useState({
-    nombre: "", tipo: "Herramienta Manual", area_id: "", codigo: "", descripcion: "", criticidad: "Baja", manual_url: ""
+    id: null,
+    nombre: "",
+    tipo: "Herramienta Manual",
+    area_id: "",
+    codigo: "",
+    criticidad: "Baja",
+    manual_url: "",
+    // Metadata fields stored in descripcion
+    brand: "",
+    model: "",
+    serial: "",
+    status: "Disponible",
+    lastCal: "",
+    nextCal: "",
+    notes: ""
   });
   const [file, setFile] = useState(null);
   const [showManualInt, setShowManualInt] = useState(false);
@@ -46,6 +69,39 @@ export default function GestionHerramientas() {
   });
 
   useEffect(() => { loadData(); }, []);
+
+  // Parses description column as JSON or falls back to plain text notes
+  function parseDesc(descText) {
+    const defaultData = { notes: descText || "", brand: "", model: "", serial: "", status: "Disponible", lastCal: "", nextCal: "" };
+    if (!descText) return defaultData;
+    if (descText.trim().startsWith("{") && descText.trim().endsWith("}")) {
+      try {
+        return { ...defaultData, ...JSON.parse(descText) };
+      } catch (e) {
+        return defaultData;
+      }
+    }
+    return defaultData;
+  }
+
+  // Returns calibration status logic
+  function getCalibrationStatus(nextCalDate) {
+    if (!nextCalDate) return { label: "No requiere", class: "cal-none", icon: "⚪", color: "#64748b", bg: "#f1f5f9" };
+    const next = new Date(nextCalDate + "T00:00:00");
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const diffTime = next - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays < 0) {
+      return { label: "VENCIDA 🚨", class: "cal-expired", icon: "🚨", color: "#b91c1c", bg: "#fee2e2", border: "#fecaca" };
+    } else if (diffDays <= 30) {
+      return { label: `PRÓXIMA (${diffDays}d) ⏳`, class: "cal-warning", icon: "⏳", color: "#b45309", bg: "#fef3c7", border: "#fde68a" };
+    } else {
+      return { label: "VIGENTE ✅", class: "cal-ok", icon: "✅", color: "#15803d", bg: "#dcfce7", border: "#bbf7d0" };
+    }
+  }
 
   async function loadData() {
     setLoading(true);
@@ -71,7 +127,6 @@ export default function GestionHerramientas() {
     setProveedores(provs || []);
     setTiposSolicitud(types || []);
 
-    // Set default area to Mantenimiento (id 1 usually, or search by name)
     const defArea = ars?.find(ar => 
       ar.nombre.toLowerCase().includes("mantenimiento") || 
       ar.nombre.toLowerCase().includes("taller")
@@ -88,30 +143,80 @@ export default function GestionHerramientas() {
     setLoading(false);
   }
 
-  const stats = useMemo(() => ({
-    total: activos.length,
-    alta: activos.filter(a => a.criticidad === "Alta").length,
-    media: activos.filter(a => a.criticidad === "Media").length,
-    baja: activos.filter(a => a.criticidad === "Baja").length,
-  }), [activos]);
+  const stats = useMemo(() => {
+    let vencidas = 0;
+    let disponibles = 0;
+    let enReparacion = 0;
+
+    activos.forEach(a => {
+      const parsed = parseDesc(a.descripcion);
+      if (parsed.status === "Disponible") disponibles++;
+      if (parsed.status === "En Reparación" || parsed.status === "Fuera de Servicio") enReparacion++;
+      if (parsed.nextCal && getCalibrationStatus(parsed.nextCal).class === "cal-expired") {
+        vencidas++;
+      }
+    });
+
+    return {
+      total: activos.length,
+      disponibles,
+      enReparacion,
+      vencidas
+    };
+  }, [activos]);
 
   const filtered = useMemo(() => {
-    let res = activos;
-    if (filtroCrit !== "todos") res = res.filter(a => a.criticidad === filtroCrit);
-    if (filtroText.trim()) {
-      const q = filtroText.toLowerCase();
-      res = res.filter(a =>
-        a.nombre?.toLowerCase().includes(q) ||
-        a.codigo?.toLowerCase().includes(q) ||
-        areas.find(ar => ar.id === a.area_id)?.nombre?.toLowerCase().includes(q)
-      );
-    }
-    return res;
-  }, [activos, filtroCrit, filtroText, areas]);
+    return activos.filter(a => {
+      const parsed = parseDesc(a.descripcion);
+      
+      // Filter criticidad
+      if (filtroCrit !== "todos" && a.criticidad !== filtroCrit) return false;
+      
+      // Filter status
+      if (filtroEstado !== "todos" && parsed.status !== filtroEstado) return false;
+      
+      // Filter calibration alert
+      if (filtroCalibracion !== "todos") {
+        const calStatus = getCalibrationStatus(parsed.nextCal);
+        if (filtroCalibracion === "vencida" && calStatus.class !== "cal-expired") return false;
+        if (filtroCalibracion === "proxima" && calStatus.class !== "cal-warning") return false;
+        if (filtroCalibracion === "vigente" && calStatus.class !== "cal-ok") return false;
+        if (filtroCalibracion === "no_requiere" && calStatus.class !== "cal-none") return false;
+      }
+
+      // Filter text
+      if (filtroText.trim()) {
+        const q = filtroText.toLowerCase();
+        const areaName = areas.find(ar => ar.id === a.area_id)?.nombre || "";
+        
+        return (
+          a.nombre?.toLowerCase().includes(q) ||
+          a.codigo?.toLowerCase().includes(q) ||
+          areaName.toLowerCase().includes(q) ||
+          parsed.brand?.toLowerCase().includes(q) ||
+          parsed.model?.toLowerCase().includes(q) ||
+          parsed.serial?.toLowerCase().includes(q) ||
+          parsed.notes?.toLowerCase().includes(q)
+        );
+      }
+
+      return true;
+    });
+  }, [activos, filtroCrit, filtroEstado, filtroCalibracion, filtroText, areas]);
 
   async function openEdit(a, e) {
     e.stopPropagation();
-    setForm({ ...a });
+    const parsed = parseDesc(a.descripcion);
+    setForm({ 
+      ...a, 
+      brand: parsed.brand || "",
+      model: parsed.model || "",
+      serial: parsed.serial || "",
+      status: parsed.status || "Disponible",
+      lastCal: parsed.lastCal || "",
+      nextCal: parsed.nextCal || "",
+      notes: parsed.notes || ""
+    });
     setShowForm(true);
   }
 
@@ -130,7 +235,7 @@ export default function GestionHerramientas() {
         .upload(filePath, file);
 
       if (uploadError) {
-        alert("Error subiendo manual: " + uploadError.message);
+        alert("Error subiendo manual/certificado: " + uploadError.message);
       } else {
         const { data: urlData } = supabase.storage
           .from('manuales_equipos')
@@ -139,7 +244,29 @@ export default function GestionHerramientas() {
       }
     }
 
-    const { error } = await supabase.from(st("activos")).upsert([{ ...form, manual_url: currentUrl }]);
+    // Serialize metadata fields inside the descripcion column
+    const descJson = JSON.stringify({
+      notes: form.notes || "",
+      brand: form.brand || "",
+      model: form.model || "",
+      serial: form.serial || "",
+      status: form.status || "Disponible",
+      lastCal: form.lastCal || "",
+      nextCal: form.nextCal || ""
+    });
+
+    const payload = {
+      id: form.id || undefined,
+      nombre: form.nombre,
+      tipo: form.tipo,
+      area_id: parseInt(form.area_id),
+      codigo: form.codigo || null,
+      criticidad: form.criticidad,
+      manual_url: currentUrl,
+      descripcion: descJson
+    };
+
+    const { error } = await supabase.from(st("activos")).upsert([payload]);
     if (error) alert("Error: " + error.message);
     else {
       setShowForm(false);
@@ -220,47 +347,66 @@ export default function GestionHerramientas() {
 
   function printHojaRutina() {
     if (!selectedEquipo) return;
+    const parsed = parseDesc(selectedEquipo.descripcion);
+    const calStatus = getCalibrationStatus(parsed.nextCal);
     const printWindow = window.open("", "_blank");
+    
     const html = `
       <html>
         <head>
-          <title>Hoja de Servicio - ${selectedEquipo.nombre}</title>
+          <title>Hoja de Control de Calibración - ${selectedEquipo.nombre}</title>
           <style>
-            body { font-family: sans-serif; padding: 40px; color: #333; }
+            body { font-family: sans-serif; padding: 40px; color: #333; line-height: 1.6; }
             .header { display: flex; justify-content: space-between; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
-            .title { font-size: 24px; font-weight: bold; }
-            .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 30px; background: #f9f9f9; padding: 15px; border-radius: 8px; }
-            .info-item { font-size: 14px; }
-            .info-item strong { color: #555; }
+            .title { font-size: 20px; font-weight: bold; }
+            .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 30px; background: #f9f9f9; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; }
+            .info-item { font-size: 13px; }
+            .info-item strong { color: #475569; }
+            .alert-box { padding: 10px 15px; border-radius: 6px; font-weight: bold; margin-bottom: 20px; display: inline-block; font-size: 13px; }
             table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-            th { background: #f2f2f2; text-align: left; padding: 12px; border: 1px solid #ddd; font-size: 13px; }
-            td { padding: 12px; border: 1px solid #ddd; font-size: 13px; vertical-align: top; }
-            .footer { margin-top: 50px; font-size: 12px; color: #777; text-align: center; border-top: 1px solid #ddd; padding-top: 10px; }
+            th { background: #f1f5f9; text-align: left; padding: 10px; border: 1px solid #cbd5e1; font-size: 12px; }
+            td { padding: 10px; border: 1px solid #cbd5e1; font-size: 12px; vertical-align: top; }
+            .footer { margin-top: 50px; font-size: 11px; color: #64748b; text-align: center; border-top: 1px solid #e2e8f0; padding-top: 10px; }
           </style>
         </head>
         <body>
           <div class="header">
-            <div class="title">HOJA DE SERVICIO Y CALIBRACIÓN</div>
-            <div style="text-align: right">
-              <div>Código: ${selectedEquipo.codigo || "N/A"}</div>
-              <div>Fecha: ${new Date().toLocaleDateString()}</div>
+            <div class="title">SISTEMA GMP — REGISTRO DE CALIBRACIÓN Y CONTROL</div>
+            <div style="text-align: right; font-size: 12px;">
+              <div>Código Serie: ${selectedEquipo.codigo || "N/A"}</div>
+              <div>Fecha Emisión: ${new Date().toLocaleDateString()}</div>
             </div>
           </div>
           <div class="info-grid">
-            <div class="info-item"><strong>HERRAMIENTA:</strong> ${selectedEquipo.nombre}</div>
-            <div class="info-item"><strong>TIPO:</strong> ${selectedEquipo.tipo}</div>
-            <div class="info-item"><strong>UBICACIÓN:</strong> ${areas.find(a => a.id === selectedEquipo.area_id)?.nombre || "N/A"}</div>
-            <div class="info-item"><strong>CRITICIDAD:</strong> ${selectedEquipo.criticidad}</div>
+            <div class="info-item"><strong>HERRAMIENTA / EQUIPO:</strong> ${selectedEquipo.nombre}</div>
+            <div class="info-item"><strong>MARCA / MODELO:</strong> ${parsed.brand || "N/A"} / ${parsed.model || "N/A"}</div>
+            <div class="info-item"><strong>NÚMERO SERIE:</strong> ${parsed.serial || "N/A"}</div>
+            <div class="info-item"><strong>CATEGORÍA:</strong> ${selectedEquipo.tipo}</div>
+            <div class="info-item"><strong>UBICACIÓN / TALLER:</strong> ${areas.find(a => a.id === selectedEquipo.area_id)?.nombre || "N/A"}</div>
+            <div class="info-item"><strong>ESTADO OPERATIVO:</strong> ${parsed.status}</div>
+            <div class="info-item"><strong>ÚLT. CALIBRACIÓN:</strong> ${parsed.lastCal ? new Date(parsed.lastCal + "T00:00:00").toLocaleDateString() : "No registrada"}</div>
+            <div class="info-item"><strong>PRÓX. CALIBRACIÓN:</strong> ${parsed.nextCal ? new Date(parsed.nextCal + "T00:00:00").toLocaleDateString() : "No registrada"}</div>
           </div>
-          <h3>HISTORIAL DE MANTENIMIENTO Y CALIBRACIÓN</h3>
+          <div class="alert-box" style="background-color: ${calStatus.bg}; color: ${calStatus.color}; border: 1px solid ${calStatus.color}40;">
+            ESTADO DE VIGENCIA DE CALIBRACIÓN: ${calStatus.label}
+          </div>
+          
+          ${parsed.notes ? `
+            <div style="margin-bottom: 25px; background: #fff; border-left: 4px solid #cbd5e1; padding-left: 10px;">
+              <strong>Especificaciones / Notas:</strong>
+              <p style="margin: 5px 0 0; font-size: 12px; color: #475569;">${parsed.notes}</p>
+            </div>
+          ` : ""}
+
+          <h3>HISTORIAL DE CALIBRACIONES Y SERVICIOS</h3>
           <table>
             <thead>
               <tr>
                 <th>FECHA</th>
-                <th>CÓDIGO INTERNO</th>
+                <th>OT</th>
                 <th>TIPO</th>
                 <th>DESCRIPCIÓN DE INTERVENCIÓN</th>
-                <th>ACCIÓN REALIZADA</th>
+                <th>ACCIONES Y AJUSTES REALIZADOS</th>
                 <th>RESPONSABLE</th>
               </tr>
             </thead>
@@ -275,9 +421,10 @@ export default function GestionHerramientas() {
                   <td>${r.usuario_id}</td>
                 </tr>
               `).join("")}
+              ${rutina.length === 0 ? '<tr><td colspan="6" style="text-align: center; color: #94a3b8;">No registra intervenciones en el historial.</td></tr>' : ""}
             </tbody>
           </table>
-          <div class="footer">Documento generado automáticamente por Sistema de Gestión de Mantenimiento GMP</div>
+          <div class="footer">Documento de control interno de mantenimiento — Laboratorios Gusing SAS</div>
           <script>window.print(); setTimeout(() => window.close(), 500);</script>
         </body>
       </html>
@@ -287,7 +434,22 @@ export default function GestionHerramientas() {
   }
 
   function resetForm() {
-    setForm({ nombre: "", tipo: "Herramienta Manual", area_id: defaultAreaId, codigo: "", descripcion: "", criticidad: "Baja", manual_url: "" });
+    setForm({ 
+      id: null,
+      nombre: "", 
+      tipo: "Herramienta Manual", 
+      area_id: defaultAreaId, 
+      codigo: "", 
+      criticidad: "Baja", 
+      manual_url: "",
+      brand: "",
+      model: "",
+      serial: "",
+      status: "Disponible",
+      lastCal: "",
+      nextCal: "",
+      notes: ""
+    });
     setFile(null);
     setShowAreaForm(false);
     setNewAreaName("");
@@ -300,7 +462,7 @@ export default function GestionHerramientas() {
         <header className="mant-header-section">
           <div>
             <h2 className="mant-title">Equipos y Herramientas de Mantenimiento</h2>
-            <p className="mant-subtitle">Inventario centralizado de herramientas, taladros y equipos propios del taller — {activos.length} herramientas registradas</p>
+            <p className="mant-subtitle">Control de calibración, vigencia y estado operativo para herramientas del taller — {activos.length} herramientas registradas</p>
           </div>
           <div className="mant-actions-group">
             <button className="mant-btn-action secondary" onClick={() => navigate("/mantenimiento")}>← Tablero</button>
@@ -310,33 +472,50 @@ export default function GestionHerramientas() {
 
         {/* STATS ROW */}
         <div className="activos-stats-row">
-          <div className="activo-stat" onClick={() => setFiltroCrit("todos")} style={{ "--a": filtroCrit === "todos" ? "var(--mant-primary)" : "#94a3b8" }}>
+          <div className="activo-stat" onClick={() => { setFiltroEstado("todos"); setFiltroCalibracion("todos"); }} style={{ "--a": "var(--mant-primary)" }}>
             <span className="as-val">{stats.total}</span><span className="as-lbl">Total Herramientas</span>
           </div>
-          <div className="activo-stat crit-alta" onClick={() => setFiltroCrit(filtroCrit === "Alta" ? "todos" : "Alta")} style={{ "--a": "#ef4444" }}>
-            <span className="as-val">{stats.alta}</span><span className="as-lbl">Criticidad Alta</span>
+          <div className="activo-stat" onClick={() => { setFiltroEstado("Disponible"); setFiltroCalibracion("todos"); }} style={{ "--a": "#10b981" }}>
+            <span className="as-val" style={{ color: "#10b981" }}>{stats.disponibles}</span><span className="as-lbl">Disponibles</span>
           </div>
-          <div className="activo-stat crit-media" onClick={() => setFiltroCrit(filtroCrit === "Media" ? "todos" : "Media")} style={{ "--a": "#f59e0b" }}>
-            <span className="as-val">{stats.media}</span><span className="as-lbl">Criticidad Media</span>
+          <div className="activo-stat" onClick={() => { setFiltroEstado("En Reparación"); setFiltroCalibracion("todos"); }} style={{ "--a": "#f59e0b" }}>
+            <span className="as-val" style={{ color: "#f59e0b" }}>{stats.enReparacion}</span><span className="as-lbl">En Taller / Reparación</span>
           </div>
-          <div className="activo-stat crit-baja" onClick={() => setFiltroCrit(filtroCrit === "Baja" ? "todos" : "Baja")} style={{ "--a": "#10b981" }}>
-            <span className="as-val">{stats.baja}</span><span className="as-lbl">Criticidad Baja</span>
+          <div className="activo-stat crit-alta" onClick={() => { setFiltroCalibracion("vencida"); setFiltroEstado("todos"); }} style={{ "--a": "#ef4444" }}>
+            <span className="as-val" style={{ color: "#ef4444" }}>{stats.vencidas}</span><span className="as-lbl">Calibración Vencida 🚨</span>
           </div>
         </div>
 
-        {/* FILTER */}
-        <div className="mant-filter-bar">
-          <div className="mant-search-wrap">
+        {/* FILTERS PANEL */}
+        <div className="mant-filter-bar" style={{ display: "flex", flexWrap: "wrap", gap: "12px", alignItems: "center" }}>
+          <div className="mant-search-wrap" style={{ flex: "1 1 250px" }}>
             <span className="search-icon">🔍</span>
-            <input className="mant-search-input" placeholder="Buscar por nombre, código, ubicación..."
+            <input className="mant-search-input" placeholder="Buscar por nombre, marca, serie, tag..."
               value={filtroText} onChange={e => setFiltroText(e.target.value)} />
             {filtroText && <button className="search-clear" onClick={() => setFiltroText("")}>✖</button>}
           </div>
-          {filtroCrit !== "todos" && (
-            <span className={`v2-crit-badge crit-${filtroCrit.toLowerCase()}`} style={{ cursor: "pointer" }} onClick={() => setFiltroCrit("todos")}>
-              {filtroCrit} ✖
-            </span>
-          )}
+
+          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+            {/* Status Filter */}
+            <select className="v2-select" style={{ width: "160px", padding: "8px", borderRadius: "8px" }}
+              value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)}>
+              <option value="todos">Todos los Estados</option>
+              <option value="Disponible">Disponible</option>
+              <option value="En Uso">En Uso</option>
+              <option value="En Reparación">En Reparación</option>
+              <option value="Fuera de Servicio">Fuera de Servicio</option>
+            </select>
+
+            {/* Calibration Expiry Filter */}
+            <select className="v2-select" style={{ width: "185px", padding: "8px", borderRadius: "8px" }}
+              value={filtroCalibracion} onChange={e => setFiltroCalibracion(e.target.value)}>
+              <option value="todos">Todas las Calibraciones</option>
+              <option value="vigente">Calibración Vigente</option>
+              <option value="proxima">Próxima a vencer (&lt;30d)</option>
+              <option value="vencida">Vencida 🚨</option>
+              <option value="no_requiere">No requiere calibración</option>
+            </select>
+          </div>
         </div>
 
         {loading ? (
@@ -344,26 +523,61 @@ export default function GestionHerramientas() {
         ) : filtered.length === 0 ? (
           <div className="empty-state" style={{ marginTop: "60px" }}>
             <div className="empty-state-icon">🔧</div>
-            <p>No se encontraron herramientas con ese filtro</p>
+            <p>No se encontraron herramientas con los filtros seleccionados</p>
           </div>
         ) : (
           <div className="assets-grid-premium">
             {filtered.map(a => {
               const area = areas.find(ar => ar.id === a.area_id);
+              const parsed = parseDesc(a.descripcion);
+              const calStatus = getCalibrationStatus(parsed.nextCal);
+              const stCol = ESTADO_COLORS[parsed.status] || { bg: "#f1f5f9", color: "#475569", border: "#cbd5e1" };
+
               return (
-                <div key={a.id} className={`asset-card-v2 crit-${a.criticidad?.toLowerCase() || "baja"}`} onClick={() => loadRutina(a)}>
-                  <div className="card-v2-header">
+                <div key={a.id} className="asset-card-v2" onClick={() => loadRutina(a)} style={{ paddingBottom: "15px" }}>
+                  <div className="card-v2-header" style={{ marginBottom: "8px" }}>
                     <span className="v2-id-tag">{a.codigo || `HER-${a.id}`}</span>
-                    <div style={{ display: "flex", gap: "5px" }}>
-                      <span className={`v2-crit-badge crit-${a.criticidad?.toLowerCase() || "baja"}`}>{a.criticidad || "Baja"}</span>
-                      <span className="v2-type-badge" style={{ backgroundColor: "rgba(14, 165, 233, 0.15)", color: "#0ea5e9" }}>{a.tipo}</span>
+                    <span className="v2-type-badge" style={{ backgroundColor: "rgba(14, 165, 233, 0.15)", color: "#0ea5e9" }}>{a.tipo}</span>
+                  </div>
+
+                  <div style={{ display: "flex", gap: "10px", alignItems: "center", marginBottom: "8px" }}>
+                    <div className="card-v2-icon" style={{ fontSize: "1.6rem", margin: 0 }}>{TIPO_ICON[a.tipo] || "🔧"}</div>
+                    <div style={{ overflow: "hidden" }}>
+                      <h4 style={{ margin: 0, fontSize: "0.95rem", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{a.nombre}</h4>
+                      <p style={{ margin: "2px 0 0", fontSize: "0.75rem", color: "#64748b" }}>
+                        {parsed.brand ? `${parsed.brand} ` : ""}{parsed.model ? `| Mod: ${parsed.model}` : ""}
+                      </p>
                     </div>
                   </div>
-                  <div className="card-v2-icon">{TIPO_ICON[a.tipo] || "🔧"}</div>
-                  <h4>{a.nombre}</h4>
-                  {a.descripcion && <p style={{ fontSize: "0.8rem", color: "#64748b", margin: "0 0 10px", lineHeight: "1.5" }}>{a.descripcion}</p>}
-                  <div className="v2-location-info">📍 {area?.nombre || "Sin área"}</div>
-                  <div className="card-v2-footer">
+
+                  {parsed.serial && (
+                    <div style={{ fontSize: "0.75rem", color: "#475569", marginBottom: "8px" }}>
+                      <strong>S/N:</strong> <code style={{ background: "#f1f5f9", padding: "2px 4px", borderRadius: "4px" }}>{parsed.serial}</code>
+                    </div>
+                  )}
+
+                  {/* Status & Calibration Alert Row */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px", margin: "10px 0" }}>
+                    <div style={{ 
+                      fontSize: "0.72rem", padding: "4px 8px", borderRadius: "6px", display: "inline-flex", width: "fit-content",
+                      backgroundColor: stCol.bg, color: stCol.color, border: `1px solid ${stCol.border}`, fontWeight: "bold"
+                    }}>
+                      Estado: {parsed.status}
+                    </div>
+                    
+                    {parsed.nextCal && (
+                      <div style={{ 
+                        fontSize: "0.7rem", padding: "4px 8px", borderRadius: "6px", display: "inline-flex", width: "fit-content",
+                        backgroundColor: calStatus.bg, color: calStatus.color, border: `1px solid ${calStatus.border}`, fontWeight: "bold"
+                      }}>
+                        Calibración: {calStatus.label}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="v2-location-info" style={{ marginTop: "auto", fontSize: "0.75rem" }}>📍 {area?.nombre || "Sin taller"}</div>
+                  
+                  <div className="card-v2-footer" style={{ marginTop: "12px", borderTop: "1px dashed #e2e8f0", paddingTop: "12px" }}>
                     <button className="mini-btn" onClick={e => { e.stopPropagation(); loadRutina(a); }}>📋 Historial</button>
                     <div style={{ display: "flex", gap: "6px" }}>
                       <button className="mini-btn" style={{ color: "var(--mant-primary)", borderColor: "#bfdbfe" }} onClick={e => openEdit(a, e)}>✏️ Editar</button>
@@ -386,11 +600,12 @@ export default function GestionHerramientas() {
               </div>
               <div className="modal-v2-body">
                 <div className="v2-form-group">
-                  <label>Nombre de la Herramienta / Equipo <span className="req">*</span></label>
+                  <label>Nombre de la Herramienta / Instrumento <span className="req">*</span></label>
                   <input className="v2-input" type="text" value={form.nombre}
                     onChange={e => setForm({ ...form, nombre: e.target.value })}
                     placeholder="Ej: Taladro Percutor Makita 18V" />
                 </div>
+                
                 <div className="v2-form-row">
                   <div className="v2-form-group">
                     <label>Categoría</label>
@@ -403,14 +618,56 @@ export default function GestionHerramientas() {
                     </select>
                   </div>
                   <div className="v2-form-group">
-                    <label>Criticidad <span className="req">*</span></label>
-                    <select className="v2-select" value={form.criticidad} onChange={e => setForm({ ...form, criticidad: e.target.value })}>
-                      <option value="Alta">Alta</option>
-                      <option value="Media">Media</option>
-                      <option value="Baja">Baja</option>
+                    <label>Estado Operativo</label>
+                    <select className="v2-select" value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
+                      <option value="Disponible">Disponible</option>
+                      <option value="En Uso">En Uso</option>
+                      <option value="En Reparación">En Taller / Reparación</option>
+                      <option value="Fuera de Servicio">Fuera de Servicio</option>
                     </select>
                   </div>
                 </div>
+
+                <div className="v2-form-row">
+                  <div className="v2-form-group">
+                    <label>Marca</label>
+                    <input className="v2-input" type="text" value={form.brand}
+                      onChange={e => setForm({ ...form, brand: e.target.value })} placeholder="Ej: Bosch, Fluke" />
+                  </div>
+                  <div className="v2-form-group">
+                    <label>Modelo</label>
+                    <input className="v2-input" type="text" value={form.model}
+                      onChange={e => setForm({ ...form, model: e.target.value })} placeholder="Ej: 115, DHP482" />
+                  </div>
+                </div>
+
+                <div className="v2-form-row">
+                  <div className="v2-form-group">
+                    <label>Número de Serie</label>
+                    <input className="v2-input" type="text" value={form.serial}
+                      onChange={e => setForm({ ...form, serial: e.target.value })} placeholder="S/N: 2026402..." />
+                  </div>
+                  <div className="v2-form-group">
+                    <label>Código Interno / TAG / Placa</label>
+                    <input className="v2-input" type="text" value={form.codigo}
+                      onChange={e => setForm({ ...form, codigo: e.target.value })} placeholder="HER-001" />
+                  </div>
+                </div>
+
+                {/* Calibration Dates (Visible always, useful for measuring tools) */}
+                <div className="v2-form-row">
+                  <div className="v2-form-group">
+                    <label>Última Calibración / Control</label>
+                    <input className="v2-input" type="date" value={form.lastCal}
+                      onChange={e => setForm({ ...form, lastCal: e.target.value })} />
+                  </div>
+                  <div className="v2-form-group">
+                    <label>Próxima Calibración (Vencimiento)</label>
+                    <input className="v2-input" type="date" value={form.nextCal}
+                      onChange={e => setForm({ ...form, nextCal: e.target.value })} />
+                  </div>
+                </div>
+
                 <div className="v2-form-group">
                   <label>Ubicación / Taller <span className="req">*</span></label>
                   <div style={{ display: "flex", gap: "8px" }}>
@@ -418,27 +675,21 @@ export default function GestionHerramientas() {
                       <option value="">Seleccione ubicación...</option>
                       {areas.map(ar => <option key={ar.id} value={ar.id}>{ar.nombre}</option>)}
                     </select>
-                    <button className="v2-add-btn" title="Nueva área" onClick={() => setShowAreaForm(!showAreaForm)}>
+                    <button className="v2-add-btn" title="Nueva ubicación" onClick={() => setShowAreaForm(!showAreaForm)}>
                       {showAreaForm ? "✖" : "+"}
                     </button>
                   </div>
                   {showAreaForm && (
                     <div className="v2-inline-form">
-                      <input className="v2-input-mini" placeholder="Nombre de la ubicación..." value={newAreaName}
+                      <input className="v2-input-mini" placeholder="Nombre del taller/ubicación..." value={newAreaName}
                         onChange={e => setNewAreaName(e.target.value)} onKeyDown={e => e.key === "Enter" && saveNewArea()} />
                       <button className="v2-save-mini" onClick={saveNewArea}>OK</button>
                     </div>
                   )}
                 </div>
-                <div className="v2-form-row">
-                  <div className="v2-form-group">
-                    <label>Código Interno / TAG / Serie</label>
-                    <input className="v2-input" type="text" value={form.codigo}
-                      onChange={e => setForm({ ...form, codigo: e.target.value })} placeholder="HER-001" />
-                  </div>
-                </div>
+
                 <div className="v2-form-group">
-                  <label>Hoja de Datos / Certificado (PDF)</label>
+                  <label>Certificado de Calibración / Manual (PDF)</label>
                   <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
                     <input className="v2-input" type="file" accept=".pdf" onChange={e => setFile(e.target.files[0])} />
                     {form.manual_url && (
@@ -448,11 +699,12 @@ export default function GestionHerramientas() {
                     )}
                   </div>
                 </div>
+
                 <div className="v2-form-group">
-                  <label>Especificaciones / Serie / Observaciones</label>
-                  <textarea className="v2-input" rows={2} value={form.descripcion}
-                    onChange={e => setForm({ ...form, descripcion: e.target.value })}
-                    placeholder="Marca, modelo, número de serie, fecha de calibración, accesorios..." />
+                  <label>Observaciones / Accesorios / Características Técnicas</label>
+                  <textarea className="v2-input" rows={2} value={form.notes}
+                    onChange={e => setForm({ ...form, notes: e.target.value })}
+                    placeholder="Incluye accesorios, estado físico, rango de medición, etc..." />
                 </div>
               </div>
               <div className="modal-v2-footer">
@@ -484,7 +736,7 @@ export default function GestionHerramientas() {
                 <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
                   {selectedEquipo.manual_url && (
                     <a href={selectedEquipo.manual_url} target="_blank" rel="noreferrer" className="v2-btn-secondary" style={{ textDecoration: "none", fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "5px" }}>
-                      📄 Ver Certificado/Manual
+                      📄 Ver Certificado
                     </a>
                   )}
                   <button className="v2-btn-primary" style={{ padding: "8px 16px", fontSize: "0.85rem" }} onClick={printHojaRutina}>
