@@ -256,7 +256,6 @@ export default function GestionHerramientas() {
     });
 
     const payload = {
-      id: form.id || undefined,
       nombre: form.nombre,
       tipo: form.tipo,
       area_id: parseInt(form.area_id),
@@ -265,6 +264,10 @@ export default function GestionHerramientas() {
       manual_url: currentUrl,
       descripcion: descJson
     };
+
+    if (form.id) {
+      payload.id = form.id;
+    }
 
     const { error } = await supabase.from(st("activos")).upsert([payload]);
     if (error) alert("Error: " + error.message);
