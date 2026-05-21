@@ -117,13 +117,16 @@ export default function BodegaMP() {
 
     function formatFechaFull(f, soloHora = false) {
         if (!f) return "—";
-        // Si es solo fecha (10 caracteres), forzar medianoche local para evitar desfase UTC
-        const d = f.length === 10 ? new Date(f + "T00:00:00") : new Date(f);
+        const isDateOnly = f.length === 10;
+        const d = isDateOnly ? new Date(f + "T00:00:00") : new Date(f);
         if (soloHora) {
-            if (f.length === 10) return "—";
+            if (isDateOnly) return "—";
             return d.toLocaleTimeString("es-CO", { hour: '2-digit', minute: '2-digit' });
         }
-        return d.toLocaleString("es-CO");
+        if (isDateOnly) {
+            return d.toLocaleDateString("es-CO", { day: '2-digit', month: '2-digit', year: 'numeric' });
+        }
+        return d.toLocaleString("es-CO", { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
     }
 
     async function loadPedidos() {

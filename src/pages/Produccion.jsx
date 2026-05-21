@@ -10,6 +10,20 @@ import CamposDinamicos from "../components/solicitudes/CamposDinamicos";
 import { notifyRoles, checkAndNotifyFlowCompletion } from "../api/notifications";
 import SearchableSelect from "../components/SearchableSelect";
 
+function formatFechaFull(f, soloHora = false) {
+  if (!f) return "—";
+  const isDateOnly = f.length === 10;
+  const d = isDateOnly ? new Date(f + "T00:00:00") : new Date(f);
+  if (soloHora) {
+    if (isDateOnly) return "—";
+    return d.toLocaleTimeString("es-CO", { hour: '2-digit', minute: '2-digit' });
+  }
+  if (isDateOnly) {
+    return d.toLocaleDateString("es-CO", { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+  return d.toLocaleString("es-CO", { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
 /* ===========================================================
    MAPA DE ESTADOS → SIGUIENTE ESTADO
    (coincide con tabla "estados")
@@ -2682,17 +2696,13 @@ export default function Produccion() {
                     <div>
                       <label style={{ display: 'block', fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>Fecha solicitud</label>
                       <div style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#f8fafc', fontSize: '13px', minHeight: '35px', display: 'flex', alignItems: 'center' }}>
-                        {selected.fecha_solicitud_materias_primas
-                          ? new Date(selected.fecha_solicitud_materias_primas).toLocaleString("es-CO", { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-                          : "—"}
+                        {formatFechaFull(selected.fecha_solicitud_materias_primas)}
                       </div>
                     </div>
                     <div>
                       <label style={{ display: 'block', fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>Fecha entrega</label>
                       <div style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#f8fafc', fontSize: '13px', minHeight: '35px', display: 'flex', alignItems: 'center' }}>
-                        {selected.fecha_entrega_de_materias_primas_e_insumos
-                          ? new Date(selected.fecha_entrega_de_materias_primas_e_insumos).toLocaleString("es-CO", { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-                          : "—"}
+                        {formatFechaFull(selected.fecha_entrega_de_materias_primas_e_insumos)}
                       </div>
                     </div>
                   </div>

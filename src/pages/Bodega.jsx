@@ -17,6 +17,11 @@ export default function Bodega() {
   const [itemsDetallados, setItemsDetallados] = useState([]);
   const [itemsLoading, setItemsLoading] = useState(false);
 
+  // MATERIAL IMPRESO
+  const [pedidosMI, setPedidosMI] = useState([]);
+  const [obsMIResponse, setObsMIResponse] = useState("");
+  const [loadingMI, setLoadingMI] = useState(false);
+
   // OBSERVACIONES
   const [obs, setObs] = useState([]);
   const [newObs, setNewObs] = useState("");
@@ -29,13 +34,16 @@ export default function Bodega() {
   =========================================================== */
   function formatFechaFull(f, soloHora = false) {
     if (!f) return "—";
-    // Si es solo fecha (10 caracteres), forzar medianoche local para evitar desfase UTC
-    const d = f.length === 10 ? new Date(f + "T00:00:00") : new Date(f);
+    const isDateOnly = f.length === 10;
+    const d = isDateOnly ? new Date(f + "T00:00:00") : new Date(f);
     if (soloHora) {
-      if (f.length === 10) return "—";
+      if (isDateOnly) return "—";
       return d.toLocaleTimeString("es-CO", { hour: '2-digit', minute: '2-digit' });
     }
-    return d.toLocaleString("es-CO");
+    if (isDateOnly) {
+      return d.toLocaleDateString("es-CO", { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+    return d.toLocaleString("es-CO", { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   }
 
 
@@ -90,6 +98,52 @@ export default function Bodega() {
     total.sort((a, b) => b.id - a.id);
 
     setPedidos(total);
+  }
+
+  async function loadSolicitudesMI() {
+    const { data, error } = await supabase
+      .from(st("pedidos_produccion"))
+      .select(ss("*, productos(articulo), clientes(nombre), estados(nombre)"))
+      .not("solicitud_material_impreso", "is", null)
+      .neq("solicitud_material_impreso_atendida", true)
+      .order("id", { ascending: false });
+    if (!error) setPedidosMI(data || []);
+  }
+
+  async function confirmarMaterialImpreso() {
+    if (!selected) return;
+    setLoadingMI(true);
+
+    const { error } = await supabase
+      .from(st("pedidos_produccion"))
+      .update({ solicitud_material_impreso_atendida: true })
+      .eq("id", selected.id);
+
+    if (error) { alert("Error al confirmar entrega"); setLoadingMI(false); return; }
+
+    const obsText = obsMIResponse.trim() || "Material impreso entregado.";
+    await supabase.from(st("observaciones_pedido")).insert({
+      pedido_id: selected.id,
+      usuario: usuarioActual?.usuario || "Bodega",
+      observacion: `✔ MATERIAL IMPRESO ENTREGADO: ${obsText}`,
+    });
+
+    try {
+      const { notifyRoles } = await import("../api/notifications");
+      await notifyRoles(
+        ["acondicionamiento"],
+        "Material Impreso Entregado",
+        `Bodega entregó el material impreso para el Pedido #${selected.id}`,
+        selected.id,
+        "accion_requerida"
+      );
+    } catch (e) { console.error(e); }
+
+    setObsMIResponse("");
+    setSelected(null);
+    setLoadingMI(false);
+    loadSolicitudesMI();
+    loadPedidos();
   }
 
   /* ===========================================================
@@ -233,6 +287,7 @@ export default function Bodega() {
   useEffect(() => {
     loadPedidos();
     loadHistorial();
+    loadSolicitudesMI();
   }, []);
 
   // Seleccionar automáticamente si viene un ?id= en la URL
@@ -507,6 +562,44 @@ export default function Bodega() {
             </>
           )}
 
+          {rol !== "bodega_pt" && pedidosMI.length > 0 && (
+            <>
+              <div style={{
+                margin: "18px 0 10px",
+                display: "flex", alignItems: "center", gap: 8,
+              }}>
+                <div style={{ flex: 1, height: 1, background: "var(--border-color)" }} />
+                <span style={{
+                  fontSize: "0.7rem", fontWeight: 800, color: "#7c3aed",
+                  background: "#ede9fe", padding: "3px 10px", borderRadius: 99,
+                  border: "1px solid #c4b5fd", whiteSpace: "nowrap",
+                }}>
+                  📦 Material Impreso · {pedidosMI.length}
+                </span>
+                <div style={{ flex: 1, height: 1, background: "var(--border-color)" }} />
+              </div>
+              {pedidosMI.map(p => (
+                <div
+                  key={`mi-${p.id}`}
+                  className={`pc-item ${selected?.id === p.id ? "pc-item-selected" : ""}`}
+                  onClick={() => seleccionarPedido(p)}
+                  style={{ borderLeft: "4px solid #7c3aed" }}
+                >
+                  <span className="pc-id-tag" style={{ background: "#7c3aed" }}>#{p.id}</span>
+                  <p><strong>Producto:</strong> {p.productos?.articulo}</p>
+                  <p><strong>Cliente:</strong> {p.clientes?.nombre}</p>
+                  <p style={{
+                    fontSize: "0.75rem", marginTop: 6, color: "#6d28d9",
+                    background: "#ede9fe", borderRadius: 6, padding: "4px 8px",
+                    fontStyle: "italic",
+                  }}>
+                    "{p.solicitud_material_impreso?.slice(0, 60)}{p.solicitud_material_impreso?.length > 60 ? "…" : ""}"
+                  </p>
+                </div>
+              ))}
+            </>
+          )}
+
           {rol !== "bodega_mp" && (
             <>
               <h4 className="pc-section-title">Despachos PT</h4>
@@ -769,6 +862,78 @@ export default function Bodega() {
                   )}
                 </div>
               </>
+            )}
+
+            {/* PANEL MATERIAL IMPRESO */}
+            {selected.solicitud_material_impreso && !selected.solicitud_material_impreso_atendida && (
+              <div style={{
+                marginTop: 20, borderRadius: 14,
+                border: "1.5px solid #a78bfa",
+                background: "#faf5ff", overflow: "hidden",
+              }}>
+                <div style={{
+                  padding: "12px 18px",
+                  background: "linear-gradient(135deg,#7c3aed,#6d28d9)",
+                  display: "flex", alignItems: "center", gap: 8,
+                }}>
+                  <span style={{ fontSize: "1.1rem" }}>📦</span>
+                  <div>
+                    <p style={{ margin: 0, fontWeight: 800, color: "white", fontSize: "0.9rem" }}>
+                      Solicitud de Material Impreso
+                    </p>
+                    <p style={{ margin: 0, fontSize: "0.72rem", color: "rgba(255,255,255,0.75)" }}>
+                      Solicitado por Acondicionamiento
+                    </p>
+                  </div>
+                  <span style={{
+                    marginLeft: "auto", fontSize: "0.68rem", fontWeight: 800,
+                    background: "#f59e0b", color: "white",
+                    padding: "2px 10px", borderRadius: 99,
+                  }}>
+                    ⏳ Pendiente
+                  </span>
+                </div>
+                <div style={{ padding: "14px 18px" }}>
+                  <p style={{
+                    fontSize: "0.88rem", color: "#1e293b",
+                    background: "#ede9fe", border: "1px solid #c4b5fd",
+                    borderRadius: 8, padding: "10px 12px",
+                    lineHeight: 1.6, marginBottom: 14,
+                  }}>
+                    {selected.solicitud_material_impreso}
+                  </p>
+                  <p style={{ fontSize: "0.78rem", color: "#6d28d9", fontWeight: 700, marginBottom: 6 }}>
+                    Nota de entrega (opcional):
+                  </p>
+                  <textarea
+                    rows={2}
+                    placeholder="Ej: Entregados 1000 etiquetas y 500 cajas…"
+                    value={obsMIResponse}
+                    onChange={e => setObsMIResponse(e.target.value)}
+                    style={{
+                      width: "100%", padding: "8px 12px", borderRadius: 8,
+                      border: "1.5px solid #c4b5fd", fontSize: "0.85rem",
+                      background: "white", color: "#1e293b",
+                      resize: "vertical", fontFamily: "inherit",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                  <button
+                    onClick={confirmarMaterialImpreso}
+                    disabled={loadingMI}
+                    style={{
+                      marginTop: 10, width: "100%", padding: 11,
+                      background: "linear-gradient(135deg,#7c3aed,#6d28d9)",
+                      color: "white", border: "none", borderRadius: 10,
+                      fontWeight: 700, fontSize: "0.875rem",
+                      cursor: loadingMI ? "default" : "pointer",
+                      opacity: loadingMI ? 0.7 : 1,
+                    }}
+                  >
+                    {loadingMI ? "Procesando…" : "✔ Confirmar entrega de material impreso"}
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         )}
