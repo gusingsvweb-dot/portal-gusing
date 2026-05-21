@@ -30,6 +30,7 @@ import GarantiaCalidad from "./pages/GarantiaCalidad";
 import BodegaMP from "./pages/BodegaMP";
 import BodegaPT from "./pages/BodegaPT";
 import GestionEquipos from "./pages/GestionEquipos.jsx";
+import GestionHerramientas from "./pages/GestionHerramientas.jsx";
 import GestionProveedoresMant from "./pages/GestionProveedoresMant.jsx";
 import PlanMaestro from "./pages/PlanMaestro.jsx";
 import GestionRepuestos from "./pages/GestionRepuestos.jsx";
@@ -315,6 +316,15 @@ export default function AppRouter() {
         element={
           ["mantenimiento", "gerencia"].includes(usuarioActual?.rol)
             ? <GestionEquipos />
+            : <Navigate to="/" />
+        }
+      />
+
+      <Route
+        path="/mantenimiento/herramientas"
+        element={
+          ["mantenimiento", "gerencia"].includes(usuarioActual?.rol)
+            ? <GestionHerramientas />
             : <Navigate to="/" />
         }
       />

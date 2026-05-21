@@ -86,6 +86,7 @@ export default function Navbar() {
           { to: "/pedidos-finalizados", label: "Cerrados", icon: "📂" },
           { to: "/gerenciacompras", label: "Compras", icon: "🛒" },
           { to: "/gerenciamantenimiento", label: "Mantenimiento", icon: "🛠️" },
+          { to: "/mantenimiento/herramientas", label: "Herramientas", icon: "🔧" },
           { to: "/consolidado", label: "Consolidado", icon: "📊" },
           { to: "/dashboard", label: "Métricas", icon: "📈" },
           { to: "/kpis-mantenimiento", label: "Mantenimiento Stats", icon: "🛠️" },
@@ -139,6 +140,7 @@ export default function Navbar() {
         items: [
           { to: "/mantenimiento", label: "Órdenes", icon: "🛠️" },
           { to: "/mantenimiento/equipos", label: "Equipos", icon: "🏢" },
+          { to: "/mantenimiento/herramientas", label: "Herramientas", icon: "🔧" },
           { to: "/mantenimiento/plan-maestro", label: "Plan Maestro", icon: "📅" },
           { to: "/mantenimiento/repuestos", label: "Repuestos", icon: "⚙️" },
           { to: "/mantenimiento/proyectos", label: "Proyectos", icon: "🚀" },

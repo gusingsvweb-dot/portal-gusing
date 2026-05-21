@@ -6,9 +6,15 @@ import Footer from "../components/Footer";
 import "./Mantenimiento.css";
 import "./GestionEquipos.css";
 
-const TIPO_ICON = { Equipo: "⚙️", "Instalación": "🏗️", Computador: "💻" };
+const TIPO_ICON = { 
+  "Herramienta Manual": "🔧", 
+  "Herramienta Eléctrica": "🔌", 
+  "Equipo de Medición": "📐", 
+  "Equipo de Seguridad": "🦺", 
+  "Herramienta": "🔧" 
+};
 
-export default function GestionEquipos() {
+export default function GestionHerramientas() {
   const navigate = useNavigate();
   const [activos, setEquipos] = useState([]);
   const [areas, setAreas] = useState([]);
@@ -24,9 +30,10 @@ export default function GestionEquipos() {
   const [saving, setSaving] = useState(false);
   const [proveedores, setProveedores] = useState([]);
   const [tiposSolicitud, setTiposSolicitud] = useState([]);
+  const [defaultAreaId, setDefaultAreaId] = useState("");
 
   const [form, setForm] = useState({
-    nombre: "", tipo: "Equipo", area_id: "", codigo: "", descripcion: "", criticidad: "Baja", manual_url: ""
+    nombre: "", tipo: "Herramienta Manual", area_id: "", codigo: "", descripcion: "", criticidad: "Baja", manual_url: ""
   });
   const [file, setFile] = useState(null);
   const [showManualInt, setShowManualInt] = useState(false);
@@ -48,21 +55,36 @@ export default function GestionEquipos() {
       supabase.from(st("proveedores_mant")).select("*").order("nombre"),
       supabase.from(st("tipos_solicitud")).select("*")
     ]);
-    
-    // Filter out tools from standard equipment list
+
+    // Filter tools
     const toolTypes = ["Herramienta", "Herramienta Manual", "Herramienta Eléctrica", "Equipo de Medición", "Equipo de Seguridad"];
-    const nonTools = (act || []).filter(a => 
-      !toolTypes.includes(a.tipo) && 
-      !a.tipo?.toLowerCase().includes("herramienta") && 
-      !a.tipo?.toLowerCase().includes("medicion") && 
-      !a.tipo?.toLowerCase().includes("medición") && 
-      !a.tipo?.toLowerCase().includes("seguridad")
+    const toolsOnly = (act || []).filter(a => 
+      toolTypes.includes(a.tipo) || 
+      a.tipo?.toLowerCase().includes("herramienta") || 
+      a.tipo?.toLowerCase().includes("medicion") || 
+      a.tipo?.toLowerCase().includes("medición") || 
+      a.tipo?.toLowerCase().includes("seguridad")
     );
 
-    setEquipos(nonTools || []);
+    setEquipos(toolsOnly);
     setAreas(ars || []);
     setProveedores(provs || []);
     setTiposSolicitud(types || []);
+
+    // Set default area to Mantenimiento (id 1 usually, or search by name)
+    const defArea = ars?.find(ar => 
+      ar.nombre.toLowerCase().includes("mantenimiento") || 
+      ar.nombre.toLowerCase().includes("taller")
+    );
+    
+    const initialAreaId = defArea ? defArea.id : (ars?.[0]?.id || "");
+    setDefaultAreaId(initialAreaId);
+    
+    setForm(prev => ({ 
+      ...prev, 
+      area_id: prev.area_id || initialAreaId 
+    }));
+    
     setLoading(false);
   }
 
@@ -131,7 +153,6 @@ export default function GestionEquipos() {
     if (!manualIntForm.descripcion || !manualIntForm.accion) return alert("Completa descripción y acción");
     setSaving(true);
     
-    // Consecutivo manual (para no chocar con las automáticas)
     const { data: maxData } = await supabase
       .from(st("solicitudes"))
       .select("consecutivo")
@@ -158,7 +179,7 @@ export default function GestionEquipos() {
     if (error) alert("Error: " + error.message);
     else {
       setShowManualInt(false);
-      setManualIntForm({ fecha: new Date().toISOString().split("T")[0], descripcion: "", accion: "", tecnico: "" });
+      setManualIntForm({ fecha: new Date().toISOString().split("T")[0], descripcion: "", accion: "", tecnico: "", tipo_solicitud_id: 5 });
       loadRutina(selectedEquipo);
     }
     setSaving(false);
@@ -166,39 +187,10 @@ export default function GestionEquipos() {
 
   async function deleteEquipo(id, e) {
     e.stopPropagation();
-    if (!confirm("¿Eliminar este activo? Esta acción no se puede deshacer.")) return;
+    if (!confirm("¿Eliminar esta herramienta? Esta acción no se puede deshacer.")) return;
     const { error } = await supabase.from(st("activos")).delete().eq("id", id);
     if (error) alert("Error: " + error.message);
     else loadData();
-  }
-
-  async function deleteAllAssets() {
-    const total = activos.length;
-    if (total === 0) return alert("No hay activos para eliminar.");
-    
-    if (!confirm(`⚠️ ATENCIÓN: Estás a punto de eliminar los ${total} activos registrados.\n\nEsto también borrará todas sus órdenes de trabajo, solicitudes y planes preventivos asociados.\n\n¿Deseas continuar?`)) return;
-    if (!confirm("🚨 ¿ESTÁS ABSOLUTAMENTE SEGURO? Esta acción es irreversible y borrará TODO el historial de estos activos.")) return;
-
-    setLoading(true);
-    try {
-      // 1. Borrar planes preventivos
-      await supabase.from(st("planes_preventivos")).delete().not("id", "is", null);
-      
-      // 2. Borrar solicitudes y órdenes
-      await supabase.from(st("solicitudes")).delete().not("id", "is", null);
-      
-      // 3. Borrar finalmente los activos
-      const { error } = await supabase.from(st("activos")).delete().not("id", "is", null);
-      
-      if (error) throw error;
-      
-      alert("Se han eliminado todos los activos y su historial correctamente.");
-      loadData();
-    } catch (err) {
-      alert("Error al eliminar todo: " + err.message);
-    } finally {
-      setLoading(false);
-    }
   }
 
   async function saveNewArea() {
@@ -232,7 +224,7 @@ export default function GestionEquipos() {
     const html = `
       <html>
         <head>
-          <title>Hoja de Rutina - ${selectedEquipo.nombre}</title>
+          <title>Hoja de Servicio - ${selectedEquipo.nombre}</title>
           <style>
             body { font-family: sans-serif; padding: 40px; color: #333; }
             .header { display: flex; justify-content: space-between; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
@@ -248,26 +240,26 @@ export default function GestionEquipos() {
         </head>
         <body>
           <div class="header">
-            <div class="title">HOJA DE RUTINA Y MANTENIMIENTO</div>
+            <div class="title">HOJA DE SERVICIO Y CALIBRACIÓN</div>
             <div style="text-align: right">
               <div>Código: ${selectedEquipo.codigo || "N/A"}</div>
               <div>Fecha: ${new Date().toLocaleDateString()}</div>
             </div>
           </div>
           <div class="info-grid">
-            <div class="info-item"><strong>EQUIPO:</strong> ${selectedEquipo.nombre}</div>
+            <div class="info-item"><strong>HERRAMIENTA:</strong> ${selectedEquipo.nombre}</div>
             <div class="info-item"><strong>TIPO:</strong> ${selectedEquipo.tipo}</div>
             <div class="info-item"><strong>UBICACIÓN:</strong> ${areas.find(a => a.id === selectedEquipo.area_id)?.nombre || "N/A"}</div>
             <div class="info-item"><strong>CRITICIDAD:</strong> ${selectedEquipo.criticidad}</div>
           </div>
-          <h3>HISTORIAL DE INTERVENCIONES</h3>
+          <h3>HISTORIAL DE MANTENIMIENTO Y CALIBRACIÓN</h3>
           <table>
             <thead>
               <tr>
                 <th>FECHA</th>
-                <th>OT</th>
+                <th>CÓDIGO INTERNO</th>
                 <th>TIPO</th>
-                <th>DESCRIPCIÓN / PROBLEMA</th>
+                <th>DESCRIPCIÓN DE INTERVENCIÓN</th>
                 <th>ACCIÓN REALIZADA</th>
                 <th>RESPONSABLE</th>
               </tr>
@@ -295,7 +287,7 @@ export default function GestionEquipos() {
   }
 
   function resetForm() {
-    setForm({ nombre: "", tipo: "Equipo", area_id: "", codigo: "", descripcion: "", criticidad: "Baja", manual_url: "" });
+    setForm({ nombre: "", tipo: "Herramienta Manual", area_id: defaultAreaId, codigo: "", descripcion: "", criticidad: "Baja", manual_url: "" });
     setFile(null);
     setShowAreaForm(false);
     setNewAreaName("");
@@ -307,21 +299,19 @@ export default function GestionEquipos() {
       <div className="mant-container">
         <header className="mant-header-section">
           <div>
-            <h2 className="mant-title">Gestión de Equipos</h2>
-            <p className="mant-subtitle">Inventario centralizado de infraestructura y equipos — {activos.length} equipos registrados</p>
+            <h2 className="mant-title">Equipos y Herramientas de Mantenimiento</h2>
+            <p className="mant-subtitle">Inventario centralizado de herramientas, taladros y equipos propios del taller — {activos.length} herramientas registradas</p>
           </div>
           <div className="mant-actions-group">
             <button className="mant-btn-action secondary" onClick={() => navigate("/mantenimiento")}>← Tablero</button>
-            <button className="mant-btn-action secondary" style={{ color: "#ef4444", borderColor: "#fecaca" }} onClick={deleteAllAssets}>🗑️ Borrar Todo</button>
-            <button className="mant-btn-action secondary" onClick={() => navigate("/mantenimiento/importar-activos")}>📥 Importar Excel</button>
-            <button className="mant-btn-action primary" onClick={() => { resetForm(); setShowForm(true); }}>+ Nuevo Equipo</button>
+            <button className="mant-btn-action primary" onClick={() => { resetForm(); setShowForm(true); }}>+ Nueva Herramienta</button>
           </div>
         </header>
 
         {/* STATS ROW */}
         <div className="activos-stats-row">
           <div className="activo-stat" onClick={() => setFiltroCrit("todos")} style={{ "--a": filtroCrit === "todos" ? "var(--mant-primary)" : "#94a3b8" }}>
-            <span className="as-val">{stats.total}</span><span className="as-lbl">Total Equipos</span>
+            <span className="as-val">{stats.total}</span><span className="as-lbl">Total Herramientas</span>
           </div>
           <div className="activo-stat crit-alta" onClick={() => setFiltroCrit(filtroCrit === "Alta" ? "todos" : "Alta")} style={{ "--a": "#ef4444" }}>
             <span className="as-val">{stats.alta}</span><span className="as-lbl">Criticidad Alta</span>
@@ -338,7 +328,7 @@ export default function GestionEquipos() {
         <div className="mant-filter-bar">
           <div className="mant-search-wrap">
             <span className="search-icon">🔍</span>
-            <input className="mant-search-input" placeholder="Buscar por nombre, código, área..."
+            <input className="mant-search-input" placeholder="Buscar por nombre, código, ubicación..."
               value={filtroText} onChange={e => setFiltroText(e.target.value)} />
             {filtroText && <button className="search-clear" onClick={() => setFiltroText("")}>✖</button>}
           </div>
@@ -350,11 +340,11 @@ export default function GestionEquipos() {
         </div>
 
         {loading ? (
-          <div className="mant-loading-state">Actualizando inventario...</div>
+          <div className="mant-loading-state">Actualizando inventario de herramientas...</div>
         ) : filtered.length === 0 ? (
           <div className="empty-state" style={{ marginTop: "60px" }}>
-            <div className="empty-state-icon">🏭</div>
-            <p>No se encontraron equipos con ese filtro</p>
+            <div className="empty-state-icon">🔧</div>
+            <p>No se encontraron herramientas con ese filtro</p>
           </div>
         ) : (
           <div className="assets-grid-premium">
@@ -363,13 +353,13 @@ export default function GestionEquipos() {
               return (
                 <div key={a.id} className={`asset-card-v2 crit-${a.criticidad?.toLowerCase() || "baja"}`} onClick={() => loadRutina(a)}>
                   <div className="card-v2-header">
-                    <span className="v2-id-tag">{a.codigo || `ID-${a.id}`}</span>
+                    <span className="v2-id-tag">{a.codigo || `HER-${a.id}`}</span>
                     <div style={{ display: "flex", gap: "5px" }}>
                       <span className={`v2-crit-badge crit-${a.criticidad?.toLowerCase() || "baja"}`}>{a.criticidad || "Baja"}</span>
-                      <span className="v2-type-badge">{a.tipo}</span>
+                      <span className="v2-type-badge" style={{ backgroundColor: "rgba(14, 165, 233, 0.15)", color: "#0ea5e9" }}>{a.tipo}</span>
                     </div>
                   </div>
-                  <div className="card-v2-icon">{TIPO_ICON[a.tipo] || "🔩"}</div>
+                  <div className="card-v2-icon">{TIPO_ICON[a.tipo] || "🔧"}</div>
                   <h4>{a.nombre}</h4>
                   {a.descripcion && <p style={{ fontSize: "0.8rem", color: "#64748b", margin: "0 0 10px", lineHeight: "1.5" }}>{a.descripcion}</p>}
                   <div className="v2-location-info">📍 {area?.nombre || "Sin área"}</div>
@@ -391,39 +381,41 @@ export default function GestionEquipos() {
           <div className="mant-modal-overlay-v2" onClick={() => { setShowForm(false); resetForm(); }}>
             <div className="mant-modal-content-centered" onClick={e => e.stopPropagation()}>
               <div className="modal-v2-header">
-                <h3>{form.id ? "✏️ Editar Equipo" : "✨ Nuevo Equipo"}</h3>
+                <h3>{form.id ? "✏️ Editar Herramienta" : "✨ Nueva Herramienta"}</h3>
                 <button className="close-btn-v2" onClick={() => { setShowForm(false); resetForm(); }}>✖</button>
               </div>
               <div className="modal-v2-body">
                 <div className="v2-form-group">
-                  <label>Nombre del Equipo <span className="req">*</span></label>
+                  <label>Nombre de la Herramienta / Equipo <span className="req">*</span></label>
                   <input className="v2-input" type="text" value={form.nombre}
                     onChange={e => setForm({ ...form, nombre: e.target.value })}
-                    placeholder="Ej: Aire Acondicionado Central 1" />
+                    placeholder="Ej: Taladro Percutor Makita 18V" />
                 </div>
                 <div className="v2-form-row">
                   <div className="v2-form-group">
-                    <label>Tipo</label>
+                    <label>Categoría</label>
                     <select className="v2-select" value={form.tipo} onChange={e => setForm({ ...form, tipo: e.target.value })}>
-                      <option value="Equipo">Maquinaria / Equipo</option>
-                      <option value="Instalación">Instalación Civil</option>
-                      <option value="Computador">Equipo de Cómputo</option>
+                      <option value="Herramienta Manual">Herramienta Manual</option>
+                      <option value="Herramienta Eléctrica">Herramienta Eléctrica</option>
+                      <option value="Equipo de Medición">Equipo de Medición / Calibración</option>
+                      <option value="Equipo de Seguridad">Equipo de Seguridad</option>
+                      <option value="Herramienta">Otra Herramienta</option>
                     </select>
                   </div>
                   <div className="v2-form-group">
                     <label>Criticidad <span className="req">*</span></label>
                     <select className="v2-select" value={form.criticidad} onChange={e => setForm({ ...form, criticidad: e.target.value })}>
-                      <option value="Alta">Alta (Crítico GMP)</option>
+                      <option value="Alta">Alta</option>
                       <option value="Media">Media</option>
                       <option value="Baja">Baja</option>
                     </select>
                   </div>
                 </div>
                 <div className="v2-form-group">
-                  <label>Área / Ubicación <span className="req">*</span></label>
+                  <label>Ubicación / Taller <span className="req">*</span></label>
                   <div style={{ display: "flex", gap: "8px" }}>
                     <select className="v2-select" value={form.area_id} onChange={e => setForm({ ...form, area_id: e.target.value })}>
-                      <option value="">Seleccione área...</option>
+                      <option value="">Seleccione ubicación...</option>
                       {areas.map(ar => <option key={ar.id} value={ar.id}>{ar.nombre}</option>)}
                     </select>
                     <button className="v2-add-btn" title="Nueva área" onClick={() => setShowAreaForm(!showAreaForm)}>
@@ -432,7 +424,7 @@ export default function GestionEquipos() {
                   </div>
                   {showAreaForm && (
                     <div className="v2-inline-form">
-                      <input className="v2-input-mini" placeholder="Nombre del área..." value={newAreaName}
+                      <input className="v2-input-mini" placeholder="Nombre de la ubicación..." value={newAreaName}
                         onChange={e => setNewAreaName(e.target.value)} onKeyDown={e => e.key === "Enter" && saveNewArea()} />
                       <button className="v2-save-mini" onClick={saveNewArea}>OK</button>
                     </div>
@@ -440,48 +432,48 @@ export default function GestionEquipos() {
                 </div>
                 <div className="v2-form-row">
                   <div className="v2-form-group">
-                    <label>Código Interno / TAG</label>
+                    <label>Código Interno / TAG / Serie</label>
                     <input className="v2-input" type="text" value={form.codigo}
-                      onChange={e => setForm({ ...form, codigo: e.target.value })} placeholder="TAG-001" />
+                      onChange={e => setForm({ ...form, codigo: e.target.value })} placeholder="HER-001" />
                   </div>
                 </div>
-                  <div className="v2-form-group">
-                    <label>Manual / Hoja de Rutina (PDF)</label>
-                    <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                      <input className="v2-input" type="file" accept=".pdf" onChange={e => setFile(e.target.files[0])} />
-                      {form.manual_url && (
-                        <a href={form.manual_url} target="_blank" rel="noreferrer" className="v2-btn-secondary" style={{ textDecoration: "none", fontSize: "0.75rem", padding: "8px" }}>
-                          📄 Ver Actual
-                        </a>
-                      )}
-                    </div>
+                <div className="v2-form-group">
+                  <label>Hoja de Datos / Certificado (PDF)</label>
+                  <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                    <input className="v2-input" type="file" accept=".pdf" onChange={e => setFile(e.target.files[0])} />
+                    {form.manual_url && (
+                      <a href={form.manual_url} target="_blank" rel="noreferrer" className="v2-btn-secondary" style={{ textDecoration: "none", fontSize: "0.75rem", padding: "8px" }}>
+                        📄 Ver Actual
+                      </a>
+                    )}
                   </div>
-                  <div className="v2-form-group">
-                    <label>Descripción / Observaciones</label>
-                    <textarea className="v2-input" rows={2} value={form.descripcion}
-                      onChange={e => setForm({ ...form, descripcion: e.target.value })}
-                      placeholder="Características técnicas, ubicación exacta, notas importantes..." />
-                  </div>
+                </div>
+                <div className="v2-form-group">
+                  <label>Especificaciones / Serie / Observaciones</label>
+                  <textarea className="v2-input" rows={2} value={form.descripcion}
+                    onChange={e => setForm({ ...form, descripcion: e.target.value })}
+                    placeholder="Marca, modelo, número de serie, fecha de calibración, accesorios..." />
+                </div>
               </div>
               <div className="modal-v2-footer">
                 <button className="v2-btn-secondary" onClick={() => { setShowForm(false); resetForm(); }}>Cancelar</button>
                 <button className="v2-btn-primary" onClick={saveEquipo} disabled={saving}>
-                  {saving ? "Guardando..." : form.id ? "Actualizar Equipo" : "Registrar Equipo"}
+                  {saving ? "Guardando..." : form.id ? "Actualizar Herramienta" : "Registrar Herramienta"}
                 </button>
               </div>
             </div>
           </div>
         )}
 
-        {/* RUTINA MODAL */}
+        {/* HISTORIAL MODAL */}
         {selectedEquipo && (
           <div className="mant-modal-overlay-v2" onClick={() => setSelectedEquipo(null)}>
             <div className="mant-modal-content-centered wide-v2" onClick={e => e.stopPropagation()}>
               <div className="modal-v2-header">
                 <div className="v2-header-title">
-                  <span className="icon-v2-header">{TIPO_ICON[selectedEquipo.tipo] || "🔩"}</span>
+                  <span className="icon-v2-header">{TIPO_ICON[selectedEquipo.tipo] || "🔧"}</span>
                   <div>
-                    <h3>Hoja de Rutina</h3>
+                    <h3>Historial de Intervenciones</h3>
                     <p>{selectedEquipo.nombre} | {selectedEquipo.codigo || "Sin código"} |&nbsp;
                       <span className={`v2-crit-badge crit-${selectedEquipo.criticidad?.toLowerCase() || "baja"}`}>
                         {selectedEquipo.criticidad || "Baja"}
@@ -489,34 +481,34 @@ export default function GestionEquipos() {
                     </p>
                   </div>
                 </div>
-                 <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                   {selectedEquipo.manual_url && (
-                     <a href={selectedEquipo.manual_url} target="_blank" rel="noreferrer" className="v2-btn-secondary" style={{ textDecoration: "none", fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "5px" }}>
-                       📄 Ver Manual
-                     </a>
-                   )}
-                   <button className="v2-btn-primary" style={{ padding: "8px 16px", fontSize: "0.85rem" }} onClick={printHojaRutina}>
-                     🖨️ Generar PDF / Imprimir
-                   </button>
-                   <button className="close-btn-v2" onClick={() => setSelectedEquipo(null)}>✖</button>
-                 </div>
+                <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                  {selectedEquipo.manual_url && (
+                    <a href={selectedEquipo.manual_url} target="_blank" rel="noreferrer" className="v2-btn-secondary" style={{ textDecoration: "none", fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "5px" }}>
+                      📄 Ver Certificado/Manual
+                    </a>
+                  )}
+                  <button className="v2-btn-primary" style={{ padding: "8px 16px", fontSize: "0.85rem" }} onClick={printHojaRutina}>
+                    🖨️ Generar PDF / Imprimir
+                  </button>
+                  <button className="close-btn-v2" onClick={() => setSelectedEquipo(null)}>✖</button>
+                </div>
               </div>
               <div className="scroll-v2">
-                 {rutinaLoading ? (
-                   <div className="mant-loading-state">Cargando historial...</div>
-                 ) : (
-                   <>
+                {rutinaLoading ? (
+                  <div className="mant-loading-state">Cargando historial...</div>
+                ) : (
+                  <>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px" }}>
-                      <h4 className="v2-subtitle" style={{ margin: 0 }}>Historial de Intervenciones</h4>
+                      <h4 className="v2-subtitle" style={{ margin: 0 }}>Historial de Mantenimiento / Calibración</h4>
                       <button className="v2-btn-primary" style={{ fontSize: "0.75rem", padding: "6px 12px" }} onClick={() => setShowManualInt(true)}>
-                        + Añadir Intervención Manual
+                        + Registrar Calibración/Mantenimiento Manual
                       </button>
                     </div>
 
                     {showManualInt && (
                       <div className="v2-inline-manual-form" style={{ background: "#f8fafc", padding: "15px", borderRadius: "12px", border: "1px solid #e2e8f0", marginBottom: "20px" }}>
                         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px" }}>
-                          <strong>Nueva Intervención Manual</strong>
+                          <strong>Nueva Intervención / Calibración</strong>
                           <button className="close-btn-v2" onClick={() => setShowManualInt(false)}>✖</button>
                         </div>
                         <div className="v2-form-row">
@@ -543,18 +535,18 @@ export default function GestionEquipos() {
                               value={manualIntForm.tipo_solicitud_id} 
                               onChange={e => setManualIntForm({...manualIntForm, tipo_solicitud_id: e.target.value})}
                             >
-                              {tiposSolicitud.filter(t => [2, 5, 6].includes(t.id) || t.nombre.toLowerCase().includes("mejora")).map(t => (
+                              {tiposSolicitud.filter(t => [2, 5, 6].includes(t.id) || t.nombre.toLowerCase().includes("calibracion") || t.nombre.toLowerCase().includes("calibración")).map(t => (
                                 <option key={t.id} value={t.id}>{t.nombre}</option>
                               ))}
                             </select>
                           </div>
                         </div>
                         <div className="v2-form-group">
-                          <label>Descripción del Problema</label>
+                          <label>Descripción / Problema / Estado de Calibración</label>
                           <input type="text" className="v2-input" value={manualIntForm.descripcion} onChange={e => setManualIntForm({...manualIntForm, descripcion: e.target.value})} />
                         </div>
                         <div className="v2-form-group">
-                          <label>Acción Realizada</label>
+                          <label>Acción Realizada / Ajustes</label>
                           <textarea className="v2-input" rows={2} value={manualIntForm.accion} onChange={e => setManualIntForm({...manualIntForm, accion: e.target.value})} />
                         </div>
                         <div style={{ textAlign: "right" }}>
@@ -568,7 +560,7 @@ export default function GestionEquipos() {
                     {rutina.length === 0 ? (
                       <div className="v2-empty-state">
                         <div className="v2-empty-icon">📭</div>
-                        <p>Este equipo aún no tiene intervenciones registradas.</p>
+                        <p>Esta herramienta no registra mantenimiento o calibraciones previas.</p>
                       </div>
                     ) : (
                       <div className="v2-timeline">
@@ -576,36 +568,36 @@ export default function GestionEquipos() {
                           const fechaRef = item.fecha_cierre || item.created_at;
                           const enProceso = !item.fecha_cierre;
                           return (
-                          <div key={item.id} className="v2-timeline-item">
-                            <div className={`v2-tl-marker ${enProceso ? "tl-marker-proceso" : ""}`}></div>
-                            <div className="v2-tl-date">
-                              <span className="v2-date-main">{new Date(fechaRef).toLocaleDateString("es-CO")}</span>
-                              <span className="v2-date-sub">{enProceso ? "En proceso" : new Date(fechaRef).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
-                            </div>
-                            <div className={`v2-tl-card ${enProceso ? "tl-card-proceso" : ""}`}>
-                              <div className="v2-tl-header">
-                                <span className="v2-tl-consec">M-{item.consecutivo}</span>
-                                <span className="v2-tl-type">{item.tipos_solicitud?.nombre || "Manual"}</span>
-                                {enProceso && <span className="tl-badge-proceso">⚙️ En Proceso</span>}
+                            <div key={item.id} className="v2-timeline-item">
+                              <div className={`v2-tl-marker ${enProceso ? "tl-marker-proceso" : ""}`}></div>
+                              <div className="v2-tl-date">
+                                <span className="v2-date-main">{new Date(fechaRef).toLocaleDateString("es-CO")}</span>
+                                <span className="v2-date-sub">{enProceso ? "En proceso" : new Date(fechaRef).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
                               </div>
-                              <div className="v2-tl-body">
-                                <p className="v2-tl-orig"><strong>Problema:</strong> {item.descripcion}</p>
-                                {item.accion_realizada && (
-                                  <div className="v2-tl-action">
-                                    <strong>Acción realizada:</strong>
-                                    <p>{item.accion_realizada}</p>
-                                  </div>
-                                )}
+                              <div className={`v2-tl-card ${enProceso ? "tl-card-proceso" : ""}`}>
+                                <div className="v2-tl-header">
+                                  <span className="v2-tl-consec">M-{item.consecutivo}</span>
+                                  <span className="v2-tl-type">{item.tipos_solicitud?.nombre || "Manual"}</span>
+                                  {enProceso && <span className="tl-badge-proceso">⚙️ En Proceso</span>}
+                                </div>
+                                <div className="v2-tl-body">
+                                  <p className="v2-tl-orig"><strong>Intervención:</strong> {item.descripcion}</p>
+                                  {item.accion_realizada && (
+                                    <div className="v2-tl-action">
+                                      <strong>Acción realizada:</strong>
+                                      <p>{item.accion_realizada}</p>
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="v2-tl-footer">👨‍🔧 Responsable: {item.usuario_id}</div>
                               </div>
-                              <div className="v2-tl-footer">👨‍🔧 Responsable: {item.usuario_id}</div>
                             </div>
-                          </div>
                           );
                         })}
                       </div>
                     )}
-                   </>
-                 )}
+                  </>
+                )}
               </div>
             </div>
           </div>
