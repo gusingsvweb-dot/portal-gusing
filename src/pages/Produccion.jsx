@@ -2075,7 +2075,7 @@ export default function Produccion() {
                           </button>
                         ) : (
                           <button className="pc-btn" onClick={() => avanzarEtapaFlujo()}>
-                            Completar etapa (sin liberación)
+                            Completar etapa
                           </button>
                         )}
                       </div>
