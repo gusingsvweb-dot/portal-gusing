@@ -2587,7 +2587,7 @@ export default function Produccion() {
                         return `Etapa: ${raw}`;
                       })()
                     ) : (
-                      p.estados?.nombre
+                      p.estados?.nombre || p.asignado_a || "Sin estado"
                     )}
                   </span>
                 </p>
