@@ -164,8 +164,7 @@ export function NotificationsProvider({ children }) {
                             });
                             n.onclick = () => window.focus();
 
-                            // 🔄 Iniciar cuenta regresiva para recarga (5s)
-                            setReloadCountdown(5);
+                            // Recarga automática desactivada
                         } catch (e) {
                             console.error("Error mostrando notificación real:", e);
                         }

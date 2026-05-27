@@ -229,7 +229,6 @@ export default function Produccion() {
   // NUEVO: Ver estado de solicitud (readonly para Produccion)
   const [itemsSolicitados, setItemsSolicitados] = useState([]);
   const [showItemsSolicitados, setShowItemsSolicitados] = useState(false);
-  const [haSolicitadoMicro, setHaSolicitadoMicro] = useState(false);
   const [selectedBatchIds, setSelectedBatchIds] = useState([]); // Array de IDs seleccionados para lote
 
   // NUEVO: Modal de devolución de sobrantes
@@ -1359,7 +1358,6 @@ export default function Produccion() {
     }
 
     setSolLoading(false);
-    setHaSolicitadoMicro(true);
 
     // Cerrar modal y reset
     setShowSolicitudMB(false);
@@ -2015,7 +2013,7 @@ export default function Produccion() {
                                 .join(", ") || etapaActual.rol_liberador}
                             </strong>
                           </p>
-                          {esEtapaCorrectaMB && !haSolicitadoMicro && (
+                          {esEtapaCorrectaMB && (
                             <button
                               className="pc-btn"
                               style={{ background: "#7c3aed", width: 'fit-content' }}
