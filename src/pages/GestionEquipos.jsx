@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import GestionHerramientas from "./GestionHerramientas";
 import { supabase, st, ss } from "../api/supabaseClient";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
@@ -10,6 +11,7 @@ const TIPO_ICON = { Equipo: "⚙️", "Instalación": "🏗️", Computador: "�
 
 export default function GestionEquipos() {
   const navigate = useNavigate();
+  const [subView, setSubView] = useState("equipos");
   const [activos, setEquipos] = useState([]);
   const [areas, setAreas] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -307,17 +309,32 @@ export default function GestionEquipos() {
       <div className="mant-container">
         <header className="mant-header-section">
           <div>
-            <h2 className="mant-title">Gestión de Equipos</h2>
-            <p className="mant-subtitle">Inventario centralizado de infraestructura y equipos — {activos.length} equipos registrados</p>
+            <h2 className="mant-title">Gestión de Equipos y Herramientas</h2>
+            <p className="mant-subtitle">
+              {subView === "equipos"
+                ? `Inventario centralizado de infraestructura y equipos — ${activos.length} equipos registrados`
+                : "Control de calibración, vigencia y estado operativo para herramientas del taller"}
+            </p>
           </div>
           <div className="mant-actions-group">
             <button className="mant-btn-action secondary" onClick={() => navigate("/mantenimiento")}>← Tablero</button>
-            <button className="mant-btn-action secondary" style={{ color: "#ef4444", borderColor: "#fecaca" }} onClick={deleteAllAssets}>🗑️ Borrar Todo</button>
-            <button className="mant-btn-action secondary" onClick={() => navigate("/mantenimiento/importar-activos")}>📥 Importar Excel</button>
-            <button className="mant-btn-action primary" onClick={() => { resetForm(); setShowForm(true); }}>+ Nuevo Equipo</button>
+            {subView === "equipos" && <>
+              <button className="mant-btn-action secondary" style={{ color: "#ef4444", borderColor: "#fecaca" }} onClick={deleteAllAssets}>🗑️ Borrar Todo</button>
+              <button className="mant-btn-action secondary" onClick={() => navigate("/mantenimiento/importar-activos")}>📥 Importar Excel</button>
+              <button className="mant-btn-action primary" onClick={() => { resetForm(); setShowForm(true); }}>+ Nuevo Equipo</button>
+            </>}
           </div>
         </header>
 
+        {/* SUBTABS */}
+        <div className="ge-sub-tabs">
+          <button className={`ge-sub-tab${subView === "equipos" ? " active" : ""}`} onClick={() => setSubView("equipos")}>⚙️ Equipos</button>
+          <button className={`ge-sub-tab${subView === "herramientas" ? " active" : ""}`} onClick={() => setSubView("herramientas")}>🔧 Herramientas</button>
+        </div>
+
+        {subView === "herramientas" && <GestionHerramientas embedded />}
+
+        {subView === "equipos" && <>
         {/* STATS ROW */}
         <div className="activos-stats-row">
           <div className="activo-stat" onClick={() => setFiltroCrit("todos")} style={{ "--a": filtroCrit === "todos" ? "var(--mant-primary)" : "#94a3b8" }}>
@@ -610,6 +627,7 @@ export default function GestionEquipos() {
             </div>
           </div>
         )}
+        </>}
       </div>
       <Footer />
     </>

@@ -1,5 +1,38 @@
 /* GestionActivos — extends Mantenimiento.css */
 
+/* SUB-TABS (Equipos / Herramientas) */
+.ge-sub-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid var(--mant-border);
+  margin-bottom: 24px;
+}
+
+.ge-sub-tab {
+  padding: 10px 24px;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--mant-text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ge-sub-tab:hover {
+  color: var(--mant-primary);
+}
+
+.ge-sub-tab.active {
+  color: var(--mant-primary);
+  border-bottom-color: var(--mant-primary);
+}
+
 .activos-stats-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

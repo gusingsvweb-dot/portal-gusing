@@ -322,11 +322,7 @@ export default function AppRouter() {
 
       <Route
         path="/mantenimiento/herramientas"
-        element={
-          ["mantenimiento", "gerencia"].includes(usuarioActual?.rol)
-            ? <GestionHerramientas />
-            : <Navigate to="/" />
-        }
+        element={<Navigate to="/mantenimiento/equipos" replace />}
       />
 
       <Route

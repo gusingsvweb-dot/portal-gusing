@@ -21,7 +21,7 @@ const ESTADO_COLORS = {
   "Fuera de Servicio": { bg: "#fee2e2", color: "#991b1b", border: "#fecaca" }
 };
 
-export default function GestionHerramientas() {
+export default function GestionHerramientas({ embedded = false }) {
   const navigate = useNavigate();
   const [activos, setEquipos] = useState([]);
   const [areas, setAreas] = useState([]);
@@ -461,18 +461,25 @@ export default function GestionHerramientas() {
 
   return (
     <>
-      <Navbar />
-      <div className="mant-container">
-        <header className="mant-header-section">
-          <div>
-            <h2 className="mant-title">Equipos y Herramientas de Mantenimiento</h2>
-            <p className="mant-subtitle">Control de calibración, vigencia y estado operativo para herramientas del taller — {activos.length} herramientas registradas</p>
-          </div>
-          <div className="mant-actions-group">
-            <button className="mant-btn-action secondary" onClick={() => navigate("/mantenimiento")}>← Tablero</button>
+      {!embedded && <Navbar />}
+      <div className={embedded ? "" : "mant-container"}>
+        {!embedded && (
+          <header className="mant-header-section">
+            <div>
+              <h2 className="mant-title">Equipos y Herramientas de Mantenimiento</h2>
+              <p className="mant-subtitle">Control de calibración, vigencia y estado operativo para herramientas del taller — {activos.length} herramientas registradas</p>
+            </div>
+            <div className="mant-actions-group">
+              <button className="mant-btn-action secondary" onClick={() => navigate("/mantenimiento")}>← Tablero</button>
+              <button className="mant-btn-action primary" onClick={() => { resetForm(); setShowForm(true); }}>+ Nueva Herramienta</button>
+            </div>
+          </header>
+        )}
+        {embedded && (
+          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "16px" }}>
             <button className="mant-btn-action primary" onClick={() => { resetForm(); setShowForm(true); }}>+ Nueva Herramienta</button>
           </div>
-        </header>
+        )}
 
         {/* STATS ROW */}
         <div className="activos-stats-row">
@@ -856,7 +863,7 @@ export default function GestionHerramientas() {
           </div>
         )}
       </div>
-      <Footer />
+      {!embedded && <Footer />}
     </>
   );
 }
