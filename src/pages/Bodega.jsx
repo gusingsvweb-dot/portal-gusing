@@ -424,9 +424,24 @@ export default function Bodega() {
       return;
     }
 
-    // COMPLETA / LEGACY: validar items
+    // Si no hay ítems solicitados, tratar como entrega completa sin validar lista
     if (itemsDetallados.length === 0) {
-      alert("Error: No hay items cargados o la lista está vacía. Intente recargar el pedido.");
+      const ok = window.confirm("No hay ítems registrados para este pedido. ¿Confirmar entrega y avanzar a Producción?");
+      if (!ok) return;
+      const ahora = new Date().toISOString();
+      const { error } = await supabase
+        .from(st("pedidos_produccion"))
+        .update({ fecha_entrega_de_materias_primas_e_insumos: ahora, estado_id: 5, asignado_a: "produccion" })
+        .eq("id", selected.id);
+      if (error) return alert("Error guardando entrega");
+      try {
+        const { notifyRoles } = await import("../api/notifications");
+        await notifyRoles(["produccion"], "MP Entregada", `Bodega confirmó entrega para pedido #${selected.id}`, selected.id, "accion_requerida");
+      } catch (e) { console.error(e); }
+      alert("Entrega registrada. Pedido enviado a Producción.");
+      setSelected(null);
+      loadPedidos();
+      loadHistorial();
       return;
     }
 
