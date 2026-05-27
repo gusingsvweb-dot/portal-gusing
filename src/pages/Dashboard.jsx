@@ -751,25 +751,18 @@ export default function Dashboard() {
                   <th>Producto</th>
                   <th>Cliente</th>
                   <th>Estado</th>
-                  <th>Etapa</th>
                   <th>Asignado a</th>
                   <th>Recepción</th>
+                  <th>Cantidad</th>
                   <th>F. Planificada</th>
                   <th>F. Proyectada</th>
                   <th>F. Inicio Prod.</th>
-                  <th>Plan. (d)</th>
-                  <th>Real (d)</th>
-                  <th>T. Entrega (d)</th>
-                  <th>Días MB</th>
-                  <th>Días Acond.</th>
-                  <th>T. Muertos</th>
-                  <th>¿A tiempo?</th>
                 </tr>
               </thead>
               <tbody>
                 {tablaPedidos.length === 0 ? (
                   <tr>
-                    <td colSpan="15" className="dash-empty">
+                    <td colSpan="10" className="dash-empty">
                       No hay pedidos para los filtros seleccionados.
                     </td>
                   </tr>
@@ -797,30 +790,12 @@ export default function Dashboard() {
                             {finalizado ? "✓ " : ""}{p.estados?.nombre || "Pendiente"}
                           </span>
                         </td>
-                        <td>
-                          {etapaActual !== null ? (
-                            <span style={{
-                              background: "#ede9fe", color: "#6d28d9", border: "1px solid #c4b5fd",
-                              padding: "2px 8px", borderRadius: 6, fontSize: 11, fontWeight: 600,
-                            }}>
-                              {etapaActual}
-                            </span>
-                          ) : <span style={{ color: "var(--text-sub)", fontSize: 12 }}>—</span>}
-                        </td>
                         <td>{p.asignado_a || "Sin asignar"}</td>
                         <td>{p.fecha_recepcion_cliente || "-"}</td>
+                        <td style={{ textAlign: "center" }}>{p.cantidad || "-"}</td>
                         <td style={{ fontWeight: p.fecha_maxima_entrega ? 600 : 400 }}>{p.fecha_maxima_entrega || "-"}</td>
                         <td style={{ color: p.fecha_propuesta_entrega ? "#7c3aed" : "var(--text-sub)", fontWeight: p.fecha_propuesta_entrega ? 600 : 400 }}>{p.fecha_propuesta_entrega || "-"}</td>
                         <td style={{ color: p.fecha_inicio_produccion ? "#0369a1" : "var(--text-sub)", fontWeight: p.fecha_inicio_produccion ? 600 : 400 }}>{p.fecha_inicio_produccion || "-"}</td>
-                        <td style={{ textAlign: "center" }}>{getMetricBadge(c.plan, "process")}</td>
-                        <td style={{ textAlign: "center" }}>{getMetricBadge(c.real, "process")}</td>
-                        <td style={{ textAlign: "center" }}>{getMetricBadge(c.entrega, "process")}</td>
-                        <td style={{ textAlign: "center" }}>{getMetricBadge(c.mb, "process")}</td>
-                        <td style={{ textAlign: "center" }}>{getMetricBadge(c.acond, "process")}</td>
-                        <td style={{ textAlign: "center" }}>{getMetricBadge(c.tMuertos, "-")}</td>
-                        <td className={cumplio === "A tiempo" ? "badge-ok" : cumplio === "Tarde" ? "badge-late" : ""}>
-                          {cumplio}
-                        </td>
                       </tr>
                     );
                   })
