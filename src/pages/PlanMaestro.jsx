@@ -398,7 +398,7 @@ export default function PlanMaestro() {
         <header className="mant-header-section">
           <div>
             <h2 className="mant-title">Plan Maestro de Preventivos</h2>
-            <p className="mant-subtitle">Cronograma automático de intervenciones recurrentes GMP</p>
+            <p className="mant-subtitle">Cronograma de mantenimiento preventivo</p>
           </div>
           <div className="mant-actions-group">
             <button className="mant-btn-action secondary" onClick={() => navigate("/mantenimiento")}>← Tablero</button>

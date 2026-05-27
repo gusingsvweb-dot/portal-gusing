@@ -161,7 +161,8 @@ export default function GestionHerramientas() {
       total: activos.length,
       disponibles,
       enReparacion,
-      vencidas
+      vencidas,
+      noDisponible: activos.length - disponibles
     };
   }, [activos]);
 
@@ -481,11 +482,8 @@ export default function GestionHerramientas() {
           <div className="activo-stat" onClick={() => { setFiltroEstado("Disponible"); setFiltroCalibracion("todos"); }} style={{ "--a": "#10b981" }}>
             <span className="as-val" style={{ color: "#10b981" }}>{stats.disponibles}</span><span className="as-lbl">Disponibles</span>
           </div>
-          <div className="activo-stat" onClick={() => { setFiltroEstado("En Reparación"); setFiltroCalibracion("todos"); }} style={{ "--a": "#f59e0b" }}>
-            <span className="as-val" style={{ color: "#f59e0b" }}>{stats.enReparacion}</span><span className="as-lbl">En Taller / Reparación</span>
-          </div>
-          <div className="activo-stat crit-alta" onClick={() => { setFiltroCalibracion("vencida"); setFiltroEstado("todos"); }} style={{ "--a": "#ef4444" }}>
-            <span className="as-val" style={{ color: "#ef4444" }}>{stats.vencidas}</span><span className="as-lbl">Calibración Vencida 🚨</span>
+          <div className="activo-stat" onClick={() => { setFiltroEstado("En Reparación"); setFiltroCalibracion("todos"); }} style={{ "--a": "#ef4444" }}>
+            <span className="as-val" style={{ color: "#ef4444" }}>{stats.noDisponible}</span><span className="as-lbl">No Disponible</span>
           </div>
         </div>
 
