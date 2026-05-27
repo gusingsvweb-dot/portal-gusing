@@ -757,7 +757,7 @@ export default function Mantenimiento() {
                     <label>Prioridad *</label>
                     <select className="v2-select" value={manualForm.prioridad_id} onChange={e => setManualForm({ ...manualForm, prioridad_id: e.target.value })}>
                       <option value="">Seleccione...</option>
-                      {allPrioridades.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                      {allPrioridades.filter(p => p.nombre !== "Muy Alto").map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
                     </select>
                   </div>
                 </div>
