@@ -998,37 +998,6 @@ export default function Microbiologia() {
             />
           </div>
 
-          {/* 1. LIBERACIÓN DE ÁREA (Ampollas/Viales) */}
-          <SidebarSection
-            title="Liberación de Área"
-            count={solicitudesFiltradas.filter(s => isAreaRelease(s)).length}
-            isOpen={expanded.liberacionArea}
-            onToggle={() => toggleSection("liberacionArea")}
-          >
-            {solicitudesFiltradas
-              .filter(s => isAreaRelease(s))
-              .map((s) => {
-                const iniciado = !!s.pedidoData?.fecha_inicio_analisis_mb;
-                return (
-                  <div
-                    key={s.id}
-                    className={`mb-item ${selected?.id === s.id && selected?.tipoItem === 'solicitud' ? 'mb-item-selected' : ''}`}
-                    onClick={() => seleccionarItem(s, 'solicitud')}
-                    style={{ borderLeft: '4px solid #8b5cf6' }} // Morado para diferenciar
-                  >
-                    <div className="mb-item-top">
-                      <span className="mb-id">ID: {s.consecutivo ? `MB-${s.consecutivo}` : `#${s.id}`}</span>
-                      <span className={`mb-chip ${iniciado ? '' : 'mb-chip-warn'}`}>
-                        {iniciado ? 'EN PROCESO' : 'PENDIENTE'}
-                      </span>
-                    </div>
-                    <p className="mb-title">{s.pedidoData?.productos?.articulo || s.tipos_solicitud?.nombre}</p>
-                    <p className="mb-sub">Forma: {s.pedidoData?.productos?.forma_farmaceutica || "N/A"}</p>
-                  </div>
-                );
-              })}
-          </SidebarSection>
-
           <SidebarSection
             title="Pendientes de Inicio"
             count={solicitudesFiltradas.filter(s => !isAreaRelease(s) && !s.pedidoData?.fecha_inicio_analisis_mb).length}
