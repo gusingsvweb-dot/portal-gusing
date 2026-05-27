@@ -2549,6 +2549,8 @@ export default function Produccion() {
                         if (raw === "") return "Entrada Acondicionamiento";
                         return `Etapa: ${raw}`;
                       })()
+                    ) : p.estado_id === 6 ? (
+                      "Por iniciar etapas internas"
                     ) : (
                       p.estados?.nombre || p.asignado_a || "Sin estado"
                     )}
