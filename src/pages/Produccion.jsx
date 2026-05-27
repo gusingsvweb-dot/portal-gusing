@@ -1156,11 +1156,19 @@ export default function Produccion() {
       throw new Error(`El flujo ${flujo.id} no tiene etapas en flujos_forma_etapas.`);
     }
 
-    // 3) Insertar pedido_etapas (FILTRANDO Acondicionamiento)
+    // 3) Insertar pedido_etapas (FILTRANDO Acondicionamiento y primera etapa MB en estéril)
     const ahora = ahoraISO();
+    const ffLower = (pedido.productos?.forma_farmaceutica || "").toLowerCase();
+    const esEsteril = ffLower.includes("esteril") || ffLower.includes("estéril");
 
-    const inserts = cat
-      .filter(e => !e.nombre.toLowerCase().includes("acondicionamiento"))
+    const etapasFiltradas = cat.filter((e, idx) => {
+      if (e.nombre.toLowerCase().includes("acondicionamiento")) return false;
+      // Para forma estéril (viales): eliminar primera etapa que requiere liberación de microbiología
+      if (esEsteril && idx === 0 && (e.rol_liberador || "").toLowerCase().includes("microbiolog")) return false;
+      return true;
+    });
+
+    const inserts = etapasFiltradas
       .map((e, index) => {
         const requiere = !!e.requiere_liberacion;
         const esPrimera = index === 0;
