@@ -9,8 +9,6 @@ export default function ConsolidadoPedidos() {
     const { usuarioActual } = useAuth();
     const [pedidos, setPedidos] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [etapasDict, setEtapasDict] = useState({});
-
     // Estado para los filtros de cada columna
     const [filtros, setFiltros] = useState({
         id: "",
@@ -37,36 +35,6 @@ export default function ConsolidadoPedidos() {
     useEffect(() => {
         fetchPedidos();
     }, []);
-
-    useEffect(() => {
-        if (pedidos.length === 0) return;
-        const en8 = pedidos.filter(p => p.estado_id === 8).map(p => p.id);
-        if (en8.length === 0) { setEtapasDict({}); return; }
-
-        async function loadEtapas() {
-            const { data } = await supabase
-                .from(st("pedido_etapas"))
-                .select("pedido_id, nombre, orden, estado")
-                .in("pedido_id", en8)
-                .neq("estado", "completada");
-            if (!data) return;
-            const groups = {};
-            data.forEach(d => {
-                if (!groups[d.pedido_id]) groups[d.pedido_id] = [];
-                groups[d.pedido_id].push(d);
-            });
-            const dict = {};
-            Object.keys(groups).forEach(pid => {
-                const list = groups[pid].sort((a, b) => (a.orden || 0) - (b.orden || 0));
-                if (list.length > 0) dict[pid] = list[0].nombre;
-            });
-            en8.forEach(pid => {
-                if (!(pid in dict) && !(String(pid) in dict)) dict[pid] = "Entrada Acond.";
-            });
-            setEtapasDict(dict);
-        }
-        loadEtapas();
-    }, [pedidos]);
 
     async function fetchPedidos() {
         setLoading(true);
@@ -276,7 +244,6 @@ export default function ConsolidadoPedidos() {
                                         <input className="filter-input" placeholder="Producto..." onChange={e => handleFilterChange("producto", e.target.value)} />
                                     </th>
                                     <th>Estado <input className="filter-input" placeholder="Estado..." onChange={e => handleFilterChange("estado", e.target.value)} /></th>
-                                    <th>Etapa Actual</th>
                                     <th>Prioridad <input className="filter-input" placeholder="Filtro..." onChange={e => handleFilterChange("prioridad", e.target.value)} /></th>
                                     <th>Cant.</th>
                                     <th>Fecha Recepción <input className="filter-input" placeholder="YYYY-MM-DD" onChange={e => handleFilterChange("fecha", e.target.value)} /></th>
@@ -300,7 +267,6 @@ export default function ConsolidadoPedidos() {
                                     <th>Días MB</th>
                                     <th>Días Acond.</th>
                                     <th>T. Muertos</th>
-                                    <th>Cat. T. Muerto</th>
                                     <th>F. Entrega MM.PP.</th>
                                     <th>F. Inicio Acond.</th>
                                     <th>F. Fin Acond.</th>
@@ -309,16 +275,13 @@ export default function ConsolidadoPedidos() {
                             </thead>
                             <tbody>
                                 {loading ? (
-                                    <tr><td colSpan="33" style={{ textAlign: "center", padding: "40px", color: "#64748b" }}>Cargando registros consolidados...</td></tr>
+                                    <tr><td colSpan="31" style={{ textAlign: "center", padding: "40px", color: "#64748b" }}>Cargando registros consolidados...</td></tr>
                                 ) : pedidosPaginados.length === 0 ? (
-                                    <tr><td colSpan="33" style={{ textAlign: "center", padding: "40px", color: "#64748b" }}>No se encontraron pedidos que coincidan con la búsqueda.</td></tr>
+                                    <tr><td colSpan="31" style={{ textAlign: "center", padding: "40px", color: "#64748b" }}>No se encontraron pedidos que coincidan con la búsqueda.</td></tr>
                                 ) : (
                                     pedidosPaginados.map((p) => {
                                         const c = getCalculatedValues(p);
                                         const finalizado = p.estado_id === 12 || p.entregado_cliente;
-                                        const etapaActual = p.estado_id === 8
-                                            ? (etapasDict[p.id] || etapasDict[String(p.id)] || null)
-                                            : null;
                                         const estadoBadgeStyle = (() => {
                                             if (finalizado) return { background: "#dcfce7", color: "#166534", border: "1px solid #bbf7d0" };
                                             if (p.estado_id <= 2) return { background: "#f1f5f9", color: "#475569", border: "1px solid #e2e8f0" };
@@ -344,18 +307,6 @@ export default function ConsolidadoPedidos() {
                                                     }}>
                                                         {finalizado ? "✓ " : ""}{p.estados?.nombre || "-"}
                                                     </span>
-                                                </td>
-                                                <td>
-                                                    {etapaActual !== null ? (
-                                                        <span style={{
-                                                            background: "#ede9fe", color: "#6d28d9",
-                                                            border: "1px solid #c4b5fd",
-                                                            padding: "2px 8px", borderRadius: 6,
-                                                            fontSize: 11, fontWeight: 600, whiteSpace: "nowrap",
-                                                        }}>
-                                                            {etapaActual}
-                                                        </span>
-                                                    ) : <span style={{ color: "#94a3b8", fontSize: 11 }}>—</span>}
                                                 </td>
                                                 <td>
                                                     <span className={`badge badge-${(p.prioridad || "bajo").toLowerCase().replace(" ", "")}`}>
@@ -390,7 +341,6 @@ export default function ConsolidadoPedidos() {
                                                 <td style={{ textAlign: "center" }}>{c.mb ?? "-"}</td>
                                                 <td style={{ textAlign: "center" }}>{c.acond ?? "-"}</td>
                                                 <td style={{ textAlign: "center" }}>{c.tMuertos ?? "-"}</td>
-                                                <td>{p.categoria_tiempo_muerto || "-"}</td>
                                                 <td>{p.fecha_entrega_de_materias_primas_e_insumos || "-"}</td>
                                                 <td>{p.fecha_inicio_acondicionamiento || "-"}</td>
                                                 <td>{p.fecha_fin_acondicionamiento || "-"}</td>
