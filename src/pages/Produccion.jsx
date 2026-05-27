@@ -1466,12 +1466,6 @@ export default function Produccion() {
       return;
     }
 
-    // Confirmar
-    const confirmado = window.confirm(
-      `El producto tiene forma "${forma}".\n\n¿Desea omitir la solicitud a Microbiología y avanzar etapa?`
-    );
-    if (!confirmado) return;
-
     setSolLoading(true); // Reusamos loading state
 
     try {
