@@ -146,12 +146,12 @@ export default function ConsolidadoPedidos() {
 
         // Definir encabezados y mapeo de datos
         const headers = [
-            "ID", "Cliente", "Producto", "Prioridad", "Estado", "Cantidad", "Fecha Recepción",
-            "Entregado", "F. Entrega Cliente", "F. Ingreso Prod.", "OP", "Lote", "F. Vencimiento",
-            "Tam. Lote", "% Desp.", "F. Máxima", "F. Propuesta", "F. Inicio Prod.", "F. Entrada MB",
-            "F. Salida MB", "F. Liberación PT", "F. Entrega Bodega", "Planificada", "P. Real",
-            "T. Entrega", "Días MB", "Días Acond.", "T. Muertos", "Cat. T. Muerto",
-            "F. Entrega MM.PP.", "F. Inicio Acond.", "F. Fin Acond.", "F. Solicitud MM.PP."
+            "ID", "Cliente", "Producto", "Estado", "Prioridad", "Fecha Recepción",
+            "Cantidad", "Tam. Lote", "% Desp.", "F. Entrega Cliente", "F. Planificada",
+            "F. Proyectada", "F. Ingreso Prod.", "F. Solicitud MM.PP.", "F. Entrega MM.PP.",
+            "F. Inicio Prod.", "F. Entrada MB", "F. Inicio Acond.", "F. Fin Acond.",
+            "F. Liberación PT", "F. Entrega Bodega", "Plan. (d)", "Real (d)",
+            "T. Entrega (d)", "Días MB", "Días Acond.", "OP", "Lote", "F. Vencimiento"
         ];
 
         const rows = pedidosFiltrados.map(p => {
@@ -160,23 +160,22 @@ export default function ConsolidadoPedidos() {
                 p.id,
                 p.clientes?.nombre || "",
                 p.productos?.articulo || "",
-                p.prioridad || "",
                 p.estados?.nombre || "",
-                p.cantidad,
+                p.prioridad || "",
                 p.fecha_recepcion_cliente || "",
-                p.entregado_cliente ? "SI" : "NO",
-                p.fecha_entrega_cliente || "",
-                p.fecha_ingreso_produccion || "",
-                p.op || "",
-                p.lote || "",
-                p.fecha_vencimiento || "",
+                p.cantidad,
                 p.tamano_lote || "",
                 p.porcentaje_desperdicio || "",
+                p.fecha_entrega_cliente || "",
                 p.fecha_maxima_entrega || "",
                 p.fecha_propuesta_entrega || "",
+                p.fecha_ingreso_produccion || "",
+                p.fecha_solicitud_materias_primas || "",
+                p.fecha_entrega_de_materias_primas_e_insumos || "",
                 p.fecha_inicio_produccion || "",
                 p.fecha_entrada_mb || "",
-                p.fecha_salida_mb || "",
+                p.fecha_inicio_acondicionamiento || "",
+                p.fecha_fin_acondicionamiento || "",
                 p.fecha_liberacion_pt || "",
                 p.fecha_entrega_bodega || "",
                 c.plan ?? "",
@@ -184,12 +183,9 @@ export default function ConsolidadoPedidos() {
                 c.entrega ?? "",
                 c.mb ?? "",
                 c.acond ?? "",
-                c.tMuertos ?? "",
-                p.categoria_tiempo_muerto || "",
-                p.fecha_entrega_de_materias_primas_e_insumos || "",
-                p.fecha_inicio_acondicionamiento || "",
-                p.fecha_fin_acondicionamiento || "",
-                p.fecha_solicitud_materias_primas || ""
+                p.op || "",
+                p.lote || "",
+                p.fecha_vencimiento || ""
             ].map(val => `"${String(val).replace(/"/g, '""')}"`); // Escapar comillas
         });
 
@@ -245,20 +241,20 @@ export default function ConsolidadoPedidos() {
                                     </th>
                                     <th>Estado <input className="filter-input" placeholder="Estado..." onChange={e => handleFilterChange("estado", e.target.value)} /></th>
                                     <th>Prioridad <input className="filter-input" placeholder="Filtro..." onChange={e => handleFilterChange("prioridad", e.target.value)} /></th>
-                                    <th>Cant.</th>
                                     <th>Fecha Recepción <input className="filter-input" placeholder="YYYY-MM-DD" onChange={e => handleFilterChange("fecha", e.target.value)} /></th>
-                                    <th>F. Planificada</th>
-                                    <th>F. Proyectada</th>
-                                    <th>F. Inicio Prod.</th>
-                                    <th>F. Ingreso Prod.</th>
-                                    <th>F. Entrega Cliente</th>
-                                    <th>OP</th>
-                                    <th>Lote</th>
-                                    <th>F. Vencimiento</th>
+                                    <th>Cant.</th>
                                     <th>Tam. Lote</th>
                                     <th>% Desp.</th>
+                                    <th>F. Entrega Cliente</th>
+                                    <th>F. Planificada</th>
+                                    <th>F. Proyectada</th>
+                                    <th>F. Ingreso Prod.</th>
+                                    <th>F. Solicitud MM.PP.</th>
+                                    <th>F. Entrega MM.PP.</th>
+                                    <th>F. Inicio Prod.</th>
                                     <th>F. Entrada MB</th>
-                                    <th>F. Salida MB</th>
+                                    <th>F. Inicio Acond.</th>
+                                    <th>F. Fin Acond.</th>
                                     <th>F. Liberación PT</th>
                                     <th>F. Entrega Bodega</th>
                                     <th>Plan. (d)</th>
@@ -266,18 +262,16 @@ export default function ConsolidadoPedidos() {
                                     <th>T. Entrega (d)</th>
                                     <th>Días MB</th>
                                     <th>Días Acond.</th>
-                                    <th>T. Muertos</th>
-                                    <th>F. Entrega MM.PP.</th>
-                                    <th>F. Inicio Acond.</th>
-                                    <th>F. Fin Acond.</th>
-                                    <th>F. Solicitud MM.PP.</th>
+                                    <th>OP</th>
+                                    <th>Lote</th>
+                                    <th>F. Vencimiento</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {loading ? (
-                                    <tr><td colSpan="31" style={{ textAlign: "center", padding: "40px", color: "#64748b" }}>Cargando registros consolidados...</td></tr>
+                                    <tr><td colSpan="29" style={{ textAlign: "center", padding: "40px", color: "#64748b" }}>Cargando registros consolidados...</td></tr>
                                 ) : pedidosPaginados.length === 0 ? (
-                                    <tr><td colSpan="31" style={{ textAlign: "center", padding: "40px", color: "#64748b" }}>No se encontraron pedidos que coincidan con la búsqueda.</td></tr>
+                                    <tr><td colSpan="29" style={{ textAlign: "center", padding: "40px", color: "#64748b" }}>No se encontraron pedidos que coincidan con la búsqueda.</td></tr>
                                 ) : (
                                     pedidosPaginados.map((p) => {
                                         const c = getCalculatedValues(p);
@@ -313,26 +307,26 @@ export default function ConsolidadoPedidos() {
                                                         {p.prioridad || "BAJO"}
                                                     </span>
                                                 </td>
-                                                <td style={{ textAlign: "center" }}>{p.cantidad}</td>
                                                 <td>{p.fecha_recepcion_cliente || "-"}</td>
+                                                <td style={{ textAlign: "center" }}>{p.cantidad}</td>
+                                                <td>{p.tamano_lote || "-"}</td>
+                                                <td style={{ textAlign: "right" }}>{p.porcentaje_desperdicio ? `${p.porcentaje_desperdicio}%` : "-"}</td>
+                                                <td>{p.fecha_entrega_cliente || "-"}</td>
                                                 <td style={{ fontWeight: p.fecha_maxima_entrega ? 600 : 400, color: p.fecha_maxima_entrega ? "#1e293b" : "#94a3b8" }}>
                                                     {p.fecha_maxima_entrega || "-"}
                                                 </td>
                                                 <td style={{ color: p.fecha_propuesta_entrega ? "#7c3aed" : "#94a3b8", fontWeight: p.fecha_propuesta_entrega ? 600 : 400 }}>
                                                     {p.fecha_propuesta_entrega || "-"}
                                                 </td>
+                                                <td>{p.fecha_ingreso_produccion || "-"}</td>
+                                                <td>{p.fecha_solicitud_materias_primas || "-"}</td>
+                                                <td>{p.fecha_entrega_de_materias_primas_e_insumos || "-"}</td>
                                                 <td style={{ color: p.fecha_inicio_produccion ? "#0369a1" : "#94a3b8", fontWeight: p.fecha_inicio_produccion ? 600 : 400 }}>
                                                     {p.fecha_inicio_produccion || "-"}
                                                 </td>
-                                                <td>{p.fecha_ingreso_produccion || "-"}</td>
-                                                <td>{p.fecha_entrega_cliente || "-"}</td>
-                                                <td>{p.op || "-"}</td>
-                                                <td>{p.lote || "-"}</td>
-                                                <td>{p.fecha_vencimiento || "-"}</td>
-                                                <td>{p.tamano_lote || "-"}</td>
-                                                <td style={{ textAlign: "right" }}>{p.porcentaje_desperdicio ? `${p.porcentaje_desperdicio}%` : "-"}</td>
                                                 <td>{p.fecha_entrada_mb || "-"}</td>
-                                                <td>{p.fecha_salida_mb || "-"}</td>
+                                                <td>{p.fecha_inicio_acondicionamiento || "-"}</td>
+                                                <td>{p.fecha_fin_acondicionamiento || "-"}</td>
                                                 <td>{p.fecha_liberacion_pt || "-"}</td>
                                                 <td>{p.fecha_entrega_bodega || "-"}</td>
                                                 <td style={{ textAlign: "center" }}>{c.plan ?? "-"}</td>
@@ -340,11 +334,9 @@ export default function ConsolidadoPedidos() {
                                                 <td style={{ textAlign: "center" }}>{c.entrega ?? "-"}</td>
                                                 <td style={{ textAlign: "center" }}>{c.mb ?? "-"}</td>
                                                 <td style={{ textAlign: "center" }}>{c.acond ?? "-"}</td>
-                                                <td style={{ textAlign: "center" }}>{c.tMuertos ?? "-"}</td>
-                                                <td>{p.fecha_entrega_de_materias_primas_e_insumos || "-"}</td>
-                                                <td>{p.fecha_inicio_acondicionamiento || "-"}</td>
-                                                <td>{p.fecha_fin_acondicionamiento || "-"}</td>
-                                                <td>{p.fecha_solicitud_materias_primas || "-"}</td>
+                                                <td>{p.op || "-"}</td>
+                                                <td>{p.lote || "-"}</td>
+                                                <td>{p.fecha_vencimiento || "-"}</td>
                                             </tr>
                                         );
                                     })
