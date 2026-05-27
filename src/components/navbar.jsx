@@ -4,7 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationsContext";
 import { useTheme } from "../context/ThemeContext";
 import { useConfig } from "../context/ConfigContext";
-import { useMemo, useState, useEffect, useRef } from "react";
+import { useMemo, useState, useEffect, useRef, useCallback } from "react";
 
 export default function Navbar() {
   const { usuarioActual, logout } = useAuth();
@@ -25,6 +25,27 @@ export default function Navbar() {
 
   const [open, setOpen] = useState(false);
   const notifRef = useRef(null);
+  const navLinksRef = useRef(null);
+  const [canNavScrollLeft, setCanNavScrollLeft] = useState(false);
+  const [canNavScrollRight, setCanNavScrollRight] = useState(false);
+
+  const checkNavScroll = useCallback(() => {
+    const el = navLinksRef.current;
+    if (!el) return;
+    setCanNavScrollLeft(el.scrollLeft > 0);
+    setCanNavScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
+  }, []);
+
+  const scrollNav = (dir) => {
+    const el = navLinksRef.current;
+    if (el) el.scrollBy({ left: dir * 200, behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    checkNavScroll();
+    window.addEventListener("resize", checkNavScroll);
+    return () => window.removeEventListener("resize", checkNavScroll);
+  }, [checkNavScroll]);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -256,13 +277,21 @@ export default function Navbar() {
         <span className="nav-title">{menu.title}</span>
       </div>
 
-      <div className="nav-links">
-        {menu.items.map((item) => (
-          <NavLink key={item.to} to={item.to} end>
-            <span>{item.icon}</span>
-            {item.label}
-          </NavLink>
-        ))}
+      <div className="nav-links-container">
+        {canNavScrollLeft && (
+          <button className="nav-scroll-arrow" onClick={() => scrollNav(-1)} aria-label="Anterior">‹</button>
+        )}
+        <div className="nav-links" ref={navLinksRef} onScroll={checkNavScroll}>
+          {menu.items.map((item) => (
+            <NavLink key={item.to} to={item.to} end>
+              <span>{item.icon}</span>
+              {item.label}
+            </NavLink>
+          ))}
+        </div>
+        {canNavScrollRight && (
+          <button className="nav-scroll-arrow" onClick={() => scrollNav(1)} aria-label="Siguiente">›</button>
+        )}
       </div>
 
       <div className="nav-right-actions">
