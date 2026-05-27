@@ -397,7 +397,7 @@ export default function PlanMaestro() {
       <div className="mant-container">
         <header className="mant-header-section">
           <div>
-            <h2 className="mant-title">Plan Maestro de Preventivos</h2>
+            <h2 className="mant-title">Cronograma de Mantenimiento Preventivo</h2>
             <p className="mant-subtitle">Cronograma de mantenimiento preventivo</p>
           </div>
           <div className="mant-actions-group">
