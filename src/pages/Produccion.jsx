@@ -2266,20 +2266,15 @@ export default function Produccion() {
               );
             }
 
-            // 2. Es válida → Iniciar etapas internas directamente (sin solicitud de liberación de área)
+            // 2. Es válida → Iniciar etapas internas directamente
             return (
-              <>
-                <p>
-                  La forma farmacéutica <strong>{flujoValido.forma_farmaceutica}</strong> no requiere solicitud de liberación de área a Microbiología.
-                </p>
-                <button
-                  className="pc-btn"
-                  onClick={avanzarSinSolicitudMB}
-                  style={{ backgroundColor: '#22c55e', borderColor: '#16a34a' }}
-                >
-                  🚀 Iniciar etapas internas
-                </button>
-              </>
+              <button
+                className="pc-btn"
+                onClick={avanzarSinSolicitudMB}
+                style={{ backgroundColor: '#22c55e', borderColor: '#16a34a' }}
+              >
+                🚀 Iniciar etapas internas
+              </button>
             );
 
           })()}
