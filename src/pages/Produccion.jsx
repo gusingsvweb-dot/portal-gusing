@@ -2608,7 +2608,9 @@ export default function Produccion() {
                   <span className={`pc-chip estado-${selected.estado_id}`}>
                     {selected.estado_id === 8
                       ? (flujoCompleto ? "Entrada Acondicionamiento" : "Etapas internas")
-                      : selected.estados?.nombre}
+                      : selected.estado_id === 6
+                        ? "Por iniciar etapas internas"
+                        : selected.estados?.nombre}
                   </span>{" "}
                   <span className={`pc-chip-asignado asignado-${selected.asignado_a || "sin"}`}>
                     {selected.asignado_a || "Sin asignar"}
