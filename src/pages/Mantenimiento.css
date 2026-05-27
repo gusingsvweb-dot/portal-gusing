@@ -93,11 +93,54 @@
 }
 
 /* NAV PILLS */
+.mant-nav-pills-wrapper {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  flex-basis: 100%;
+  gap: 4px;
+  min-width: 0;
+}
+
 .mant-nav-pills {
   display: flex;
   gap: 8px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  flex: 1;
+  min-width: 0;
+}
+
+.mant-nav-pills::-webkit-scrollbar {
+  display: none;
+}
+
+.nav-pill-arrow {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid var(--mant-border);
+  background: white;
+  color: var(--mant-text-main);
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: all 0.2s ease;
+}
+
+.nav-pill-arrow:hover {
+  background: var(--mant-primary);
+  border-color: var(--mant-primary);
+  color: white;
 }
 
 .nav-pill {

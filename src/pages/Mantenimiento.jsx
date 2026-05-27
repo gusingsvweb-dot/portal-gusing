@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback } from "react";
+import React, { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
 import { supabase, st, ss } from "../api/supabaseClient";
@@ -14,6 +14,21 @@ const PRIORITY_CLASS = { 1: "priority-low", 2: "priority-medium", 3: "priority-h
 export default function Mantenimiento() {
   const navigate = useNavigate();
   const { usuarioActual } = useAuth();
+  const pillsRef = useRef(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const checkPillsScroll = useCallback(() => {
+    const el = pillsRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 0);
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
+  }, []);
+
+  const scrollPills = (dir) => {
+    const el = pillsRef.current;
+    if (el) el.scrollBy({ left: dir * 220, behavior: "smooth" });
+  };
   const [solicitudes, setSolicitudes] = useState([]);
   const [proveedores, setProveedores] = useState([]);
   const [allRepuestos, setAllRepuestos] = useState([]);
@@ -101,6 +116,12 @@ export default function Mantenimiento() {
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  useEffect(() => {
+    checkPillsScroll();
+    window.addEventListener("resize", checkPillsScroll);
+    return () => window.removeEventListener("resize", checkPillsScroll);
+  }, [checkPillsScroll]);
 
   const stats = useMemo(() => {
     const tickets = solicitudes.filter(s => s.tipo_solicitud_id !== 5);
@@ -410,16 +431,24 @@ export default function Mantenimiento() {
           <div className="mant-hero-img-container">
             <img src="/mantenimiento_hero.png" alt="Mantenimiento" className="mant-hero-mini-img" />
           </div>
-          <div className="mant-nav-pills">
-            <button className="nav-pill active" onClick={() => navigate("/mantenimiento")}>Órdenes</button>
-            <button className="nav-pill" onClick={() => navigate("/mantenimiento/equipos")}>Equipos</button>
-            <button className="nav-pill" onClick={() => navigate("/mantenimiento/herramientas")}>Herramientas</button>
-            <button className="nav-pill" onClick={() => navigate("/mantenimiento/plan-maestro")}>Plan Maestro</button>
-            <button className="nav-pill" onClick={() => navigate("/mantenimiento/repuestos")}>Repuestos</button>
-            <button className="nav-pill" onClick={() => navigate("/mantenimiento/proyectos")}>Proyectos</button>
-            <button className="nav-pill" onClick={() => navigate("/mantenimiento/proveedores")}>Personal Técnico</button>
-            <button className="nav-pill kpi-pill" onClick={() => navigate("/kpis-mantenimiento")}>KPIs</button>
-            <button className="nav-pill" onClick={() => setShowManualForm(true)}>+ Intervención Manual</button>
+          <div className="mant-nav-pills-wrapper">
+            {canScrollLeft && (
+              <button className="nav-pill-arrow" onClick={() => scrollPills(-1)} aria-label="Anterior">‹</button>
+            )}
+            <div className="mant-nav-pills" ref={pillsRef} onScroll={checkPillsScroll}>
+              <button className="nav-pill active" onClick={() => navigate("/mantenimiento")}>Órdenes</button>
+              <button className="nav-pill" onClick={() => navigate("/mantenimiento/equipos")}>Equipos</button>
+              <button className="nav-pill" onClick={() => navigate("/mantenimiento/herramientas")}>Herramientas</button>
+              <button className="nav-pill" onClick={() => navigate("/mantenimiento/plan-maestro")}>Plan Maestro</button>
+              <button className="nav-pill" onClick={() => navigate("/mantenimiento/repuestos")}>Repuestos</button>
+              <button className="nav-pill" onClick={() => navigate("/mantenimiento/proyectos")}>Proyectos</button>
+              <button className="nav-pill" onClick={() => navigate("/mantenimiento/proveedores")}>Personal Técnico</button>
+              <button className="nav-pill kpi-pill" onClick={() => navigate("/kpis-mantenimiento")}>KPIs</button>
+              <button className="nav-pill" onClick={() => setShowManualForm(true)}>+ Intervención Manual</button>
+            </div>
+            {canScrollRight && (
+              <button className="nav-pill-arrow" onClick={() => scrollPills(1)} aria-label="Siguiente">›</button>
+            )}
           </div>
         </header>
 

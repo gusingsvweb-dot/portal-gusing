@@ -258,7 +258,7 @@ export default function Navbar() {
 
       <div className="nav-links">
         {menu.items.map((item) => (
-          <NavLink key={item.to} to={item.to} end={item.to === "/"}>
+          <NavLink key={item.to} to={item.to} end>
             <span>{item.icon}</span>
             {item.label}
           </NavLink>
