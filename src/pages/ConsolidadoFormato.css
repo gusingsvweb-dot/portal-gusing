@@ -121,10 +121,11 @@
     white-space: nowrap;
 }
 
-.cf-cell-white {
-    background: #ffffff;
+.cf-cell-white,
+.cf-cell-manual {
+    background: #eaf3ff;
     padding: 4px 6px;
-    border: 1px solid #dce8f8;
+    border: 1px solid #b0c4de;
 }
 
 .cf-input {
@@ -136,6 +137,10 @@
     background: #fff;
     color: #1e293b;
     outline: none;
+}
+
+.cf-input-med {
+    width: 130px;
 }
 
 .cf-input-wide {
