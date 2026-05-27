@@ -1177,7 +1177,7 @@ export default function Produccion() {
           pedido_id: pedido.id,
           flujo_id: flujo.id,
           orden: e.orden,
-          nombre: e.nombre,
+          nombre: (esEsteril && e.nombre.toLowerCase().includes("filtraci")) ? "Envasado" : e.nombre,
           requiere_liberacion: requiere,
           rol_liberador: requiere ? e.rol_liberador : null,
 
@@ -1614,8 +1614,8 @@ export default function Produccion() {
         );
       }
 
-      // B) SOLUCIONES ESTERILES: "Filtración"
-      if (esEsteril && nombreEtapa.includes("filtración")) {
+      // B) SOLUCIONES ESTERILES: "Filtración" / "Envasado" (renombrado)
+      if (esEsteril && (nombreEtapa.includes("filtración") || nombreEtapa.includes("envasado"))) {
         await notifyRoles(
           ["microbiologia"],
           "Toma de Biocarga (Post-filtración)",
@@ -1965,7 +1965,12 @@ export default function Produccion() {
                     <div key={e.id} className="pc-hist-item" style={{ borderLeft: "3px solid #e2e8f0" }}>
                       <p className="pc-hist-fecha">#{e.orden}</p>
                       <p className="pc-hist-titulo">
-                        {e.nombre}{" "}
+                        {(() => {
+                          const ff = (selected.productos?.forma_farmaceutica || "").toLowerCase();
+                          const esEsterilDisp = ff.includes("esteril") || ff.includes("estéril");
+                          if (esEsterilDisp && (e.nombre || "").toLowerCase().includes("filtraci")) return "Envasado";
+                          return e.nombre;
+                        })()}{" "}
                         <span className={`pc-chip ${chip}`} style={{ marginLeft: 8 }}>
                           {est || "pendiente"}
                         </span>
