@@ -334,18 +334,18 @@ body {
 
 /* Colores por asignación */
 .asignado-produccion {
-  background: #e0ebff;
-  color: #1d4ed8;
+  background: #2563eb;
+  color: #ffffff;
 }
 
 .asignado-bodega {
-  background: #fff4e0;
-  color: #b45309;
+  background: #d97706;
+  color: #ffffff;
 }
 
 .asignado-sin {
-  background: #e5e7eb;
-  color: #374151;
+  background: #64748b;
+  color: #ffffff;
 }
 
 .pc-id-tag {

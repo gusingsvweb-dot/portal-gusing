@@ -2570,9 +2570,6 @@ export default function Produccion() {
                 <span className="pc-id-tag">#{p.id}</span>
 
                 <h4>{p.productos?.articulo}</h4>
-                <small style={{ display: 'block', color: '#64748b', marginBottom: '4px' }}>
-                  orden produccion: {p.op || "—"}
-                </small>
                 <p>
                   <strong>Cliente:</strong> {p.clientes?.nombre}
                 </p>
