@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase, st, ss } from "../api/supabaseClient";
 import Navbar from "../components/navbar.jsx";
 import Footer from "../components/Footer";
@@ -7,6 +8,7 @@ import "./ConsolidadoPedidos.css";
 
 export default function ConsolidadoPedidos() {
     const { usuarioActual } = useAuth();
+    const navigate = useNavigate();
     const [pedidos, setPedidos] = useState([]);
     const [loading, setLoading] = useState(true);
     // Estado para los filtros de cada columna
@@ -214,6 +216,9 @@ export default function ConsolidadoPedidos() {
                     <h1 className="consolidado-title">🗂️ Consolidado de Pedidos</h1>
                     <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
                         <span className="consolidado-count">{pedidosFiltrados.length} pedidos encontrados</span>
+                        <button onClick={() => navigate("/consolidado-formato")} className="btn-download-csv" style={{ background: "#1e3a5f" }}>
+                            📋 Consolidado para Formato
+                        </button>
                         {canDownload && (
                             <button onClick={downloadCSV} className="btn-download-csv">
                                 📥 Descargar CSV

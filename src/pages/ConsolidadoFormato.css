@@ -1,0 +1,155 @@
+.cf-wrapper {
+    min-height: 100vh;
+    background-color: var(--bg-app);
+    padding: 30px;
+    box-sizing: border-box;
+}
+
+.cf-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.cf-header-left {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.cf-back-btn {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    padding: 8px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    margin-top: 4px;
+}
+
+.cf-back-btn:hover {
+    background: var(--bg-input);
+}
+
+.cf-title {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--text-main);
+    margin: 0 0 4px;
+}
+
+.cf-subtitle {
+    font-size: 13px;
+    color: var(--text-sub);
+    margin: 0;
+}
+
+.cf-legend-blue {
+    display: inline-block;
+    background: #1e3a5f;
+    color: white;
+    padding: 1px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+.cf-legend-white {
+    display: inline-block;
+    background: #c7d9f0;
+    color: #1e3a5f;
+    padding: 1px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+.cf-download-btn {
+    background: #16a34a;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.2s;
+}
+
+.cf-download-btn:hover {
+    background: #15803d;
+}
+
+.cf-table-container {
+    overflow-x: auto;
+    border-radius: 12px;
+    box-shadow: var(--shadow-main);
+    border: 1px solid var(--border-color);
+    background: var(--bg-card);
+}
+
+.cf-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    min-width: 1400px;
+}
+
+.cf-row:hover .cf-cell-blue,
+.cf-row:hover .cf-cell-white {
+    background-color: #f0f6ff;
+}
+
+.cf-cell-blue {
+    background: #f0f6ff;
+    color: #1e3a5f;
+    padding: 7px 10px;
+    border: 1px solid #dce8f8;
+    white-space: nowrap;
+    font-size: 12px;
+}
+
+.cf-cell-producto {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cf-cell-white {
+    background: #ffffff;
+    padding: 4px 6px;
+    border: 1px solid #dce8f8;
+}
+
+.cf-input {
+    width: 90px;
+    padding: 5px 8px;
+    border: 1px solid #b0c4de;
+    border-radius: 6px;
+    font-size: 12px;
+    background: #fff;
+    color: #1e293b;
+    outline: none;
+}
+
+.cf-input-wide {
+    width: 180px;
+}
+
+.cf-input:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+.cf-loading {
+    text-align: center;
+    padding: 60px;
+    color: var(--text-sub);
+    font-size: 14px;
+}

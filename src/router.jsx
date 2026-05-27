@@ -22,6 +22,7 @@ import Compras from "./pages/Compras.jsx";
 import DireccionTecnica from "./pages/DireccionTecnica.jsx";
 import CalendarioProduccion from "./pages/CalendarioProduccion.jsx";
 import ConsolidadoPedidos from "./pages/ConsolidadoPedidos.jsx";
+import ConsolidadoFormato from "./pages/ConsolidadoFormato.jsx";
 import KpisCompras from "./pages/KpisCompras.jsx";
 import KpisMantenimiento from "./pages/KpisMantenimiento.jsx";
 import GerenciaMantenimiento from "./pages/GerenciaMantenimiento.jsx";
@@ -405,6 +406,15 @@ export default function AppRouter() {
         element={
           ["produccion", "gerencia", "atencion", "direcciontecnica", "planeacion"].includes(usuarioActual?.rol)
             ? <ConsolidadoPedidos />
+            : <Navigate to="/" />
+        }
+      />
+
+      <Route
+        path="/consolidado-formato"
+        element={
+          ["produccion", "gerencia", "atencion", "direcciontecnica", "planeacion"].includes(usuarioActual?.rol)
+            ? <ConsolidadoFormato />
             : <Navigate to="/" />
         }
       />
