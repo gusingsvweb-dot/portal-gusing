@@ -2347,7 +2347,7 @@ export default function Produccion() {
             }}
           >
             {selected.estado_id === 6
-              ? "Solicitud de liberación de área a Microbiología"
+              ? "Iniciar Etapas Internas"
               : (selected.estado_id === 8 && !flujoCompleto)
                 ? "Gestión de Etapas Internas"
                 : selected.estados?.nombre}
