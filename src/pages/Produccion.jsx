@@ -2266,58 +2266,21 @@ export default function Produccion() {
               );
             }
 
-            // 2. Es válida. Check si es ESTÉRIL
-            const valNorm = flujoValido.forma_farmaceutica.toUpperCase();
-            const esEsteril = valNorm.includes("SOLUCIONES ESTERILES") || valNorm.includes("SOLUCIONES ESTÉRILES");
-
-            if (esEsteril) {
-              // CASO A: REQUIERE SOLICITUD
-              return (
-                <>
-                  <p>
-                    Para continuar, debes enviar una <strong>solicitud a Microbiología</strong>.
-                    Al enviarla se registrará la <strong>Fecha entrada MB</strong> y el pedido pasará a <strong>etapas internas</strong>.
-                  </p>
-                  <button
-                    className="pc-btn"
-                    onClick={() => {
-                      if (!areaMicroId) {
-                        alert("No se encontró el área de Microbiología en la tabla 'areas'.");
-                        return;
-                      }
-                      setSolMsg("");
-                      // Reset form but keep manual form if set
-                      setSolForm(prev => ({
-                        ...prev,
-                        tipo_solicitud_id: "",
-                        prioridad_id: "",
-                        descripcion: `Solicitado desde la etapa: Inicio de Producción (Liberación de área)`,
-                        justificacion: "",
-                      }));
-                      setShowSolicitudMB(true);
-                    }}
-                  >
-                    🧫 Crear solicitud a Microbiología
-                  </button>
-                </>
-              );
-            } else {
-              // CASO B: NO REQUIERE SOLICITUD
-              return (
-                <>
-                  <p>
-                    La forma farmacéutica <strong>{flujoValido.forma_farmaceutica}</strong> no requiere solicitud de liberación de área a Microbiología.
-                  </p>
-                  <button
-                    className="pc-btn"
-                    onClick={avanzarSinSolicitudMB}
-                    style={{ backgroundColor: '#22c55e', borderColor: '#16a34a' }}
-                  >
-                    🚀 Iniciar etapas internas
-                  </button>
-                </>
-              );
-            }
+            // 2. Es válida → Iniciar etapas internas directamente (sin solicitud de liberación de área)
+            return (
+              <>
+                <p>
+                  La forma farmacéutica <strong>{flujoValido.forma_farmaceutica}</strong> no requiere solicitud de liberación de área a Microbiología.
+                </p>
+                <button
+                  className="pc-btn"
+                  onClick={avanzarSinSolicitudMB}
+                  style={{ backgroundColor: '#22c55e', borderColor: '#16a34a' }}
+                >
+                  🚀 Iniciar etapas internas
+                </button>
+              </>
+            );
 
           })()}
         </>
