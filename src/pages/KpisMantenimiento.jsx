@@ -210,27 +210,14 @@ export default function KpisMantenimiento() {
 
         {/* CHARTS GRID */}
         <div className="kpi-mant-charts-grid">
-          <div className="kpi-chart-box">
+          <div className="kpi-chart-box kpi-chart-wide">
             <h3 className="kpi-chart-title">Solicitudes por Estado</h3>
             <div style={{ height: "220px" }}>
               <Bar data={estadoChartData} options={CHART_OPTS} />
             </div>
           </div>
 
-          <div className="kpi-chart-box">
-            <h3 className="kpi-chart-title">Impacto por Criticidad</h3>
-            <div style={{ height: "220px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Doughnut data={criticidadChartData} options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: { position: "right", labels: { font: { weight: "600" }, padding: 16 } },
-                  tooltip: { backgroundColor: "#1e293b", padding: 12, cornerRadius: 10 },
-                },
-                cutout: "65%",
-              }} />
-            </div>
-          </div>
+
 
           <div className="kpi-chart-box kpi-chart-wide">
             <h3 className="kpi-chart-title">Top Áreas Solicitantes</h3>
