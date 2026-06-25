@@ -172,8 +172,13 @@ export default function GestionEquipos() {
     e.stopPropagation();
     if (!confirm("¿Eliminar este activo? Esta acción no se puede deshacer.")) return;
     const { error } = await supabase.from(st("activos")).delete().eq("id", id);
-    if (error) alert("Error: " + error.message);
-    else loadData();
+    if (error) {
+      alert("Error: " + error.message);
+    } else {
+      setShowForm(false);
+      resetForm();
+      loadData();
+    }
   }
 
   async function deleteAllAssets() {
@@ -321,7 +326,6 @@ export default function GestionEquipos() {
           <div className="mant-actions-group">
             <button className="mant-btn-action secondary" onClick={() => navigate("/mantenimiento")}>← Tablero</button>
             {subView === "equipos" && <>
-              <button className="mant-btn-action secondary" style={{ color: "#ef4444", borderColor: "#fecaca" }} onClick={deleteAllAssets}>🗑️ Borrar Todo</button>
               <button className="mant-btn-action secondary" onClick={() => navigate("/mantenimiento/importar-activos")}>📥 Importar Excel</button>
               <button className="mant-btn-action primary" onClick={() => { resetForm(); setShowForm(true); }}>+ Nuevo Equipo</button>
             </>}
@@ -490,6 +494,15 @@ export default function GestionEquipos() {
                   </div>
               </div>
               <div className="modal-v2-footer">
+                {form.id && (
+                  <button 
+                    className="v2-btn-secondary" 
+                    style={{ color: "#ef4444", borderColor: "#fecaca", marginRight: "auto" }} 
+                    onClick={(e) => deleteEquipo(form.id, e)}
+                  >
+                    🗑️ Eliminar
+                  </button>
+                )}
                 <button className="v2-btn-secondary" onClick={() => { setShowForm(false); resetForm(); }}>Cancelar</button>
                 <button className="v2-btn-primary" onClick={saveEquipo} disabled={saving}>
                   {saving ? "Guardando..." : form.id ? "Actualizar Equipo" : "Registrar Equipo"}
