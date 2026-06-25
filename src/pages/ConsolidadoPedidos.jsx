@@ -207,6 +207,19 @@ export default function ConsolidadoPedidos() {
     };
 
     const canDownload = ["gerencia", "planeacion"].includes(usuarioActual?.rol?.toLowerCase());
+    const canDelete = usuarioActual?.rol?.toLowerCase() === "planeacion";
+
+    async function deletePedido(id) {
+        if (!window.confirm(`¿Estás seguro de que deseas eliminar el pedido #${id} para pruebas? Esta acción no se puede deshacer.`)) return;
+        const { error } = await supabase.from(st("pedidos_produccion")).delete().eq("id", id);
+        if (error) {
+            console.error("Error al eliminar pedido:", error);
+            alert("Hubo un error al eliminar el pedido.");
+        } else {
+            setPedidos(pedidos.filter(p => p.id !== id));
+            alert("Pedido de prueba eliminado.");
+        }
+    }
 
     return (
         <>
@@ -244,6 +257,7 @@ export default function ConsolidadoPedidos() {
                                         Producto
                                         <input className="filter-input" placeholder="Producto..." onChange={e => handleFilterChange("producto", e.target.value)} />
                                     </th>
+                                    {canDelete && <th>Acciones</th>}
                                     <th>Estado <input className="filter-input" placeholder="Estado..." onChange={e => handleFilterChange("estado", e.target.value)} /></th>
                                     <th>Prioridad <input className="filter-input" placeholder="Filtro..." onChange={e => handleFilterChange("prioridad", e.target.value)} /></th>
                                     <th>Fecha Recepción <input className="filter-input" placeholder="YYYY-MM-DD" onChange={e => handleFilterChange("fecha", e.target.value)} /></th>
@@ -298,6 +312,17 @@ export default function ConsolidadoPedidos() {
                                                 <td className="sticky-col col-producto" title={p.productos?.articulo} style={finalizado ? { background: "#f0fdf4" } : {}}>
                                                     {p.productos?.articulo || "Sin Producto"}
                                                 </td>
+                                                {canDelete && (
+                                                    <td style={finalizado ? { background: "#f0fdf4", textAlign: "center" } : { textAlign: "center" }}>
+                                                        <button 
+                                                            onClick={() => deletePedido(p.id)}
+                                                            style={{ background: "#ef4444", color: "white", border: "none", borderRadius: "4px", padding: "4px 8px", cursor: "pointer", fontSize: "11px", fontWeight: "bold" }}
+                                                            title="Borrar pedido de prueba"
+                                                        >
+                                                            🗑️ Borrar
+                                                        </button>
+                                                    </td>
+                                                )}
                                                 <td>
                                                     <span style={{
                                                         ...estadoBadgeStyle,
