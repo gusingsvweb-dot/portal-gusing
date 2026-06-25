@@ -1730,8 +1730,8 @@ export default function Produccion() {
         return;
       }
 
-      if (op) update.op = Number(op);
-      if (lote) update.lote = Number(lote);
+      if (op) update.op = op.trim();
+      if (lote) update.lote = lote.trim();
 
       update.tamano_lote = Math.floor(Number(tamano_lote));
 
@@ -2179,20 +2179,20 @@ export default function Produccion() {
         <>
           <label>OP (Orden de Producción)</label>
           <input
-            type="number"
+            type="text"
             value={formData.op ?? selected.op ?? ""}
             onChange={(ev) => setFormData({ ...formData, op: ev.target.value })}
             disabled={!puedeEditar}
-            placeholder="Ej: 2026"
+            placeholder="Ej: OP-2026..."
           />
 
           <label>Lote</label>
           <input
-            type="number"
+            type="text"
             value={formData.lote ?? selected.lote ?? ""}
             onChange={(ev) => setFormData({ ...formData, lote: ev.target.value })}
             disabled={!puedeEditar}
-            placeholder="Ej: 123"
+            placeholder="Ej: LT-001..."
           />
 
           <label>Tamaño de lote</label>
