@@ -205,6 +205,8 @@ export default function PedidosFinalizados() {
               <p><strong>Producto:</strong> {selected.productos?.articulo}</p>
               <p><strong>Cliente:</strong> {selected.clientes?.nombre}</p>
               <p><strong>Cantidad:</strong> {selected.cantidad}</p>
+              <p><strong>OP:</strong> {selected.op || "—"}</p>
+              <p><strong>Lote:</strong> {selected.lote || "—"}</p>
               <p><strong>Responsable final:</strong> {selected.asignado_a}</p>
               <p><strong>Finalizado el:</strong> {selected.fecha_entrega_cliente}</p>
             </div>

@@ -2174,6 +2174,24 @@ export default function Produccion() {
     const inputs = {
       2: (
         <>
+          <label>OP (Orden de Producción)</label>
+          <input
+            type="text"
+            value={formData.op ?? selected.op ?? ""}
+            onChange={(ev) => setFormData({ ...formData, op: ev.target.value })}
+            disabled={!puedeEditar}
+            placeholder="Ej: OP-2026..."
+          />
+
+          <label>Lote</label>
+          <input
+            type="text"
+            value={formData.lote ?? selected.lote ?? ""}
+            onChange={(ev) => setFormData({ ...formData, lote: ev.target.value })}
+            disabled={!puedeEditar}
+            placeholder="Ej: LT-001..."
+          />
+
           <label>Tamaño de lote</label>
           <input
             type="number"
@@ -2655,6 +2673,12 @@ export default function Produccion() {
                 </p>
                 <p>
                   <strong>Cantidad:</strong> {selected.cantidad}
+                </p>
+                <p>
+                  <strong>OP:</strong> {selected.op || "—"}
+                </p>
+                <p>
+                  <strong>Lote:</strong> {selected.lote || "—"}
                 </p>
                 <p>
                   <strong>Prioridad:</strong> {selected.prioridad || "Normal"}

@@ -316,6 +316,12 @@ export default function Gerencia() {
                 <strong>Cantidad:</strong> {selected.cantidad}
               </p>
               <p>
+                <strong>OP:</strong> {selected.op || "—"}
+              </p>
+              <p>
+                <strong>Lote:</strong> {selected.lote || "—"}
+              </p>
+              <p>
                 <strong>Estado:</strong>{" "}
                 <span className={`pc-chip estado-${selected.estado_id}`}>
                   {selected.estados?.nombre}

@@ -460,6 +460,8 @@ export default function PedidosEnCurso() {
               <p><strong>Producto:</strong> {selected.productos?.articulo}</p>
               <p><strong>Cliente:</strong> {selected.clientes?.nombre}</p>
               <p><strong>Cantidad:</strong> {selected.cantidad}</p>
+              <p><strong>OP:</strong> {selected.op || "—"}</p>
+              <p><strong>Lote:</strong> {selected.lote || "—"}</p>
               <p><strong>Fecha recepción:</strong> {selected.fecha_recepcion_cliente}</p>
               <p>
                 <strong>Estado:</strong>{" "}
