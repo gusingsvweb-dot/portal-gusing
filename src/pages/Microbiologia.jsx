@@ -1103,7 +1103,7 @@ export default function Microbiologia() {
 
                     <div className="mb-actions-row">
                       <button className="mb-btn mb-btn-danger" onClick={rechazarEtapa} disabled={accionLoading}>
-                        {accionLoading ? "Procesando…" : "Rechazar etapa"}
+                        {accionLoading ? "Procesando…" : "No Conforme"}
                       </button>
                       <button className="mb-btn" onClick={liberarEtapa} disabled={accionLoading}>
                         {accionLoading ? "Procesando…" : "Completar paso"}
@@ -1180,10 +1180,10 @@ export default function Microbiologia() {
                             />
                             <div className="mb-actions-row" style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
                               <button className="mb-btn mb-btn-danger" style={{ flex: 1 }} onClick={rechazarSolicitud} disabled={accionLoading}>
-                                {accionLoading ? "Procesando…" : "Rechazar (Obligatorio)"}
+                                {accionLoading ? "Procesando…" : "No Conforme (Obligatorio)"}
                               </button>
                               <button className="mb-btn" style={{ flex: 1 }} onClick={liberarSolicitud} disabled={accionLoading}>
-                                {accionLoading ? "Procesando…" : (esEsterilizacion ? "✅ Resultado positivo MB (Liberar)" : "Confirmar y Liberar")}
+                                {accionLoading ? "Procesando…" : "✅ Conforme (Liberar)"}
                               </button>
                             </div>
                           </>
