@@ -181,7 +181,7 @@ export default function ProyectosMantenimiento() {
             <p className="mant-subtitle">Seguimiento de obras, mejoras y proyectos de mantenimiento — {proyectos.length} activos</p>
           </div>
           <div className="mant-actions-group">
-            <button className="mant-btn-action secondary" onClick={() => navigate("/mantenimiento")}>← Volver</button>
+
             <button className="mant-btn-action primary" onClick={() => setShowCreateModal(true)}>+ Nuevo Proyecto</button>
           </div>
         </header>
