@@ -23,6 +23,7 @@ export default function GestionEquipos() {
   const [rutinaLoading, setRutinaLoading] = useState(false);
   const [filtroText, setFiltroText] = useState("");
   const [filtroCrit, setFiltroCrit] = useState("todos");
+  const [filtroTipo, setFiltroTipo] = useState("todos");
   const [saving, setSaving] = useState(false);
   const [proveedores, setProveedores] = useState([]);
   const [tiposSolicitud, setTiposSolicitud] = useState([]);
@@ -78,6 +79,7 @@ export default function GestionEquipos() {
   const filtered = useMemo(() => {
     let res = activos;
     if (filtroCrit !== "todos") res = res.filter(a => a.criticidad === filtroCrit);
+    if (filtroTipo !== "todos") res = res.filter(a => a.tipo === filtroTipo);
     if (filtroText.trim()) {
       const q = filtroText.toLowerCase();
       res = res.filter(a =>
@@ -87,7 +89,7 @@ export default function GestionEquipos() {
       );
     }
     return res;
-  }, [activos, filtroCrit, filtroText, areas]);
+  }, [activos, filtroCrit, filtroTipo, filtroText, areas]);
 
   async function openEdit(a, e) {
     e.stopPropagation();
@@ -328,7 +330,7 @@ export default function GestionEquipos() {
 
         {/* SUBTABS */}
         <div className="ge-sub-tabs">
-          <button className={`ge-sub-tab${subView === "equipos" ? " active" : ""}`} onClick={() => setSubView("equipos")}>⚙️ Equipos</button>
+          <button className={`ge-sub-tab${subView === "equipos" ? " active" : ""}`} onClick={() => setSubView("equipos")}>⚙️ Listado Maestro</button>
           <button className={`ge-sub-tab${subView === "herramientas" ? " active" : ""}`} onClick={() => setSubView("herramientas")}>🔧 Herramientas</button>
         </div>
 
@@ -359,6 +361,13 @@ export default function GestionEquipos() {
               value={filtroText} onChange={e => setFiltroText(e.target.value)} />
             {filtroText && <button className="search-clear" onClick={() => setFiltroText("")}>✖</button>}
           </div>
+          
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+            <button className={`nav-pill ${filtroTipo === "Instalación" ? "active" : ""}`} onClick={() => setFiltroTipo(filtroTipo === "Instalación" ? "todos" : "Instalación")}>Instalaciones</button>
+            <button className={`nav-pill ${filtroTipo === "Equipo" ? "active" : ""}`} onClick={() => setFiltroTipo(filtroTipo === "Equipo" ? "todos" : "Equipo")}>Equipos</button>
+            <button className={`nav-pill ${filtroTipo === "Computador" ? "active" : ""}`} onClick={() => setFiltroTipo(filtroTipo === "Computador" ? "todos" : "Computador")}>Cómputo</button>
+          </div>
+
           {filtroCrit !== "todos" && (
             <span className={`v2-crit-badge crit-${filtroCrit.toLowerCase()}`} style={{ cursor: "pointer" }} onClick={() => setFiltroCrit("todos")}>
               {filtroCrit} ✖
