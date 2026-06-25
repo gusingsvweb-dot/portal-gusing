@@ -2760,6 +2760,27 @@ export default function Produccion() {
                     {selected.asignado_a || "Sin asignar"}
                   </span>
                 </p>
+                {esProduccion && (
+                  <p style={{ marginTop: '8px' }}>
+                    <button
+                      onClick={() => {
+                        setSolMsg("");
+                        setSolForm(prev => ({
+                          ...prev,
+                          tipo_solicitud_id: "",
+                          prioridad_id: "",
+                          descripcion: "Solicitud manual desde detalle del pedido",
+                          justificacion: "",
+                        }));
+                        setShowSolicitudMB(true);
+                      }}
+                      style={{ padding: "4px 10px", background: "#7c3aed", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", fontSize: "12px", display: "inline-flex", alignItems: "center", gap: "6px", fontWeight: "500", boxShadow: "0 1px 2px rgba(0,0,0,0.1)" }}
+                      title="Crear una solicitud para Microbiología sin avanzar de etapa"
+                    >
+                      🧫 Solicitar Análisis MB (Manual)
+                    </button>
+                  </p>
+                )}
               </div>
             </CollapsibleSection>
 
