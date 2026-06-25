@@ -41,7 +41,7 @@ export default function Dashboard() {
   const [filtroTexto, setFiltroTexto] = useState("");
   const [filtroEstado, setFiltroEstado] = useState("todos");
   const [filtroAsignado, setFiltroAsignado] = useState("todos");
-  const [fechaDesde, setFechaDesde] = useState("");
+  const [fechaDesde, setFechaDesde] = useState("2026-07-01");
   const [fechaHasta, setFechaHasta] = useState("");
 
   // =============================
@@ -547,7 +547,7 @@ export default function Dashboard() {
               setFiltroTexto("");
               setFiltroEstado("todos");
               setFiltroAsignado("todos");
-              setFechaDesde("");
+              setFechaDesde("2026-07-01");
               setFechaHasta("");
             }}
           >
