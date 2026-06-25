@@ -2617,6 +2617,29 @@ export default function Produccion() {
         {selected && (
           <div className="pc-detail fadeIn">
 
+            {/* ALERTA DE RECHAZO MICROBIOLOGÍA */}
+            {(() => {
+              const lastMBObs = obs.find(o => 
+                (o.usuario === "Microbiología" || (o.observacion && (o.observacion.includes("Microbiología") || o.observacion.includes("MB")))) &&
+                (o.observacion && (o.observacion.includes("✅") || o.observacion.includes("❌")))
+              );
+              
+              if (lastMBObs && lastMBObs.observacion.includes("❌")) {
+                return (
+                  <div style={{ background: "#fef2f2", padding: "14px", borderRadius: "8px", border: "1px solid #f87171", marginBottom: "15px", boxShadow: "0 2px 4px rgba(0,0,0,0.05)" }}>
+                    <h4 style={{ color: "#b91c1c", margin: "0 0 5px 0", fontSize: "16px" }}>⚠️ ¡Atención! Análisis No Conforme</h4>
+                    <p style={{ color: "#7f1d1d", fontSize: "14px", margin: 0, fontWeight: "500" }}>
+                      {lastMBObs.observacion}
+                    </p>
+                    <p style={{ color: "#991b1b", fontSize: "13px", marginTop: "8px" }}>
+                      Microbiología marcó este análisis como no conforme. Verifica la etapa correspondiente y vuelve a solicitar el análisis.
+                    </p>
+                  </div>
+                );
+              }
+              return null;
+            })()}
+
             {/* 1. DETALLE DEL PEDIDO */}
             <CollapsibleSection
               title="📄 Detalle del Pedido"

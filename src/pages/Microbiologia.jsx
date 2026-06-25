@@ -765,8 +765,12 @@ export default function Microbiologia() {
             observacion: `❌ SOLICITUD RECHAZADA (${selected.tipos_solicitud?.nombre || 'General'}): ${currentComment}`,
           });
 
-          // Retrocedemos el pedido a estado 5 (Asignado a Producción) opcional? No, el usuario no dijo que cambiara el estado del pedido a 5. Sólo notificar.
-          
+          // Retrocedemos el pedido a estado 7 (En Producción)
+          await supabase.from(st("pedidos_produccion")).update({
+            estado_id: 7,
+            asignado_a: "produccion"
+          }).eq("id", selected.consecutivo);
+
           await notifyRoles(
             ["produccion"],
             "Solicitud Rechazada (MB)",
