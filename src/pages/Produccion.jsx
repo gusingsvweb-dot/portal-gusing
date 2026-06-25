@@ -128,6 +128,13 @@ export default function Produccion() {
   const [obs, setObs] = useState([]);
   const [newObs, setNewObs] = useState("");
 
+  // Edición de fecha en cualquier etapa
+  const [isEditingFecha, setIsEditingFecha] = useState(false);
+  const [tempFechaPropuesta, setTempFechaPropuesta] = useState("");
+  
+  const [isEditingFechaCliente, setIsEditingFechaCliente] = useState(false);
+  const [tempFechaCliente, setTempFechaCliente] = useState("");
+
   // Filtros UI
   const [filtroTexto, setFiltroTexto] = useState("");
   const [filtroEstado, setFiltroEstado] = useState("todos");
@@ -1810,6 +1817,47 @@ export default function Produccion() {
   }
 
   /* ===========================================================
+     EDICIÓN RÁPIDA DE FECHA DE ENTREGA
+  ============================================================ */
+  async function guardarEdicionFecha() {
+    if (!selected) return;
+    try {
+      const { error } = await supabase
+        .from(st("pedidos_produccion"))
+        .update({ fecha_propuesta_entrega: tempFechaPropuesta })
+        .eq("id", selected.id);
+
+      if (error) throw error;
+
+      alert("Fecha de entrega actualizada correctamente.");
+      setIsEditingFecha(false);
+      await reloadSelected();
+    } catch (err) {
+      console.error("Error al actualizar la fecha:", err);
+      alert("Error al actualizar la fecha.");
+    }
+  }
+
+  async function guardarEdicionFechaCliente() {
+    if (!selected) return;
+    try {
+      const { error } = await supabase
+        .from(st("pedidos_produccion"))
+        .update({ fecha_entrega_cliente: tempFechaCliente })
+        .eq("id", selected.id);
+
+      if (error) throw error;
+
+      alert("Fecha de entrega a cliente actualizada correctamente.");
+      setIsEditingFechaCliente(false);
+      await reloadSelected();
+    } catch (err) {
+      console.error("Error al actualizar la fecha:", err);
+      alert("Error al actualizar la fecha.");
+    }
+  }
+
+  /* ===========================================================
      OBSERVACIONES
   ============================================================ */
   async function addObservacion() {
@@ -2594,9 +2642,88 @@ export default function Produccion() {
                 <p>
                   <strong>Fecha Max:</strong> {selected.fecha_maxima_entrega || "—"}
                 </p>
-                <p>
-                  <strong>Fecha Prop.:</strong> {selected.fecha_propuesta_entrega || "—"}
-                </p>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", margin: "0 0 10px 0" }}>
+                  <strong>Fecha Prop.:</strong>
+                  {isEditingFecha ? (
+                    <div style={{ display: "flex", gap: "4px" }}>
+                      <input
+                        type="date"
+                        value={tempFechaPropuesta}
+                        onChange={(e) => setTempFechaPropuesta(e.target.value)}
+                        style={{ padding: "4px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "12px" }}
+                      />
+                      <button
+                        onClick={guardarEdicionFecha}
+                        style={{ padding: "4px 8px", background: "#10b981", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", fontSize: "12px" }}
+                      >
+                        Guardar
+                      </button>
+                      <button
+                        onClick={() => setIsEditingFecha(false)}
+                        style={{ padding: "4px 8px", background: "#ef4444", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", fontSize: "12px" }}
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      {selected.fecha_propuesta_entrega || "—"}
+                      {esProduccion && (
+                        <button
+                          onClick={() => {
+                            setTempFechaPropuesta(selected.fecha_propuesta_entrega || "");
+                            setIsEditingFecha(true);
+                          }}
+                          style={{ padding: "2px 6px", background: "#3b82f6", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", fontSize: "11px", display: "flex", alignItems: "center", justifyContent: "center" }}
+                          title="Editar Fecha de Entrega"
+                        >
+                          ✏️
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", margin: "0 0 10px 0" }}>
+                  <strong>F. Entrega Cliente:</strong>
+                  {isEditingFechaCliente ? (
+                    <div style={{ display: "flex", gap: "4px" }}>
+                      <input
+                        type="date"
+                        value={tempFechaCliente}
+                        onChange={(e) => setTempFechaCliente(e.target.value)}
+                        style={{ padding: "4px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "12px" }}
+                      />
+                      <button
+                        onClick={guardarEdicionFechaCliente}
+                        style={{ padding: "4px 8px", background: "#10b981", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", fontSize: "12px" }}
+                      >
+                        Guardar
+                      </button>
+                      <button
+                        onClick={() => setIsEditingFechaCliente(false)}
+                        style={{ padding: "4px 8px", background: "#ef4444", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", fontSize: "12px" }}
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      {selected.fecha_entrega_cliente || "—"}
+                      {esProduccion && (
+                        <button
+                          onClick={() => {
+                            setTempFechaCliente(selected.fecha_entrega_cliente || "");
+                            setIsEditingFechaCliente(true);
+                          }}
+                          style={{ padding: "2px 6px", background: "#3b82f6", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", fontSize: "11px", display: "flex", alignItems: "center", justifyContent: "center" }}
+                          title="Editar Fecha de Entrega a Cliente"
+                        >
+                          ✏️
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
                 <p>
                   <strong>Estado:</strong>{" "}
                   <span className={`pc-chip estado-${selected.estado_id}`}>
