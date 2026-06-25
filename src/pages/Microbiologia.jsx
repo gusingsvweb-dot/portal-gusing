@@ -1105,8 +1105,8 @@ export default function Microbiologia() {
                       <button className="mb-btn mb-btn-danger" onClick={rechazarEtapa} disabled={accionLoading}>
                         {accionLoading ? "Procesando…" : "No Conforme"}
                       </button>
-                      <button className="mb-btn" onClick={liberarEtapa} disabled={accionLoading}>
-                        {accionLoading ? "Procesando…" : "Completar paso"}
+                      <button className="mb-btn" style={{ background: '#10b981', color: '#fff', border: 'none' }} onClick={liberarEtapa} disabled={accionLoading}>
+                        {accionLoading ? "Procesando…" : "✅ Conforme"}
                       </button>
                     </div>
                   </div>
@@ -1180,10 +1180,10 @@ export default function Microbiologia() {
                             />
                             <div className="mb-actions-row" style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
                               <button className="mb-btn mb-btn-danger" style={{ flex: 1 }} onClick={rechazarSolicitud} disabled={accionLoading}>
-                                {accionLoading ? "Procesando…" : "No Conforme (Obligatorio)"}
+                                {accionLoading ? "Procesando…" : "No Conforme"}
                               </button>
-                              <button className="mb-btn" style={{ flex: 1 }} onClick={liberarSolicitud} disabled={accionLoading}>
-                                {accionLoading ? "Procesando…" : "✅ Conforme (Liberar)"}
+                              <button className="mb-btn" style={{ flex: 1, background: '#10b981', color: '#fff', border: 'none' }} onClick={liberarSolicitud} disabled={accionLoading}>
+                                {accionLoading ? "Procesando…" : "✅ Conforme"}
                               </button>
                             </div>
                           </>
