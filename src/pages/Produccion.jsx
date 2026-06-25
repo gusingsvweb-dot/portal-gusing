@@ -1723,12 +1723,15 @@ export default function Produccion() {
 
     // Estado 2: Registro de lote
     if (estadoId === 2) {
-      const { tamano_lote } = formData;
+      const { tamano_lote, op, lote } = formData;
 
       if (!tamano_lote) {
         alert("Complete el Tamaño de lote.");
         return;
       }
+
+      if (op) update.op = op.trim();
+      if (lote) update.lote = lote.trim();
 
       update.tamano_lote = Math.floor(Number(tamano_lote));
 
