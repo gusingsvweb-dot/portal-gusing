@@ -245,14 +245,14 @@ export default function TecnicoMantenimiento() {
         if (isEnProceso) {
           await notifyUserByUsername(
             selected.usuario_id,
-            "✅ Orden de Mantenimiento Finalizada",
+            "✅ Ticket de Mantenimiento Finalizado",
             `La solicitud ${orderId} para ${equipoNombre} ha sido completada por el técnico. Por favor, califica el servicio.`,
             selected.id
           );
           await notifyRoles(
             ["mantenimiento"],
-            "✅ Orden Completada por Técnico",
-            `El técnico ha finalizado la orden ${orderId} (${equipoNombre}). Acción: ${accion.substring(0, 100)}${accion.length > 100 ? "..." : ""}`,
+            "✅ Ticket Completado por Técnico",
+            `El técnico ha finalizado el ticket ${orderId} (${equipoNombre}). Acción: ${accion.substring(0, 100)}${accion.length > 100 ? "..." : ""}`,
             selected.id,
             "info"
           );
@@ -282,7 +282,7 @@ export default function TecnicoMantenimiento() {
       <div className="mant-container">
         <header className="mant-header-section">
           <div>
-            <h2 className="mant-title">Mis Órdenes de Mantenimiento</h2>
+            <h2 className="mant-title">Mis Tickets de Mantenimiento</h2>
             <p className="mant-subtitle">Tablero del Técnico — {new Date().toLocaleDateString("es-CO", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</p>
           </div>
           <div style={{ display: "flex", gap: "20px", alignItems: "center" }}>
@@ -294,12 +294,12 @@ export default function TecnicoMantenimiento() {
         </header>
 
         {loading ? (
-          <div style={{ textAlign: "center", padding: "50px", color: "#64748b" }}>Cargando órdenes asignadas...</div>
+          <div style={{ textAlign: "center", padding: "50px", color: "#64748b" }}>Cargando tickets asignados...</div>
         ) : (
           <>
             {/* STAT CARDS */}
             <div className="mant-stats-row">
-              <StatCard label="Mis Órdenes" value={stats.total} icon="🔧" accent="#6366f1" />
+              <StatCard label="Mis Tickets" value={stats.total} icon="🔧" accent="#6366f1" />
               <StatCard label="Pendientes" value={stats.pendientes} icon="⏳" accent="#f59e0b" />
               <StatCard label="En Proceso" value={stats.proceso} icon="⚙️" accent="#3b82f6" />
               <StatCard label="Finalizadas" value={stats.finalizados} icon="✅" accent="#10b981" />
@@ -332,7 +332,7 @@ export default function TecnicoMantenimiento() {
         )}
       </div>
 
-      {/* MODAL DETALLE DE ORDEN */}
+      {/* MODAL DETALLE DE TICKET */}
       {selected && (
         <div className="mant-modal-overlay-v2" onClick={closeModal}>
           <div className="mant-modal-content-centered" onClick={e => e.stopPropagation()}>
@@ -341,7 +341,7 @@ export default function TecnicoMantenimiento() {
                 <span className={`modal-state-badge state-${selected.estado_id}`}>
                   {selected.estados?.nombre?.toUpperCase()}
                 </span>
-                <h3>{selected.consecutivo ? `M-${selected.consecutivo}` : `Orden #${selected.id}`}</h3>
+                <h3>{selected.consecutivo ? `M-${selected.consecutivo}` : `Ticket #${selected.id}`}</h3>
               </div>
               <button className="close-btn-v2" onClick={closeModal}>✖</button>
             </div>
@@ -448,7 +448,7 @@ export default function TecnicoMantenimiento() {
                 <div className="modal-section">
                   <span className="modal-section-label">Repuestos Consumidos</span>
                   {consumosGuardados.length === 0 ? (
-                    <p style={{ color: "#94a3b8", fontSize: "0.9rem" }}>No se registraron consumos en esta orden.</p>
+                    <p style={{ color: "#94a3b8", fontSize: "0.9rem" }}>No se registraron consumos en este ticket.</p>
                   ) : (
                     <table className="consumos-table">
                       <thead>
@@ -484,7 +484,7 @@ export default function TecnicoMantenimiento() {
               )}
               {selected.estado_id < 14 && (
                 <button className="mant-btn-action primary" onClick={avanzarEstado} disabled={saving}>
-                  {saving ? "Guardando..." : selected.estado_id === 1 ? "Iniciar Trabajo →" : "Finalizar y Cerrar Orden ✓"}
+                  {saving ? "Guardando..." : selected.estado_id === 1 ? "Iniciar Trabajo →" : "Finalizar y Cerrar Ticket ✓"}
                 </button>
               )}
             </div>

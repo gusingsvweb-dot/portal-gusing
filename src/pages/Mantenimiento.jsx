@@ -287,8 +287,8 @@ export default function Mantenimiento() {
       }
       await notifyRoles(
         ["gerencia", "mantenimiento"],
-        "⚙️ Orden en Proceso",
-        `La orden M-${selected.consecutivo} de ${selected.activos?.nombre || "equipo"} ha pasado a estado "En Proceso".`,
+        "⚙️ Ticket en Proceso",
+        `El ticket M-${selected.consecutivo} de ${selected.activos?.nombre || "equipo"} ha pasado a estado "En Proceso".`,
         selected.id,
         "info"
       );
@@ -296,15 +296,15 @@ export default function Mantenimiento() {
       if (selected.usuario_id) {
         await notifyUserByUsername(
           selected.usuario_id,
-          "✅ Orden de Mantenimiento Finalizada",
+          "✅ Ticket de Mantenimiento Finalizado",
           `La solicitud M-${selected.consecutivo} para ${selected.activos?.nombre || "equipo"} ha sido finalizada. Por favor, califica el servicio.`,
           selected.id
         );
       }
       await notifyRoles(
         ["gerencia", "mantenimiento"],
-        "✅ Orden Finalizada",
-        `Se ha completado la orden M-${selected.consecutivo} correspondiente al equipo ${selected.activos?.nombre || ""}.`,
+        "✅ Ticket Finalizado",
+        `Se ha completado el ticket M-${selected.consecutivo} correspondiente al equipo ${selected.activos?.nombre || ""}.`,
         selected.id,
         "success"
       );
@@ -353,8 +353,8 @@ export default function Mantenimiento() {
     if (tecnico) {
       await notifyRoles(
         ["tecnicomantenimiento"],
-        "🔧 Nueva Asignación de Orden",
-        `La orden M-${selected.consecutivo} ha sido asignada a ${tecnico}. Revisa tu tablero.`,
+        "🔧 Nueva Asignación de Ticket",
+        `El ticket M-${selected.consecutivo} ha sido asignada a ${tecnico}. Revisa tu tablero.`,
         selected.id,
         "info"
       );
@@ -392,7 +392,7 @@ export default function Mantenimiento() {
       await notifyRoles(
         ["mantenimiento", "gerencia"],
         "🔔 Nueva Solicitud Manual",
-        `Se ha registrado una nueva orden manual (M-${nextConsecutivo}) para intervención técnica.`,
+        `Se ha registrado una nuevo ticket manual (M-${nextConsecutivo}) para intervención técnica.`,
         null,
         "info"
       );
@@ -426,7 +426,7 @@ export default function Mantenimiento() {
         <header className="mant-header-section">
           <div>
             <h2 className="mant-title">Tablero de Mantenimiento</h2>
-            <p className="mant-subtitle">Gestión centralizada de órdenes y equipos — {new Date().toLocaleDateString("es-CO", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</p>
+            <p className="mant-subtitle">Gestión centralizada de tickets y equipos — {new Date().toLocaleDateString("es-CO", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</p>
           </div>
           <div className="mant-hero-img-container">
             <img src="/mantenimiento_hero.png" alt="Mantenimiento" className="mant-hero-mini-img" />
@@ -436,7 +436,7 @@ export default function Mantenimiento() {
               <button className="nav-pill-arrow" onClick={() => scrollPills(-1)} aria-label="Anterior">‹</button>
             )}
             <div className="mant-nav-pills" ref={pillsRef} onScroll={checkPillsScroll}>
-              <button className="nav-pill active" onClick={() => navigate("/mantenimiento")}>Órdenes</button>
+              <button className="nav-pill active" onClick={() => navigate("/mantenimiento")}>Tickets</button>
               <button className="nav-pill" onClick={() => navigate("/mantenimiento/equipos")}>Equipos y Herramientas</button>
               <button className="nav-pill" onClick={() => navigate("/mantenimiento/plan-maestro")}>Plan Maestro</button>
               <button className="nav-pill" onClick={() => navigate("/mantenimiento/repuestos")}>Repuestos</button>
@@ -460,7 +460,7 @@ export default function Mantenimiento() {
 
         {/* STAT CARDS */}
         <div className="mant-stats-row">
-          <StatCard label="Total Órdenes" value={stats.total} icon="🔧" accent="#6366f1" />
+          <StatCard label="Total Tickets" value={stats.total} icon="🔧" accent="#6366f1" />
           <StatCard label="Pendientes" value={stats.pendientes} icon="⏳" accent="#f59e0b" />
           <StatCard label="En Proceso" value={stats.proceso} icon="⚙️" accent="#3b82f6" />
           <StatCard label="Por Calificar" value={stats.pendientesCalificar} icon="⭐" accent="#ec4899" />
@@ -698,7 +698,7 @@ export default function Mantenimiento() {
                 <div className="modal-section">
                   <span className="modal-section-label">Repuestos Consumidos</span>
                   {consumosGuardados.length === 0 ? (
-                    <p style={{ color: "#94a3b8", fontSize: "0.9rem" }}>No se registraron consumos en esta orden.</p>
+                    <p style={{ color: "#94a3b8", fontSize: "0.9rem" }}>No se registraron consumos en este ticket.</p>
                   ) : (
                     <table className="consumos-table">
                       <thead>
@@ -725,7 +725,7 @@ export default function Mantenimiento() {
               )}
               {selected.estado_id === 15 && (
                 <div style={{ padding: "20px", background: "#ecfdf5", borderRadius: "12px", color: "#047857", textAlign: "center", fontWeight: "600", marginTop: "20px" }}>
-                  ✔ Orden Cerrada y Calificada.
+                  ✔ Ticket Cerrado y Calificada.
                 </div>
               )}
             </div>
@@ -745,7 +745,7 @@ export default function Mantenimiento() {
               )}
               {selected.estado_id < 14 && (
                 <button className="mant-btn-action primary" onClick={avanzarEstado} disabled={saving}>
-                  {saving ? "Guardando..." : selected.estado_id === 1 ? "Iniciar Trabajo →" : "Finalizar y Cerrar Orden ✓"}
+                  {saving ? "Guardando..." : selected.estado_id === 1 ? "Iniciar Trabajo →" : "Finalizar y Cerrar Ticket ✓"}
                 </button>
               )}
             </div>
@@ -806,7 +806,7 @@ export default function Mantenimiento() {
               </div>
               <div className="modal-v2-footer">
                 <button className="v2-btn-secondary" onClick={() => setShowManualForm(false)}>Cancelar</button>
-                <button className="v2-btn-primary" onClick={saveManual} disabled={saving}>Registrar Orden</button>
+                <button className="v2-btn-primary" onClick={saveManual} disabled={saving}>Registrar Ticket</button>
               </div>
             </div>
           </div>
