@@ -211,13 +211,25 @@ export default function ConsolidadoPedidos() {
 
     async function deletePedido(id) {
         if (!window.confirm(`¿Estás seguro de que deseas eliminar el pedido #${id} para pruebas? Esta acción no se puede deshacer.`)) return;
-        const { error } = await supabase.from(st("pedidos_produccion")).delete().eq("id", id);
-        if (error) {
-            console.error("Error al eliminar pedido:", error);
-            alert("Hubo un error al eliminar el pedido.");
-        } else {
-            setPedidos(pedidos.filter(p => p.id !== id));
-            alert("Pedido de prueba eliminado.");
+        
+        try {
+            // Eliminar registros dependientes primero para evitar error de Foreign Key
+            await supabase.from(st("pedidos_bodega_items")).delete().eq("pedido_id", id);
+            await supabase.from(st("pedido_etapas")).delete().eq("pedido_id", id);
+            await supabase.from(st("observaciones_pedido")).delete().eq("pedido_id", id);
+            
+            const { error } = await supabase.from(st("pedidos_produccion")).delete().eq("id", id);
+            
+            if (error) {
+                console.error("Error al eliminar pedido:", error);
+                alert("Hubo un error al eliminar el pedido: " + error.message);
+            } else {
+                setPedidos(pedidos.filter(p => p.id !== id));
+                alert("Pedido de prueba eliminado exitosamente.");
+            }
+        } catch (err) {
+            console.error("Excepción al intentar eliminar:", err);
+            alert("Excepción al intentar eliminar: " + err.message);
         }
     }
 
