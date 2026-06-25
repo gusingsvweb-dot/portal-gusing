@@ -162,7 +162,7 @@ export default function Navbar() {
           { to: "/mantenimiento", label: "Tickets", icon: "🛠️" },
           { to: "/mantenimiento/equipos", label: "Equipos", icon: "🏢" },
           { to: "/mantenimiento/plan-maestro", label: "Prev. Programados", icon: "📅" },
-          { to: "/mantenimiento/repuestos", label: "Repuestos", icon: "⚙️" },
+          { to: "/mantenimiento/repuestos", label: "Inventario", icon: "📦" },
           { to: "/mantenimiento/proyectos", label: "Proyectos", icon: "🚀" },
           { to: "/mantenimiento/proveedores", label: "Personal Técnico", icon: "👷" },
           { to: "/kpis-mantenimiento", label: "KPIs", icon: "📈" },

@@ -4,6 +4,7 @@ import { supabase, st } from "../api/supabaseClient";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
 import { notifyRoles } from "../api/notifications";
+import GestionHerramientas from "./GestionHerramientas";
 import "./Mantenimiento.css";
 import "./GestionRepuestos.css";
 
@@ -11,6 +12,7 @@ export default function GestionRepuestos() {
   const navigate = useNavigate();
   const [repuestos, setRepuestos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [subView, setSubView] = useState("repuestos");
   const [showModal, setShowModal] = useState(false);
   const [sortBy, setSortBy] = useState("nombre");
   const [filtroText, setFiltroText] = useState("");
@@ -109,15 +111,30 @@ export default function GestionRepuestos() {
       <div className="mant-container">
         <header className="mant-header-section">
           <div>
-            <h2 className="mant-title">Gestión de Repuestos</h2>
-            <p className="mant-subtitle">Inventario de insumos y refacciones para mantenimiento industrial</p>
+            <h2 className="mant-title">Gestión de Inventario</h2>
+            <p className="mant-subtitle">
+              {subView === "repuestos" 
+                ? "Inventario de insumos y refacciones para mantenimiento industrial"
+                : "Control de calibración, vigencia y estado operativo para herramientas del taller"}
+            </p>
           </div>
           <div className="mant-actions-group">
 
-            <button className="mant-btn-action primary" onClick={() => { resetForm(); setShowModal(true); }}>+ Nuevo Repuesto</button>
+            {subView === "repuestos" && (
+              <button className="mant-btn-action primary" onClick={() => { resetForm(); setShowModal(true); }}>+ Nuevo Repuesto</button>
+            )}
           </div>
         </header>
 
+        {/* SUBTABS */}
+        <div className="ge-sub-tabs">
+          <button className={`ge-sub-tab${subView === "repuestos" ? " active" : ""}`} onClick={() => setSubView("repuestos")}>📦 Repuestos</button>
+          <button className={`ge-sub-tab${subView === "herramientas" ? " active" : ""}`} onClick={() => setSubView("herramientas")}>🔧 Herramientas</button>
+        </div>
+
+        {subView === "herramientas" && <GestionHerramientas embedded />}
+
+        {subView === "repuestos" && <>
         {/* STATS */}
         <div className="rep-stats-row">
           <div className="rep-stat-card" style={{ "--c": "#6366f1" }}>
@@ -298,6 +315,7 @@ export default function GestionRepuestos() {
             </div>
           </div>
         )}
+        </>}
       </div>
       <Footer />
     </>
