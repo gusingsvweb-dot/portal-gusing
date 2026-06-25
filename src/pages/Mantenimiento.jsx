@@ -426,7 +426,7 @@ export default function Mantenimiento() {
         <header className="mant-header-section">
           <div>
             <h2 className="mant-title">Tablero de Mantenimiento</h2>
-            <p className="mant-subtitle">Gestión centralizada de tickets y equipos — {new Date().toLocaleDateString("es-CO", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</p>
+            <p className="mant-subtitle">{new Date().toLocaleDateString("es-CO", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</p>
           </div>
           <div className="mant-hero-img-container">
             <img src="/mantenimiento_hero.png" alt="Mantenimiento" className="mant-hero-mini-img" />
