@@ -112,11 +112,7 @@ export default function GestionRepuestos() {
         <header className="mant-header-section">
           <div>
             <h2 className="mant-title">Gestión de Inventarios y Herramientas</h2>
-            <p className="mant-subtitle">
-              {subView === "repuestos" 
-                ? "Inventario de insumos y refacciones para mantenimiento industrial"
-                : "Control de calibración, vigencia y estado operativo para herramientas del taller"}
-            </p>
+
           </div>
           <div className="mant-actions-group">
 
