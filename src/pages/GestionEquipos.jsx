@@ -324,7 +324,7 @@ export default function GestionEquipos() {
             </p>
           </div>
           <div className="mant-actions-group">
-            <button className="mant-btn-action secondary" onClick={() => navigate("/mantenimiento")}>← Tablero</button>
+
             {subView === "equipos" && <>
               <button className="mant-btn-action secondary" onClick={() => navigate("/mantenimiento/importar-activos")}>📥 Importar Excel</button>
               <button className="mant-btn-action primary" onClick={() => { resetForm(); setShowForm(true); }}>+ Nuevo Equipo</button>

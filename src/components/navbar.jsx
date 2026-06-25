@@ -272,6 +272,26 @@ export default function Navbar() {
           src="https://gqspcolombia.org/wp-content/uploads/2025/09/21.png"
           alt="Logo"
           className="nav-logo"
+          style={{ cursor: "pointer" }}
+          onClick={() => {
+            const routes = {
+              produccion: "/produccion",
+              bodega: "/bodega",
+              bodega_mp: "/bodega-mp",
+              bodega_pt: "/bodega-pt",
+              microbiologia: "/microbiologia",
+              mantenimiento: "/mantenimiento",
+              compras: "/compras",
+              acondicionamiento: "/Acondicionamiento",
+              controlcalidad: "/ControlCalidad",
+              direcciontecnica: "/direccion-tecnica",
+              garantiacalidad: "/garantiacalidad",
+              usuario: "/usuario/mis-solicitudes",
+              atencion: "/pedidos-curso"
+            };
+            const base = routes[rol] || "/dashboard";
+            navigate(base);
+          }}
         />
         <span className="nav-title">{menu.title}</span>
       </div>

@@ -167,7 +167,7 @@ export default function GestionProveedoresMant() {
             <p className="mant-subtitle">Técnicos internos y proveedores externos — {proveedores.length} registrados</p>
           </div>
           <div className="mant-actions-group">
-            <button className="mant-btn-action secondary" onClick={() => navigate("/mantenimiento")}>← Tablero</button>
+
             <button className="mant-btn-action primary" onClick={() => { resetForm(); setShowForm(true); }}>+ Añadir Personal</button>
           </div>
         </header>

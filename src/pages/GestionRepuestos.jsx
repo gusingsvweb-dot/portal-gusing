@@ -113,7 +113,7 @@ export default function GestionRepuestos() {
             <p className="mant-subtitle">Inventario de insumos y refacciones para mantenimiento industrial</p>
           </div>
           <div className="mant-actions-group">
-            <button className="mant-btn-action secondary" onClick={() => navigate("/mantenimiento")}>← Tablero</button>
+
             <button className="mant-btn-action primary" onClick={() => { resetForm(); setShowModal(true); }}>+ Nuevo Repuesto</button>
           </div>
         </header>

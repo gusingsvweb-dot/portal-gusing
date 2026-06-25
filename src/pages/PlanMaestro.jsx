@@ -401,7 +401,7 @@ export default function PlanMaestro() {
             <p className="mant-subtitle">Cronograma de mantenimiento preventivo</p>
           </div>
           <div className="mant-actions-group">
-            <button className="mant-btn-action secondary" onClick={() => navigate("/mantenimiento")}>← Tablero</button>
+
             <button className="mant-btn-action secondary" onClick={() => navigate("/mantenimiento/importar-cronograma")}>📥 Importar Excel</button>
             <button className="mant-btn-action success" onClick={generateOrders} disabled={generating || stats.vencidos === 0}>
               {generating ? "Generando..." : `🚀 Procesar ${stats.vencidos} Pendiente${stats.vencidos !== 1 ? "s" : ""}`}

@@ -470,7 +470,7 @@ export default function GestionHerramientas({ embedded = false }) {
               <p className="mant-subtitle">Control de calibración, vigencia y estado operativo para herramientas del taller — {activos.length} herramientas registradas</p>
             </div>
             <div className="mant-actions-group">
-              <button className="mant-btn-action secondary" onClick={() => navigate("/mantenimiento")}>← Tablero</button>
+
               <button className="mant-btn-action primary" onClick={() => { resetForm(); setShowForm(true); }}>+ Nueva Herramienta</button>
             </div>
           </header>

@@ -178,9 +178,7 @@ export default function KpisMantenimiento() {
             <h2 className="kpi-mant-title">KPIs & Métricas de Mantenimiento</h2>
             <p className="kpi-mant-sub">Indicadores de rendimiento en tiempo real</p>
           </div>
-          <button className="mant-btn-action secondary" onClick={() => navigate("/mantenimiento")} style={{ alignSelf: "flex-start" }}>
-            ← Tablero
-          </button>
+
         </header>
 
         {/* STAT CARDS */}
