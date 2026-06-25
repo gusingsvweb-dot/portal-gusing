@@ -14,6 +14,7 @@ export default function PlanMaestro() {
   const [planes, setPlanes] = useState([]);
   const [activos, setActivos] = useState([]);
   const [cronogramaAnual, setCronogramaAnual] = useState([]);
+  const [mainCategory, setMainCategory] = useState("Equipo"); // "Instalación" | "Equipo" | "Computador"
   const [activeTab, setActiveTab] = useState("auto"); // "auto" | "semanal" | "anual"
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [loading, setLoading] = useState(true);
@@ -51,7 +52,7 @@ export default function PlanMaestro() {
       // Cargamos planes y activos por separado para evitar errores de relación en tablas "NO OFICIALES"
       const [{ data: pls }, { data: acts }, { data: crono }] = await Promise.all([
         supabase.from(st("planes_preventivos")).select("*").order("proxima_fecha"),
-        supabase.from(st("activos")).select("id, nombre, codigo, criticidad, area_id").order("nombre"),
+        supabase.from(st("activos")).select("id, nombre, codigo, criticidad, area_id, tipo").order("nombre"),
         supabase.from(st("maintenance_schedules")).select(`*, maintenance_schedule_months:${st("maintenance_schedule_months")}(*)`).eq("year", selectedYear).order("equipment_code")
       ]);
 
@@ -76,19 +77,30 @@ export default function PlanMaestro() {
 
   const hoy = new Date().toISOString().split("T")[0];
 
+  const planesDeCategoria = useMemo(() => {
+    return planes.filter(p => p.activos?.tipo === mainCategory);
+  }, [planes, mainCategory]);
+
+  const cronogramaDeCategoria = useMemo(() => {
+    return cronogramaAnual.filter(item => {
+      const a = activos.find(act => act.codigo === item.equipment_code);
+      return a?.tipo === mainCategory;
+    });
+  }, [cronogramaAnual, activos, mainCategory]);
+
   const stats = useMemo(() => {
-    const vencidos = planes.filter(p => p.proxima_fecha <= hoy && p.activo !== false);
-    const proximos7 = planes.filter(p => {
+    const vencidos = planesDeCategoria.filter(p => p.proxima_fecha <= hoy && p.activo !== false);
+    const proximos7 = planesDeCategoria.filter(p => {
       const diff = (new Date(p.proxima_fecha) - new Date()) / (1000 * 60 * 60 * 24);
       return diff > 0 && diff <= 7 && p.activo !== false;
     });
-    const activosPlanes = planes.filter(p => p.activo !== false);
-    return { vencidos: vencidos.length, proximos7: proximos7.length, total: planes.length, activos: activosPlanes.length };
-  }, [planes, hoy]);
+    const activosPlanes = planesDeCategoria.filter(p => p.activo !== false);
+    return { vencidos: vencidos.length, proximos7: proximos7.length, total: planesDeCategoria.length, activos: activosPlanes.length };
+  }, [planesDeCategoria, hoy]);
 
   // ── Planes filtrados para Motor Automático ──
   const planesFiltrados = useMemo(() => {
-    return planes.filter(p => {
+    return planesDeCategoria.filter(p => {
       if (filtroMes !== "todos") {
         const mes = new Date(p.proxima_fecha).getMonth();
         if (mes !== parseInt(filtroMes)) return false;
@@ -101,7 +113,7 @@ export default function PlanMaestro() {
       }
       return true;
     });
-  }, [planes, filtroMes, filtroEstadoAuto]);
+  }, [planesDeCategoria, filtroMes, filtroEstadoAuto]);
 
   // ── Planes por semana (Vista Semanal) ──
   const semanasPorMes = useMemo(() => {
@@ -123,7 +135,7 @@ export default function PlanMaestro() {
       const inicioStr = `${inicio.getFullYear()}-${String(inicio.getMonth() + 1).padStart(2, '0')}-${String(inicio.getDate()).padStart(2, '0')}`;
       const finStr = `${fin.getFullYear()}-${String(fin.getMonth() + 1).padStart(2, '0')}-${String(fin.getDate()).padStart(2, '0')}`;
 
-      const tareas = planes.flatMap(p => {
+      const tareas = planesDeCategoria.flatMap(p => {
         if (p.activo === false) return [];
         const occurrences = [];
         
@@ -167,7 +179,7 @@ export default function PlanMaestro() {
       inicio.setDate(inicio.getDate() + 1);
     }
     return semanas;
-  }, [planes, semanalMes, semanalAnio]);
+  }, [planesDeCategoria, semanalMes, semanalAnio]);
 
   async function completarPlan(plan) {
     if (!confirm(`¿Marcar como completado el preventivo de "${plan.activos?.nombre}"? Esto avanzará la próxima fecha.`)) return;
@@ -371,7 +383,7 @@ export default function PlanMaestro() {
 
   // ── Cronograma Anual filtrado ──
   const cronogramaFiltrado = useMemo(() => {
-    return cronogramaAnual.filter(item => {
+    return cronogramaDeCategoria.filter(item => {
       const matchText = !filtroTexto || (
         item.equipment_name?.toLowerCase().includes(filtroTexto.toLowerCase()) ||
         item.equipment_code?.toLowerCase().includes(filtroTexto.toLowerCase()) ||
@@ -389,7 +401,7 @@ export default function PlanMaestro() {
       }
       return true;
     });
-  }, [cronogramaAnual, filtroTexto, filtroEstado, filtroMesAnual]);
+  }, [cronogramaDeCategoria, filtroTexto, filtroEstado, filtroMesAnual]);
 
   return (
     <>
@@ -409,6 +421,13 @@ export default function PlanMaestro() {
             <button className="mant-btn-action primary" onClick={() => { resetForm(); setShowModal(true); }}>+ Programar</button>
           </div>
         </header>
+
+        {/* MAIN CATEGORIES */}
+        <div className="ge-sub-tabs" style={{ marginBottom: '24px' }}>
+          <button className={`ge-sub-tab${mainCategory === "Instalación" ? " active" : ""}`} onClick={() => setMainCategory("Instalación")}>🏢 Instalaciones</button>
+          <button className={`ge-sub-tab${mainCategory === "Equipo" ? " active" : ""}`} onClick={() => setMainCategory("Equipo")}>⚙️ Equipos</button>
+          <button className={`ge-sub-tab${mainCategory === "Computador" ? " active" : ""}`} onClick={() => setMainCategory("Computador")}>💻 Cómputo</button>
+        </div>
 
         {/* TABS */}
         <div className="pm-tabs">
