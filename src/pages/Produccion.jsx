@@ -1822,6 +1822,23 @@ export default function Produccion() {
   /* ===========================================================
      EDICIÓN RÁPIDA DE FECHA DE ENTREGA
   ============================================================ */
+  async function actualizarRequiereSolicitudMB(valor) {
+    if (!selected) return;
+    try {
+      const { error } = await supabase
+        .from(st("pedidos_produccion"))
+        .update({ requiere_solicitud_mb: valor })
+        .eq("id", selected.id);
+
+      if (error) throw error;
+
+      await reloadSelected();
+    } catch (err) {
+      console.error("Error al actualizar requiere_solicitud_mb:", err);
+      alert("Error al actualizar la configuración de solicitud a Microbiología.");
+    }
+  }
+
   async function guardarEdicionFecha() {
     if (!selected) return;
     try {
@@ -2045,9 +2062,10 @@ export default function Produccion() {
                     const ff = (selected.productos?.forma_farmaceutica || "").toLowerCase();
                     const esEsteril = ff.includes("esteril") || ff.includes("estéril");
                     const nombreBajo = etapaActual.nombre.toLowerCase();
-                    const esEtapaCorrectaMB = esEsteril
+                    const requiereMB = selected.requiere_solicitud_mb !== false;
+                    const esEtapaCorrectaMB = requiereMB && (esEsteril
                       ? nombreBajo.includes("esterilización")
-                      : nombreBajo.includes("envasado");
+                      : nombreBajo.includes("envasado"));
 
                     if (est === "pendiente_liberacion") {
                       return (
@@ -2668,6 +2686,58 @@ export default function Produccion() {
               onToggle={() => toggleSection("detalle")}
             >
               <div className="pc-detail-grid">
+                <div
+                  style={{
+                    gridColumn: "1 / -1",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "12px",
+                    flexWrap: "wrap",
+                    padding: "10px 12px",
+                    background: "var(--bg-app)",
+                    border: "1px solid var(--border-color)",
+                    borderRadius: "8px",
+                    marginBottom: "4px",
+                  }}
+                >
+                  <strong>Este pedido requiere solicitud a Microbiología:</strong>
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <button
+                      disabled={!esProduccion}
+                      onClick={() => actualizarRequiereSolicitudMB(true)}
+                      style={{
+                        padding: "4px 14px",
+                        borderRadius: "6px",
+                        fontSize: "12px",
+                        fontWeight: 600,
+                        cursor: esProduccion ? "pointer" : "default",
+                        border: selected.requiere_solicitud_mb !== false ? "2px solid #16a34a" : "1px solid #bbf7d0",
+                        background: selected.requiere_solicitud_mb !== false ? "#22c55e" : "#dcfce7",
+                        color: selected.requiere_solicitud_mb !== false ? "#ffffff" : "#166534",
+                        boxShadow: selected.requiere_solicitud_mb !== false ? "0 1px 3px rgba(22,163,74,0.4)" : "none",
+                      }}
+                    >
+                      Sí
+                    </button>
+                    <button
+                      disabled={!esProduccion}
+                      onClick={() => actualizarRequiereSolicitudMB(false)}
+                      style={{
+                        padding: "4px 14px",
+                        borderRadius: "6px",
+                        fontSize: "12px",
+                        fontWeight: 600,
+                        cursor: esProduccion ? "pointer" : "default",
+                        border: selected.requiere_solicitud_mb === false ? "2px solid #dc2626" : "1px solid #fecaca",
+                        background: selected.requiere_solicitud_mb === false ? "#ef4444" : "#fee2e2",
+                        color: selected.requiere_solicitud_mb === false ? "#ffffff" : "#991b1b",
+                        boxShadow: selected.requiere_solicitud_mb === false ? "0 1px 3px rgba(220,38,38,0.4)" : "none",
+                      }}
+                    >
+                      No
+                    </button>
+                  </div>
+                </div>
                 <p>
                   <strong>Producto:</strong> {selected.productos?.articulo}
                 </p>
