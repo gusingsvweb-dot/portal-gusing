@@ -331,24 +331,6 @@ export default function Produccion() {
     setDevolucionLoading(false);
   }
 
-  async function checkExistenciaSolicitudMicro(pedidoId) {
-    if (!pedidoId || !areaMicroId) return;
-
-    const { data, error } = await supabase
-      .from(st("solicitudes"))
-      .select(ss("id"))
-      .eq("consecutivo", pedidoId)
-      .eq("area_id", areaMicroId)
-      .limit(1);
-
-    if (error) {
-      console.error("Error checkExistenciaSolicitudMicro:", error);
-      return;
-    }
-
-    setHaSolicitadoMicro(data && data.length > 0);
-  }
-
   async function cargarItemsSolicitados(pedidoId) {
     if (!pedidoId) return;
 
@@ -713,8 +695,6 @@ export default function Produccion() {
     // FILTRAR: No mostrar "Acondicionamiento" en etapas internas
     const filtradas = (data || []).filter(e => !e.nombre.toLowerCase().includes("acondicionamiento"));
     setPedidoEtapas(filtradas);
-
-    checkExistenciaSolicitudMicro(pedidoId);
   }
 
   /* ===========================================================
@@ -738,7 +718,6 @@ export default function Produccion() {
     cargarObservaciones(p.id);
     cargarObservaciones(p.id);
     cargarPedidoEtapas(p.id);
-    checkExistenciaSolicitudMicro(p.id);
     // ... rest
     if (p.fecha_solicitud_materias_primas) {
       cargarItemsSolicitados(p.id);
