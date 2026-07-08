@@ -14,7 +14,7 @@ function ahoraISO() {
 }
 
 function toLowerSafe(str) {
-  return (str || "").toLowerCase();
+  return String(str ?? "").toLowerCase();
 }
 
 /* ===========================================================
