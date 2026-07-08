@@ -251,7 +251,9 @@ export default function Microbiologia() {
     return solicitudesIniciales.filter(s =>
       toLowerSafe(s.tipos_solicitud?.nombre).includes(q) ||
       toLowerSafe(s.consecutivo).includes(q) ||
-      toLowerSafe(s.id).includes(q)
+      toLowerSafe(s.id).includes(q) ||
+      toLowerSafe(s.pedidoData?.productos?.articulo).includes(q) ||
+      toLowerSafe(s.pedidoData?.lote).includes(q)
     );
   }, [solicitudesIniciales, filtroTexto]);
 
@@ -323,7 +325,7 @@ export default function Microbiologia() {
       if (ids.length > 0) {
         const { data: pedidos } = await supabase
           .from(st("pedidos_produccion"))
-          .select(ss("id, fecha_inicio_analisis_mb, productos(articulo, forma_farmaceutica)"))
+          .select(ss("id, lote, fecha_inicio_analisis_mb, productos(articulo, forma_farmaceutica)"))
           .in("id", ids);
 
         const mapPedidos = {};
