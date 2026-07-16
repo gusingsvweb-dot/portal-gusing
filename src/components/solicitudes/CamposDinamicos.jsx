@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { supabase, st } from "../../api/supabaseClient";
 
-export default function CamposDinamicos({ tipo, areaId, form, setForm, isMantenimiento }) {
+export default function CamposDinamicos({ tipo, areaId, form, setForm, isMantenimiento, isCompras }) {
   const [activos, setActivos] = useState([]);
 
   useEffect(() => {
@@ -111,6 +111,123 @@ export default function CamposDinamicos({ tipo, areaId, form, setForm, isManteni
           )}
         </div>
       );
+  }
+
+  // Hierarchy para Compras
+  if (isCompras) {
+    const handleItemChange = (index, field, value) => {
+      const newItems = [...form.compras_items];
+      newItems[index][field] = value;
+      setForm({ ...form, compras_items: newItems });
+    };
+
+    const addItem = () => {
+      setForm({
+        ...form,
+        compras_items: [
+          ...form.compras_items,
+          { referencia: "", descripcion: "", cantidad_solicitada: "", unidad_medida: "UNIDAD", equipo_identificacion_interna: "", observaciones: "" }
+        ]
+      });
+    };
+
+    const removeItem = (index) => {
+      const newItems = form.compras_items.filter((_, i) => i !== index);
+      setForm({ ...form, compras_items: newItems });
+    };
+
+    return (
+      <div className="hierarchy-container" style={{ 
+        marginTop: "15px", 
+        padding: "20px", 
+        background: "rgba(16, 185, 129, 0.03)", 
+        borderRadius: "16px", 
+        border: "1px solid rgba(16, 185, 129, 0.2)",
+        display: "flex",
+        flexDirection: "column",
+        gap: "15px"
+      }}>
+        <div>
+          <label style={{ display: "block", marginBottom: "6px", fontWeight: "700", fontSize: "0.85rem", color: "#047857" }}>
+            1. Tipo de Requisición *
+          </label>
+          <select
+            value={form.compras_tipo_requisicion || ""}
+            onChange={(e) => setForm({ ...form, compras_tipo_requisicion: e.target.value })}
+            style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1" }}
+          >
+            <option value="">Seleccione...</option>
+            <option value="MATERIAL">Material / Producto</option>
+            <option value="EQUIPO">Equipo</option>
+            <option value="SERVICIO">Servicio</option>
+          </select>
+        </div>
+
+        <div>
+          <label style={{ display: "block", marginBottom: "6px", fontWeight: "700", fontSize: "0.85rem", color: "#047857" }}>
+            2. Categoría de la Compra *
+          </label>
+          <select
+            value={form.compras_categoria || ""}
+            onChange={(e) => setForm({ ...form, compras_categoria: e.target.value })}
+            style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1" }}
+          >
+            <option value="">Seleccione...</option>
+            <option value="MATERIA_PRIMA">Materia Prima</option>
+            <option value="INSUMO">Insumo</option>
+            <option value="MATERIAL_IMPRESO">Material Impreso</option>
+            <option value="EQUIPO">Equipo</option>
+            <option value="SERVICIO">Servicio</option>
+            <option value="OTRO">Otro</option>
+          </select>
+        </div>
+
+        <div style={{ marginTop: "10px" }}>
+          <label style={{ display: "block", marginBottom: "10px", fontWeight: "700", fontSize: "0.85rem", color: "#047857" }}>
+            3. Ítems a Comprar *
+          </label>
+          {form.compras_items.map((item, index) => (
+            <div key={index} style={{ background: "#fff", padding: "15px", borderRadius: "8px", border: "1px solid #e2e8f0", marginBottom: "10px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px" }}>
+                <strong>Ítem {index + 1}</strong>
+                {form.compras_items.length > 1 && (
+                  <button type="button" onClick={() => removeItem(index)} style={{ background: "#ef4444", color: "#fff", border: "none", borderRadius: "4px", padding: "2px 8px", cursor: "pointer", fontSize: "0.75rem" }}>
+                    Eliminar
+                  </button>
+                )}
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "10px" }}>
+                <div>
+                  <label style={{ fontSize: "0.75rem" }}>Referencia</label>
+                  <input type="text" value={item.referencia} onChange={(e) => handleItemChange(index, "referencia", e.target.value)} style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1" }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.75rem" }}>Descripción *</label>
+                  <input type="text" value={item.descripcion} onChange={(e) => handleItemChange(index, "descripcion", e.target.value)} style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1" }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.75rem" }}>Cantidad *</label>
+                  <input type="number" min="0.1" step="any" value={item.cantidad_solicitada} onChange={(e) => handleItemChange(index, "cantidad_solicitada", e.target.value)} style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1" }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.75rem" }}>Unidad</label>
+                  <input type="text" value={item.unidad_medida} onChange={(e) => handleItemChange(index, "unidad_medida", e.target.value)} style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1" }} />
+                </div>
+                {form.compras_tipo_requisicion === "SERVICIO" && (
+                  <div style={{ gridColumn: "1 / -1" }}>
+                    <label style={{ fontSize: "0.75rem" }}>Equipo al que aplica el servicio</label>
+                    <input type="text" value={item.equipo_identificacion_interna} onChange={(e) => handleItemChange(index, "equipo_identificacion_interna", e.target.value)} placeholder="Ej: Maquina de mezclado M1" style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1" }} />
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+          <button type="button" onClick={addItem} style={{ background: "#10b981", color: "#fff", border: "none", borderRadius: "6px", padding: "8px 12px", cursor: "pointer", fontSize: "0.8rem", width: "100%" }}>
+            + Añadir otro ítem
+          </button>
+        </div>
+      </div>
+    );
   }
 
   // Otros tipos de solicitud estándar

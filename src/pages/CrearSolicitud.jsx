@@ -24,6 +24,9 @@ export default function CrearSolicitud() {
     maint_category: "", // Nuevo para jerarquía
     maint_type: "",      // Nuevo para jerarquía
     instalacion_desc: "", // Input libre para instalaciones
+    compras_tipo_requisicion: "",
+    compras_categoria: "",
+    compras_items: [{ referencia: "", descripcion: "", cantidad_solicitada: "", unidad_medida: "UNIDAD", equipo_identificacion_interna: "", observaciones: "" }],
   });
 
   const [loading, setLoading] = useState(false);
@@ -79,6 +82,14 @@ export default function CrearSolicitud() {
       if (form.maint_category === "Instalación" && !form.instalacion_desc.trim()) {
         return setMensaje("⚠️ Debes escribir la instalación o lugar a intervenir.");
       }
+    } else if (areaSeleccionada?.nombre?.toLowerCase().trim() === "compras") {
+      if (!form.compras_tipo_requisicion || !form.compras_categoria) {
+        return setMensaje("⚠️ Para compras debes seleccionar el Tipo de Requisición y la Categoría.");
+      }
+      const hasValidItems = form.compras_items.some(i => i.descripcion && Number(i.cantidad_solicitada) > 0);
+      if (!hasValidItems) {
+        return setMensaje("⚠️ Debes agregar al menos un ítem válido con descripción y cantidad mayor a 0.");
+      }
     } else if (!form.tipo_solicitud_id) {
       // Para otras áreas, el tipo estándar es obligatorio
       return setMensaje("⚠️ Debes seleccionar el tipo de solicitud.");
@@ -119,7 +130,7 @@ export default function CrearSolicitud() {
     }
 
     // 3. Insertar solicitud
-    const { error: insertError } = await supabase.from(st("solicitudes")).insert([
+    const { data: insertedData, error: insertError } = await supabase.from(st("solicitudes")).insert([
       {
         tipo_solicitud_id: finalTipoId || null,
         prioridad_id: form.prioridad_id,
@@ -132,15 +143,51 @@ export default function CrearSolicitud() {
         consecutivo: nextConsecutivo,
         activo_id: form.activo_id || null, 
       },
-    ]);
-
-    setLoading(false);
+    ]).select();
 
     if (insertError) {
+      setLoading(false);
       console.error("Error detallado Supabase:", insertError);
       return setMensaje(`❌ Error de Base de Datos: ${insertError.message} (Código: ${insertError.code})`);
     }
 
+    const newSolicitudId = insertedData?.[0]?.id;
+
+    // 4. Si es Compras, insertar detalle e ítems
+    if (areaSeleccionada?.nombre?.toLowerCase().trim() === "compras" && newSolicitudId) {
+      const { error: errorDetalle } = await supabase.from("compras_solicitudes_detalle").insert([{
+        solicitud_id: newSolicitudId,
+        tipo_requisicion: form.compras_tipo_requisicion,
+        categoria_compra: form.compras_categoria,
+        estado_compra: "PENDIENTE",
+        cargo_solicitante_snapshot: usuarioActual?.cargo || "N/A",
+        proceso_solicitante_snapshot: usuarioActual?.areadetrabajo || "N/A",
+        observaciones_requerimiento: form.descripcion
+      }]);
+
+      if (errorDetalle) {
+        console.error("Error guardando detalle compras:", errorDetalle);
+      } else {
+        const itemsToInsert = form.compras_items
+          .filter(i => i.descripcion && Number(i.cantidad_solicitada) > 0)
+          .map((i, idx) => ({
+            solicitud_id: newSolicitudId,
+            orden: idx + 1,
+            referencia: i.referencia || null,
+            descripcion: i.descripcion,
+            equipo_identificacion_interna: i.equipo_identificacion_interna || null,
+            cantidad_solicitada: Number(i.cantidad_solicitada),
+            unidad_medida: i.unidad_medida || 'UNIDAD',
+            observaciones: i.observaciones || null
+          }));
+        
+        if (itemsToInsert.length > 0) {
+          await supabase.from("compras_solicitud_items").insert(itemsToInsert);
+        }
+      }
+    }
+
+    setLoading(false);
     setMensaje("✅ Solicitud enviada correctamente.");
 
     // Enviar Notificación al Área Destino
@@ -169,11 +216,15 @@ export default function CrearSolicitud() {
       descripcion: "",
       activo_id: "",
       instalacion_desc: "",
+      compras_tipo_requisicion: "",
+      compras_categoria: "",
+      compras_items: [{ referencia: "", descripcion: "", cantidad_solicitada: "", unidad_medida: "UNIDAD", equipo_identificacion_interna: "", observaciones: "" }],
     });
   }
 
   const areaSeleccionadaRender = areas.find(a => String(a.id) === String(form.area_id));
   const isMantenimientoRender = areaSeleccionadaRender?.nombre?.toLowerCase().trim() === "mantenimiento";
+  const isComprasRender = areaSeleccionadaRender?.nombre?.toLowerCase().trim() === "compras";
 
   return (
     <>
@@ -195,7 +246,7 @@ export default function CrearSolicitud() {
           >
             <option value="">Seleccione...</option>
             {areas
-              .filter((a) => a.nombre.toLowerCase().trim() === "mantenimiento")
+              .filter((a) => ["mantenimiento", "compras"].includes(a.nombre.toLowerCase().trim()))
               .map((a) => (
               <option key={a.id} value={a.id}>
                 {a.nombre}
@@ -203,8 +254,8 @@ export default function CrearSolicitud() {
             ))}
           </select>
 
-          {/* Tipo de solicitud (OCULTO para Mantenimiento) */}
-          {!isMantenimientoRender && (
+          {/* Tipo de solicitud (OCULTO para Mantenimiento y Compras) */}
+          {!isMantenimientoRender && !isComprasRender && (
             <>
               <label>Tipo de solicitud *</label>
               <select
@@ -251,13 +302,14 @@ export default function CrearSolicitud() {
           </select>
 
           {/* Campos dinámicos según el área/tipo */}
-          {(form.tipo_solicitud_id || isMantenimientoRender) && (
+          {(form.tipo_solicitud_id || isMantenimientoRender || isComprasRender) && (
             <CamposDinamicos
               tipo={form.tipo_solicitud_id}
               areaId={form.area_id}
               form={form}
               setForm={setForm}
               isMantenimiento={isMantenimientoRender}
+              isCompras={isComprasRender}
             />
           )}
 
