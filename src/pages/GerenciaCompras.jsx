@@ -32,7 +32,13 @@ export default function GerenciaCompras() {
         tipos_solicitud ( nombre ),
         prioridades ( nombre ),
         estados ( nombre ),
-        areas ( nombre )
+        areas ( nombre ),
+        compras_solicitudes_detalle ( * ),
+        compras_solicitud_items ( * ),
+        compras_cotizaciones (
+          *,
+          compras_proveedores ( razon_social, nit_cedula )
+        )
       `))
       .eq("area_id", 4) // destino Compras
       .in("estado_id", [14, 18, 19, 23, 24])
@@ -320,6 +326,10 @@ function Card({ data, onClick }) {
 }
 
 function InfoGrid({ data }) {
+  const detalle = data.compras_solicitudes_detalle?.[0];
+  const items = data.compras_solicitud_items || [];
+  const cotizaciones = data.compras_cotizaciones || [];
+
   return (
     <>
       <div className="info-grid">
@@ -327,12 +337,77 @@ function InfoGrid({ data }) {
         <div><strong>Area:</strong> <p>{data.area_solicitante}</p></div>
         <div><strong>Prioridad:</strong> <p>{data.prioridades?.nombre}</p></div>
       </div>
+
+      {detalle && (
+        <div className="info-grid" style={{ marginTop: '10px', background: '#f8fafc', padding: '10px', borderRadius: '6px' }}>
+          <div><strong>Tipo Requisición:</strong> <p>{detalle.tipo_requisicion}</p></div>
+          <div><strong>Categoría:</strong> <p>{detalle.categoria_compra}</p></div>
+          <div><strong>Estado Compra:</strong> <p>{detalle.estado_compra}</p></div>
+        </div>
+      )}
+
       <div className="desc-section">
         <h4>Descripción</h4>
         <div className="text-box">{data.descripcion}</div>
       </div>
+
+      {items.length > 0 && (
+        <div className="items-section" style={{ marginTop: '15px' }}>
+          <h4>Ítems Solicitados</h4>
+          <div style={{ overflowX: 'auto', marginTop: '10px' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+              <thead>
+                <tr style={{ background: '#f1f5f9', textAlign: 'left' }}>
+                  <th style={{ padding: '8px', borderBottom: '2px solid #cbd5e1' }}>Item</th>
+                  <th style={{ padding: '8px', borderBottom: '2px solid #cbd5e1' }}>Descripción</th>
+                  <th style={{ padding: '8px', borderBottom: '2px solid #cbd5e1' }}>Ref.</th>
+                  <th style={{ padding: '8px', borderBottom: '2px solid #cbd5e1' }}>Cant.</th>
+                  <th style={{ padding: '8px', borderBottom: '2px solid #cbd5e1' }}>U. Medida</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.sort((a,b) => a.orden - b.orden).map((it, idx) => (
+                  <tr key={it.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                    <td style={{ padding: '8px' }}>{it.orden}</td>
+                    <td style={{ padding: '8px' }}>{it.descripcion}</td>
+                    <td style={{ padding: '8px' }}>{it.referencia || '-'}</td>
+                    <td style={{ padding: '8px' }}>{it.cantidad_solicitada}</td>
+                    <td style={{ padding: '8px' }}>{it.unidad_medida}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {cotizaciones.length > 0 && (
+        <div className="cots-section" style={{ marginTop: '15px' }}>
+          <h4>Cotizaciones Recibidas</h4>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '10px' }}>
+            {cotizaciones.map((cot, idx) => {
+              const isSelected = detalle?.cotizacion_seleccionada_id === cot.id || (idx === 0 && !detalle?.cotizacion_seleccionada_id);
+              return (
+              <div key={cot.id} style={{ border: isSelected ? '2px solid #10b981' : '1px solid #cbd5e1', padding: '10px', borderRadius: '6px', background: isSelected ? '#ecfdf5' : '#fff' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                  <strong>Proveedor: {cot.compras_proveedores?.razon_social} ({cot.compras_proveedores?.nit_cedula})</strong>
+                  {isSelected && <span style={{ background: '#10b981', color: '#fff', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem' }}>Recomendada</span>}
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', fontSize: '0.85rem' }}>
+                  <div><strong>Valor Total:</strong> ${Number(cot.total).toLocaleString()}</div>
+                  <div><strong>Fecha Est.:</strong> {cot.fecha_compromiso_entrega || 'N/A'}</div>
+                  <div style={{ gridColumn: '1 / -1' }}><strong>Condiciones:</strong> {cot.condiciones_pago || 'N/A'}</div>
+                  {cot.observaciones && <div style={{ gridColumn: '1 / -1' }}><strong>Obs:</strong> {cot.observaciones}</div>}
+                </div>
+              </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {data.comentario_compras && (
-        <div className="desc-section">
+        <div className="desc-section" style={{ marginTop: '15px' }}>
           <h4>Comentario Compras</h4>
           <div className="text-box action-box">{data.comentario_compras}</div>
         </div>

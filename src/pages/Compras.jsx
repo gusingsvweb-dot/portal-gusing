@@ -5,6 +5,7 @@ import Footer from "../components/Footer";
 import { supabase, st, ss } from "../api/supabaseClient";
 import { useAuth } from "../context/AuthContext";
 import "./Compras.css";
+import GestionRevisionCompras from "../components/compras/GestionRevisionCompras";
 
 export default function Compras() {
   const { usuarioActual } = useAuth();
@@ -36,7 +37,9 @@ export default function Compras() {
         tipos_solicitud ( nombre ),
         prioridades ( nombre ),
         estados ( nombre ),
-        areas ( nombre )
+        areas ( nombre ),
+        compras_solicitudes_detalle ( * ),
+        compras_solicitud_items ( * )
       `))
       .eq("area_id", 4)
       .in("estado_id", [1, 14, 17, 18, 19, 23, 24])
@@ -68,26 +71,34 @@ export default function Compras() {
   }
 
   // 17 -> 16 or 23 -> 18? (Devoluciones)
-  async function solicitarCorreccion() {
+  async function solicitarCorreccion(comentarioDesdeHijo = "") {
     if (!selected) return;
-    if (!comentario.trim()) { setError("Comentario requerido"); return; }
+    const finalComment = comentarioDesdeHijo || comentario;
+    if (!finalComment.trim()) { setError("Comentario requerido"); return; }
     // Devolvemos a 16 (Asignacion)
     await updateEstado(selected.id, 16, {
       estado_aprobacion: "DEVUELTO",
-      comentario_compras: comentario
+      comentario_compras: finalComment
     });
   }
 
   // 23 -> 24
   async function enviarOrdenRevision() {
     if (!selected) return;
-    if (!accion.trim()) { setError("Indica el número de orden o detalle"); return; } // Usamos 'accion' como input temporal
+    
+    setError("");
+    const { data: numOC, error: errRpc } = await supabase.rpc("rpc_compras_generar_numero_oc", {
+      p_solicitud_id: selected.id,
+      p_creador_id: usuarioActual?.id || usuarioActual?.usuario
+    });
 
-    // Guardamos la info de la orden como comentario o accion_realizada?
-    // Usaremos 'accion_realizada' temporalmente o un comentario
+    if (errRpc) {
+      setError(`Error generando Orden de Compra: ${errRpc.message}`);
+      return;
+    }
+
     await updateEstado(selected.id, 24, {
-      comentario_compras: `Orden Generada: ${accion}`,
-      // Podriamos actualizar un campo de la solicitud si existiera 'numero_orden'
+      comentario_compras: `Orden de Compra Generada: ${numOC}`,
     });
   }
 
@@ -218,34 +229,26 @@ export default function Compras() {
 
               {/* 17: Revision -> 18 */}
               {selected.estado_id === 17 && (
-                <div className="action-area">
-                  <h4>Gestión Inicial</h4>
-                  <textarea className="comp-textarea"
-                    placeholder="Comentario..."
-                    value={comentario}
-                    onChange={e => setComentario(e.target.value)}
-                  />
-                  {error && <p className="error-msg">{error}</p>}
-                  <div className="modal-footer-actions">
-                    <button className="btn-reject" onClick={solicitarCorreccion}>Solicitar Corrección</button>
-                    <button className="btn-approve" onClick={enviarGerencia}>Aprobar (Enviar a Gerencia)</button>
-                  </div>
-                </div>
+                <GestionRevisionCompras
+                  solicitud={selected}
+                  onAprobar={(coment) => {
+                    // Update state variables for updateEstado to pick up?
+                    // Better to just call updateEstado directly with the comment
+                    updateEstado(selected.id, 18, { comentario_compras: coment });
+                  }}
+                  onRechazar={solicitarCorreccion}
+                  errorG={error}
+                />
               )}
 
               {/* 23: Crear OC -> 24 */}
               {selected.estado_id === 23 && (
                 <div className="action-area">
                   <h4>Generación de Orden de Compra</h4>
-                  <p className="note-text">Ingresa el número de orden o una referencia.</p>
-                  <textarea className="comp-textarea"
-                    placeholder="Ej: Orden #12345 adjunta..."
-                    value={accion}
-                    onChange={e => setAccion(e.target.value)}
-                  />
+                  <p className="note-text">Se generará la Orden de Compra automáticamente usando el proveedor y cotización seleccionados en Gerencia.</p>
                   {error && <p className="error-msg">{error}</p>}
                   <div className="modal-footer-actions">
-                    <button className="btn-execute" onClick={enviarOrdenRevision}>Enviar Orden a Revisión</button>
+                    <button className="btn-execute" onClick={enviarOrdenRevision}>Generar Orden y Enviar a Revisión</button>
                   </div>
                 </div>
               )}
@@ -296,6 +299,10 @@ function Card({ data, onClick }) {
 }
 
 function InfoGrid({ data }) {
+  const isCompras = data.area_id === 4;
+  const detalle = data.compras_solicitudes_detalle?.[0];
+  const items = data.compras_solicitud_items || [];
+
   return (
     <>
       <div className="info-grid">
@@ -303,10 +310,49 @@ function InfoGrid({ data }) {
         <div><strong>Área:</strong> <p>{data.areas?.nombre}</p></div>
         <div><strong>Fecha:</strong> <p>{new Date(data.created_at).toLocaleDateString()}</p></div>
       </div>
+      
+      {isCompras && detalle && (
+        <div className="info-grid" style={{ marginTop: '10px', background: '#f8fafc', padding: '10px', borderRadius: '6px' }}>
+          <div><strong>Tipo Requisición:</strong> <p>{detalle.tipo_requisicion}</p></div>
+          <div><strong>Categoría:</strong> <p>{detalle.categoria_compra}</p></div>
+          <div><strong>Estado Compra:</strong> <p>{detalle.estado_compra}</p></div>
+        </div>
+      )}
+
       <div className="desc-section">
         <h4>Descripción</h4>
         <div className="text-box">{data.descripcion}</div>
       </div>
+
+      {isCompras && items.length > 0 && (
+        <div className="items-section" style={{ marginTop: '15px' }}>
+          <h4>Ítems Solicitados</h4>
+          <div style={{ overflowX: 'auto', marginTop: '10px' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+              <thead>
+                <tr style={{ background: '#f1f5f9', textAlign: 'left' }}>
+                  <th style={{ padding: '8px', borderBottom: '2px solid #cbd5e1' }}>Item</th>
+                  <th style={{ padding: '8px', borderBottom: '2px solid #cbd5e1' }}>Descripción</th>
+                  <th style={{ padding: '8px', borderBottom: '2px solid #cbd5e1' }}>Ref.</th>
+                  <th style={{ padding: '8px', borderBottom: '2px solid #cbd5e1' }}>Cant.</th>
+                  <th style={{ padding: '8px', borderBottom: '2px solid #cbd5e1' }}>U. Medida</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.sort((a,b) => a.orden - b.orden).map((it, idx) => (
+                  <tr key={it.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                    <td style={{ padding: '8px' }}>{it.orden}</td>
+                    <td style={{ padding: '8px' }}>{it.descripcion}</td>
+                    <td style={{ padding: '8px' }}>{it.referencia || '-'}</td>
+                    <td style={{ padding: '8px' }}>{it.cantidad_solicitada}</td>
+                    <td style={{ padding: '8px' }}>{it.unidad_medida}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </>
   )
 }
