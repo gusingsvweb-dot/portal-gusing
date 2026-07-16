@@ -210,7 +210,7 @@ export default function GarantiaCalidad() {
                                             <option value="gerencia">Gerencia</option>
                                             <option value="direcciontecnica">Dirección Técnica</option>
                                             <option value="garantiacalidad">Garantía de Calidad</option>
-                                            <option value="gestioncalidad">Gestión de Calidad</option>
+                                            <option value="gestioncalidad">Aseguramiento de Calidad</option>
                                         </select>
                                     </div>
                                 </div>

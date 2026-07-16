@@ -141,7 +141,7 @@ export default function GestionCalidad() {
       <div className="gc-wrapper">
         {/* LISTA IZQUIERDA */}
         <div className="gc-list">
-          <h2>🧪 Gestión de Calidad</h2>
+          <h2>🧪 Aseguramiento de Calidad</h2>
           <p className="gc-subtitle">
             Asignación de consecutivo para solicitudes dirigidas a Compras.
           </p>
