@@ -83,8 +83,8 @@ export default function CrearSolicitud() {
         return setMensaje("⚠️ Debes escribir la instalación o lugar a intervenir.");
       }
     } else if (areaSeleccionada?.nombre?.toLowerCase().trim() === "compras") {
-      if (!form.compras_tipo_requisicion || !form.compras_categoria) {
-        return setMensaje("⚠️ Para compras debes seleccionar el Tipo de Requisición y la Categoría.");
+      if (!form.compras_tipo_requisicion) {
+        return setMensaje("⚠️ Para compras debes seleccionar el Tipo de Requisición.");
       }
       const hasValidItems = form.compras_items.some(i => i.descripcion && Number(i.cantidad_solicitada) > 0);
       if (!hasValidItems) {

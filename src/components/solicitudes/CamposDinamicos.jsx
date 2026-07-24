@@ -163,28 +163,11 @@ export default function CamposDinamicos({ tipo, areaId, form, setForm, isManteni
           </select>
         </div>
 
-        <div>
-          <label style={{ display: "block", marginBottom: "6px", fontWeight: "700", fontSize: "0.85rem", color: "#047857" }}>
-            2. Categoría de la Compra *
-          </label>
-          <select
-            value={form.compras_categoria || ""}
-            onChange={(e) => setForm({ ...form, compras_categoria: e.target.value })}
-            style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1", background: "var(--bg-card, #fff)", color: "var(--text-color, #333)" }}
-          >
-            <option value="">Seleccione...</option>
-            <option value="MATERIA_PRIMA">Materia Prima</option>
-            <option value="INSUMO">Insumo</option>
-            <option value="MATERIAL_IMPRESO">Material Impreso</option>
-            <option value="EQUIPO">Equipo</option>
-            <option value="SERVICIO">Servicio</option>
-            <option value="OTRO">Otro</option>
-          </select>
-        </div>
+
 
         <div style={{ marginTop: "10px" }}>
           <label style={{ display: "block", marginBottom: "10px", fontWeight: "700", fontSize: "0.85rem", color: "#047857" }}>
-            3. Ítems a Comprar *
+            2. Ítems a Comprar *
           </label>
           {form.compras_items.map((item, index) => (
             <div key={index} style={{ background: "var(--bg-card, #fff)", padding: "15px", borderRadius: "8px", border: "1px solid #e2e8f0", marginBottom: "10px" }}>
@@ -229,7 +212,7 @@ export default function CamposDinamicos({ tipo, areaId, form, setForm, isManteni
 
         <div style={{ marginTop: "10px" }}>
           <label style={{ display: "block", marginBottom: "6px", fontWeight: "700", fontSize: "0.85rem", color: "#047857" }}>
-            4. Cotizaciones Adjuntas (Opcional)
+            3. Cotizaciones Adjuntas (Opcional)
           </label>
           <p style={{ fontSize: "0.75rem", color: "var(--text-color, #64748b)", marginBottom: "8px" }}>Sube hasta 3 soportes de cotización (PDF o Imagen).</p>
           <input 
