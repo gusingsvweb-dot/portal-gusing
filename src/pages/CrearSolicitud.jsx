@@ -188,6 +188,33 @@ export default function CrearSolicitud() {
         if (itemsToInsert.length > 0) {
           await supabase.from("compras_solicitud_items").insert(itemsToInsert);
         }
+
+        // Subir cotizaciones adjuntas si existen
+        if (form.compras_archivos && form.compras_archivos.length > 0) {
+          for (const file of form.compras_archivos) {
+            const fileName = `${newSolicitudId}_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+            const { error: uploadError } = await supabase.storage
+              .from("compras_adjuntos")
+              .upload(`cotizaciones/${fileName}`, file, { cacheControl: '3600', upsert: false });
+            
+            if (!uploadError) {
+              const { data: publicUrlData } = supabase.storage
+                .from("compras_adjuntos")
+                .getPublicUrl(`cotizaciones/${fileName}`);
+                
+              await supabase.from("compras_adjuntos").insert([{
+                solicitud_id: newSolicitudId,
+                tipo: 'COTIZACION_PREVIA',
+                path: publicUrlData.publicUrl,
+                nombre: file.name,
+                mime_type: file.type,
+                tamano: file.size
+              }]);
+            } else {
+              console.error("Error subiendo archivo:", uploadError);
+            }
+          }
+        }
       }
     }
 
@@ -223,6 +250,7 @@ export default function CrearSolicitud() {
       compras_tipo_requisicion: "",
       compras_categoria: "",
       compras_items: [{ referencia: "", descripcion: "", cantidad_solicitada: "", unidad_medida: "UNIDAD", equipo_identificacion_interna: "", observaciones: "" }],
+      compras_archivos: []
     });
   }
 

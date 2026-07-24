@@ -11,14 +11,24 @@ export default function GestionRevisionCompras({ solicitud, onAprobar, onRechaza
   const [comentario, setComentario] = useState("");
   const [loading, setLoading] = useState(false);
   const [localError, setLocalError] = useState("");
+  const [archivosPrevios, setArchivosPrevios] = useState([]);
 
   useEffect(() => {
-    async function loadProveedores() {
+    async function loadProveedoresAndFiles() {
       const { data } = await supabase.from("compras_proveedores").select("*").order("razon_social");
       if (data) setProveedores(data);
+
+      if (solicitud?.id) {
+        const { data: adjData } = await supabase
+          .from("compras_adjuntos")
+          .select("*")
+          .eq("solicitud_id", solicitud.id)
+          .eq("tipo", "COTIZACION_PREVIA");
+        if (adjData) setArchivosPrevios(adjData);
+      }
     }
-    loadProveedores();
-  }, []);
+    loadProveedoresAndFiles();
+  }, [solicitud]);
 
   const handleAddCotizacion = () => {
     if (cotizaciones.length >= 3) {
@@ -110,6 +120,26 @@ export default function GestionRevisionCompras({ solicitud, onAprobar, onRechaza
     <div className="action-area" style={{ background: "#f8fafc", padding: "15px", borderRadius: "8px", marginTop: "15px" }}>
       <h4 style={{ color: "#334155", marginBottom: "15px", borderBottom: "1px solid #e2e8f0", paddingBottom: "10px" }}>Gestión de Proveedor y Cotizaciones</h4>
       
+      {archivosPrevios.length > 0 && (
+        <div style={{ marginBottom: "20px", padding: "12px", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "8px" }}>
+          <h5 style={{ color: "#166534", marginBottom: "8px", fontWeight: "600", fontSize: "0.85rem" }}>Soportes subidos por el Solicitante:</h5>
+          <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", gap: "10px", flexWrap: "wrap" }}>
+            {archivosPrevios.map((file, idx) => (
+              <li key={file.id}>
+                <a 
+                  href={file.path} 
+                  target="_blank" 
+                  rel="noreferrer" 
+                  style={{ display: "inline-block", padding: "6px 12px", background: "#10b981", color: "#fff", textDecoration: "none", borderRadius: "6px", fontSize: "0.75rem", fontWeight: "500" }}
+                >
+                  📄 Abrir Soporte {idx + 1}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <div style={{ marginBottom: "15px" }}>
         <label style={{ display: "block", marginBottom: "5px", fontWeight: "600", fontSize: "0.85rem", color: "#475569" }}>Proveedor Recomendado *</label>
         <select value={proveedorSeleccionado} onChange={(e) => setProveedorSeleccionado(e.target.value)} style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1", marginBottom: "10px" }}>

@@ -226,6 +226,33 @@ export default function CamposDinamicos({ tipo, areaId, form, setForm, isManteni
             + Añadir otro ítem
           </button>
         </div>
+
+        <div style={{ marginTop: "10px" }}>
+          <label style={{ display: "block", marginBottom: "6px", fontWeight: "700", fontSize: "0.85rem", color: "#047857" }}>
+            4. Cotizaciones Adjuntas (Opcional)
+          </label>
+          <p style={{ fontSize: "0.75rem", color: "var(--text-color, #64748b)", marginBottom: "8px" }}>Sube hasta 3 soportes de cotización (PDF o Imagen).</p>
+          <input 
+            type="file" 
+            multiple 
+            accept=".pdf,.png,.jpg,.jpeg" 
+            onChange={(e) => {
+              const files = Array.from(e.target.files).slice(0, 3);
+              setForm({ ...form, compras_archivos: files });
+            }}
+            style={{ 
+              width: "100%", padding: "10px", borderRadius: "8px", 
+              border: "1px dashed #10b981", background: "var(--bg-card, #fff)", color: "var(--text-color, #333)" 
+            }}
+          />
+          {form.compras_archivos && form.compras_archivos.length > 0 && (
+            <ul style={{ fontSize: "0.75rem", marginTop: "10px", color: "var(--text-color, #333)" }}>
+              {Array.from(form.compras_archivos).map((file, idx) => (
+                <li key={idx}>📄 {file.name}</li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
     );
   }
