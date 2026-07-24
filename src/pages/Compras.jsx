@@ -6,6 +6,7 @@ import { supabase, st, ss } from "../api/supabaseClient";
 import { useAuth } from "../context/AuthContext";
 import "./Compras.css";
 import GestionRevisionCompras from "../components/compras/GestionRevisionCompras";
+import OrdenCompraPDF from "../components/compras/OrdenCompraPDF";
 
 export default function Compras() {
   const { usuarioActual } = useAuth();
@@ -14,6 +15,8 @@ export default function Compras() {
   const [selected, setSelected] = useState(null);
 
   const [comentario, setComentario] = useState("");
+  const [busqueda, setBusqueda] = useState("");
+  const [showPDF, setShowPDF] = useState(false);
   const [accion, setAccion] = useState("");
   const [error, setError] = useState("");
 
@@ -232,8 +235,6 @@ export default function Compras() {
                 <GestionRevisionCompras
                   solicitud={selected}
                   onAprobar={(coment) => {
-                    // Update state variables for updateEstado to pick up?
-                    // Better to just call updateEstado directly with the comment
                     updateEstado(selected.id, 18, { comentario_compras: coment });
                   }}
                   onRechazar={solicitarCorreccion}
@@ -253,12 +254,26 @@ export default function Compras() {
                 </div>
               )}
 
-              {/* 19: Comprar -> 14 */}
+              {/* 24: Revisión Gerencia (OC) -> Read only */}
+              {selected.estado_id === 24 && (
+                <div className="readonly-msg">
+                  <p>La Orden de Compra está en <strong>Aprobación por Gerencia</strong>.</p>
+                  <button className="btn-execute" onClick={() => setShowPDF(true)} style={{ marginTop: '10px' }}>📄 Ver PDF Orden de Compra</button>
+                </div>
+              )}
+
+              {/* 19: Por Comprar (OC Aprobada) -> 14 */}
               {selected.estado_id === 19 && (
                 <div className="action-area">
-                  <h4>Ejecutar Compra</h4>
+                  <h4>Orden de Compra Aprobada</h4>
+                  <p className="note-text">Procede con el pago o formalización de la compra.</p>
+                  
+                  <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+                    <button className="btn-execute" onClick={() => setShowPDF(true)} style={{ flex: 1, backgroundColor: '#3b82f6' }}>📄 Ver PDF Orden</button>
+                  </div>
+
                   <textarea className="comp-textarea"
-                    placeholder="Detalles de la transacción..."
+                    placeholder="Soporte de pago o link..."
                     value={accion}
                     onChange={e => setAccion(e.target.value)}
                   />
@@ -269,10 +284,11 @@ export default function Compras() {
                 </div>
               )}
 
-              {/* Mensaje para Estados Pasivos (18, 24, 14) */}
-              {[18, 24, 14].includes(selected.estado_id) && (
+              {/* 14: Finalizados */}
+              {selected.estado_id === 14 && (
                 <div className="readonly-msg">
-                  Solicitud en estado: <strong>{selected.estados?.nombre}</strong>.
+                  <p>Esta solicitud está <strong>FINALIZADA</strong>.</p>
+                  <button className="btn-execute" onClick={() => setShowPDF(true)} style={{ marginTop: '10px', backgroundColor: '#64748b' }}>📄 Ver PDF Orden de Compra</button>
                 </div>
               )}
 
@@ -280,6 +296,11 @@ export default function Compras() {
           </div>
         </div>
       )}
+
+      {showPDF && selected && (
+        <OrdenCompraPDF solicitudId={selected.id} onClose={() => setShowPDF(false)} />
+      )}
+      
       <Footer />
     </>
   );

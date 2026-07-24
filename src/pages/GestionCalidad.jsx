@@ -13,6 +13,7 @@ export default function GestionCalidad() {
   const [historial, setHistorial] = useState([]);
   const [selected, setSelected] = useState(null);
   const [error, setError] = useState("");
+  const [mensajeExito, setMensajeExito] = useState("");
 
   // filtros historial
   const [busqueda, setBusqueda] = useState("");
@@ -70,41 +71,27 @@ export default function GestionCalidad() {
   }, []);
 
   // ======================================================
-  // GENERAR CONSECUTIVO POR ÁREA
+  // GENERAR CONSECUTIVO (USANDO RPC)
   // ======================================================
   async function asignarConsecutivo() {
     if (!selected) return;
 
     setError("");
 
-    // último consecutivo del área
-    const { data: ultimo } = await supabase
-      .from(st("solicitudes"))
-      .select(ss("consecutivo"))
-      .eq("area_id", selected.area_id)
-      .not("consecutivo", "is", null)
-      .order("consecutivo", { ascending: false })
-      .limit(1);
+    // Llamar al procedimiento almacenado que maneja la concurrencia y formato atómicamente
+    const { data, error: errRpc } = await supabase.rpc("rpc_compras_asignar_consecutivo", {
+      p_solicitud_id: selected.id,
+      p_actor_id: usuarioActual?.id || usuarioActual?.usuario // Si usuario_id no es UUID, se debe enviar el UUID real de auth.users si aplica
+    });
 
-    const nuevoConsecutivo =
-      ultimo && ultimo.length > 0
-        ? (Number(ultimo[0].consecutivo) || 0) + 1
-        : 1;
-
-    const { error: errUpd } = await supabase
-      .from(st("solicitudes"))
-      .update({
-        consecutivo: nuevoConsecutivo,
-        estado_id: 17, //compras
-        accion_realizada: `Consecutivo asignado: ${nuevoConsecutivo}`,
-      })
-      .eq("id", selected.id);
-
-    if (errUpd) {
-      setError("Error asignando consecutivo.");
-      console.error(errUpd);
+    if (errRpc) {
+      setError(`Error asignando consecutivo: ${errRpc.message}`);
+      console.error(errRpc);
       return;
     }
+
+    setMensajeExito(`¡Consecutivo asignado con éxito! Número: ${data?.consecutivo}`);
+    setTimeout(() => setMensajeExito(""), 5000);
 
     setSelected(null);
     await loadSolicitudes();
@@ -211,6 +198,7 @@ export default function GestionCalidad() {
             <p className="gc-box">{selected.justificacion || "No aplica"}</p>
 
             {error && <p className="gc-error">{error}</p>}
+            {mensajeExito && <p className="gc-success" style={{ color: "green", background: "#ecfdf5", padding: "10px", borderRadius: "8px", border: "1px solid #10b981" }}>{mensajeExito}</p>}
 
             <button className="gc-btn" onClick={asignarConsecutivo}>
               Asignar consecutivo automático

@@ -5,6 +5,7 @@ import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom"; // Importar hook
+import OrdenCompraPDF from "../components/compras/OrdenCompraPDF";
 import "./GerenciaCompras.css";
 
 export default function GerenciaCompras() {
@@ -16,6 +17,7 @@ export default function GerenciaCompras() {
 
   const [comentarioGerencia, setComentarioGerencia] = useState("");
   const [busqueda, setBusqueda] = useState("");
+  const [showPDF, setShowPDF] = useState(false);
   const [error, setError] = useState("");
 
   // =============================
@@ -303,9 +305,22 @@ export default function GerenciaCompras() {
                   Solo lectura. Estado actual: <strong>{selected.estados?.nombre}</strong>
                 </div>
               )}
+
+              {/* Boton para PDF en estado 24 (Aprobación OC) o 19 (Pagando) o 14 (Finalizado) */}
+              {[24, 19, 14].includes(selected.estado_id) && (
+                <div style={{ marginTop: '15px' }}>
+                  <button className="gcg-btn-kpi" onClick={() => setShowPDF(true)} style={{ backgroundColor: '#3b82f6', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
+                    📄 Ver PDF Orden de Compra
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
+      )}
+
+      {showPDF && selected && (
+        <OrdenCompraPDF solicitudId={selected.id} onClose={() => setShowPDF(false)} />
       )}
       <Footer />
     </>
