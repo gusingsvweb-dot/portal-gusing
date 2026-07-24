@@ -154,7 +154,7 @@ export default function CamposDinamicos({ tipo, areaId, form, setForm, isManteni
           <select
             value={form.compras_tipo_requisicion || ""}
             onChange={(e) => setForm({ ...form, compras_tipo_requisicion: e.target.value })}
-            style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1" }}
+            style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1", background: "var(--bg-card, #fff)", color: "var(--text-color, #333)" }}
           >
             <option value="">Seleccione...</option>
             <option value="MATERIAL">Material / Producto</option>
@@ -170,7 +170,7 @@ export default function CamposDinamicos({ tipo, areaId, form, setForm, isManteni
           <select
             value={form.compras_categoria || ""}
             onChange={(e) => setForm({ ...form, compras_categoria: e.target.value })}
-            style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1" }}
+            style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1", background: "var(--bg-card, #fff)", color: "var(--text-color, #333)" }}
           >
             <option value="">Seleccione...</option>
             <option value="MATERIA_PRIMA">Materia Prima</option>
@@ -187,9 +187,9 @@ export default function CamposDinamicos({ tipo, areaId, form, setForm, isManteni
             3. Ítems a Comprar *
           </label>
           {form.compras_items.map((item, index) => (
-            <div key={index} style={{ background: "#fff", padding: "15px", borderRadius: "8px", border: "1px solid #e2e8f0", marginBottom: "10px" }}>
+            <div key={index} style={{ background: "var(--bg-card, #fff)", padding: "15px", borderRadius: "8px", border: "1px solid #e2e8f0", marginBottom: "10px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px" }}>
-                <strong>Ítem {index + 1}</strong>
+                <strong style={{ color: "var(--text-color, #333)" }}>Ítem {index + 1}</strong>
                 {form.compras_items.length > 1 && (
                   <button type="button" onClick={() => removeItem(index)} style={{ background: "#ef4444", color: "#fff", border: "none", borderRadius: "4px", padding: "2px 8px", cursor: "pointer", fontSize: "0.75rem" }}>
                     Eliminar
@@ -198,25 +198,25 @@ export default function CamposDinamicos({ tipo, areaId, form, setForm, isManteni
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "10px" }}>
                 <div>
-                  <label style={{ fontSize: "0.75rem" }}>Referencia</label>
-                  <input type="text" value={item.referencia} onChange={(e) => handleItemChange(index, "referencia", e.target.value)} style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1" }} />
+                  <label style={{ fontSize: "0.75rem", color: "var(--text-color, #333)" }}>Referencia</label>
+                  <input type="text" value={item.referencia} onChange={(e) => handleItemChange(index, "referencia", e.target.value)} style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1", background: "var(--bg-card, #fff)", color: "var(--text-color, #333)" }} />
                 </div>
                 <div>
-                  <label style={{ fontSize: "0.75rem" }}>Descripción *</label>
-                  <input type="text" value={item.descripcion} onChange={(e) => handleItemChange(index, "descripcion", e.target.value)} style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1" }} />
+                  <label style={{ fontSize: "0.75rem", color: "var(--text-color, #333)" }}>Descripción *</label>
+                  <input type="text" value={item.descripcion} onChange={(e) => handleItemChange(index, "descripcion", e.target.value)} style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1", background: "var(--bg-card, #fff)", color: "var(--text-color, #333)" }} />
                 </div>
                 <div>
-                  <label style={{ fontSize: "0.75rem" }}>Cantidad *</label>
-                  <input type="number" min="0.1" step="any" value={item.cantidad_solicitada} onChange={(e) => handleItemChange(index, "cantidad_solicitada", e.target.value)} style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1" }} />
+                  <label style={{ fontSize: "0.75rem", color: "var(--text-color, #333)" }}>Cantidad *</label>
+                  <input type="number" min="0.1" step="any" value={item.cantidad_solicitada} onChange={(e) => handleItemChange(index, "cantidad_solicitada", e.target.value)} style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1", background: "var(--bg-card, #fff)", color: "var(--text-color, #333)" }} />
                 </div>
                 <div>
-                  <label style={{ fontSize: "0.75rem" }}>Unidad</label>
-                  <input type="text" value={item.unidad_medida} onChange={(e) => handleItemChange(index, "unidad_medida", e.target.value)} style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1" }} />
+                  <label style={{ fontSize: "0.75rem", color: "var(--text-color, #333)" }}>Unidad</label>
+                  <input type="text" value={item.unidad_medida} onChange={(e) => handleItemChange(index, "unidad_medida", e.target.value)} style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1", background: "var(--bg-card, #fff)", color: "var(--text-color, #333)" }} />
                 </div>
                 {form.compras_tipo_requisicion === "SERVICIO" && (
                   <div style={{ gridColumn: "1 / -1" }}>
-                    <label style={{ fontSize: "0.75rem" }}>Equipo al que aplica el servicio</label>
-                    <input type="text" value={item.equipo_identificacion_interna} onChange={(e) => handleItemChange(index, "equipo_identificacion_interna", e.target.value)} placeholder="Ej: Maquina de mezclado M1" style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1" }} />
+                    <label style={{ fontSize: "0.75rem", color: "var(--text-color, #333)" }}>Equipo al que aplica el servicio</label>
+                    <input type="text" value={item.equipo_identificacion_interna} onChange={(e) => handleItemChange(index, "equipo_identificacion_interna", e.target.value)} placeholder="Ej: Maquina de mezclado M1" style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1", background: "var(--bg-card, #fff)", color: "var(--text-color, #333)" }} />
                   </div>
                 )}
               </div>

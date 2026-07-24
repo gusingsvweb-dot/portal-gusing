@@ -95,8 +95,12 @@ export default function CrearSolicitud() {
       return setMensaje("⚠️ Debes seleccionar el tipo de solicitud.");
     }
 
-    if (!form.prioridad_id || !form.descripcion) {
-      return setMensaje("⚠️ Debes completar todos los campos obligatorios.");
+    if (!isComprasRender && !form.prioridad_id) {
+      return setMensaje("⚠️ Debes seleccionar una prioridad.");
+    }
+
+    if (!form.descripcion) {
+      return setMensaje("⚠️ Debes agregar una descripción general obligatoria.");
     }
 
     setLoading(true);
@@ -277,29 +281,33 @@ export default function CrearSolicitud() {
             </>
           )}
 
-          {/* Prioridad */}
-          <label>Prioridad *</label>
-          <select
-            value={form.prioridad_id}
-            onChange={(e) =>
-              setForm({ ...form, prioridad_id: e.target.value })
-            }
-          >
-            <option value="">Seleccione...</option>
-            {prioridades
-              .filter(p => {
-                // Si es mantenimiento, solo Bajo, Medio y Alto
-                if (isMantenimientoRender) {
-                  return !["Muy Alto", "Critica", "Urgente"].includes(p.nombre);
+          {/* Prioridad (Oculto para Compras) */}
+          {!isComprasRender && (
+            <>
+              <label>Prioridad *</label>
+              <select
+                value={form.prioridad_id}
+                onChange={(e) =>
+                  setForm({ ...form, prioridad_id: e.target.value })
                 }
-                return true;
-              })
-              .map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.nombre}
-                </option>
-              ))}
-          </select>
+              >
+                <option value="">Seleccione...</option>
+                {prioridades
+                  .filter(p => {
+                    // Si es mantenimiento, solo Bajo, Medio y Alto
+                    if (isMantenimientoRender) {
+                      return !["Muy Alto", "Critica", "Urgente"].includes(p.nombre);
+                    }
+                    return true;
+                  })
+                  .map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.nombre}
+                    </option>
+                  ))}
+              </select>
+            </>
+          )}
 
           {/* Campos dinámicos según el área/tipo */}
           {(form.tipo_solicitud_id || isMantenimientoRender || isComprasRender) && (
