@@ -177,8 +177,8 @@ export default function CrearSolicitud() {
           .map((i, idx) => ({
             solicitud_id: newSolicitudId,
             orden: idx + 1,
-            referencia: i.referencia || null,
             descripcion: i.descripcion,
+            stock_actual: Number(i.stock_actual) || 0,
             equipo_identificacion_interna: i.equipo_identificacion_interna || null,
             cantidad_solicitada: Number(i.cantidad_solicitada),
             unidad_medida: i.unidad_medida || 'UNIDAD',
@@ -249,7 +249,7 @@ export default function CrearSolicitud() {
       instalacion_desc: "",
       compras_tipo_requisicion: "",
       compras_categoria: "",
-      compras_items: [{ referencia: "", descripcion: "", cantidad_solicitada: "", unidad_medida: "UNIDAD", equipo_identificacion_interna: "", observaciones: "" }],
+      compras_items: [{ descripcion: "", stock_actual: "", cantidad_solicitada: "", unidad_medida: "UNIDAD", equipo_identificacion_interna: "", observaciones: "" }],
       compras_archivos: []
     });
   }

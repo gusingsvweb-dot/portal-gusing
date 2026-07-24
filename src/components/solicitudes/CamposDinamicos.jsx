@@ -126,7 +126,7 @@ export default function CamposDinamicos({ tipo, areaId, form, setForm, isManteni
         ...form,
         compras_items: [
           ...form.compras_items,
-          { referencia: "", descripcion: "", cantidad_solicitada: "", unidad_medida: "UNIDAD", equipo_identificacion_interna: "", observaciones: "" }
+          { descripcion: "", stock_actual: "", cantidad_solicitada: "", unidad_medida: "UNIDAD", equipo_identificacion_interna: "", observaciones: "" }
         ]
       });
     };
@@ -198,20 +198,20 @@ export default function CamposDinamicos({ tipo, areaId, form, setForm, isManteni
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "10px" }}>
                 <div>
-                  <label style={{ fontSize: "0.75rem", color: "var(--text-color, #333)" }}>Referencia</label>
-                  <input type="text" value={item.referencia} onChange={(e) => handleItemChange(index, "referencia", e.target.value)} style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1", background: "var(--bg-card, #fff)", color: "var(--text-color, #333)" }} />
-                </div>
-                <div>
-                  <label style={{ fontSize: "0.75rem", color: "var(--text-color, #333)" }}>Descripción *</label>
+                  <label style={{ fontSize: "0.75rem", color: "var(--text-color, #333)" }}>Referencia (Descripción) *</label>
                   <input type="text" value={item.descripcion} onChange={(e) => handleItemChange(index, "descripcion", e.target.value)} style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1", background: "var(--bg-card, #fff)", color: "var(--text-color, #333)" }} />
                 </div>
                 <div>
-                  <label style={{ fontSize: "0.75rem", color: "var(--text-color, #333)" }}>Cantidad *</label>
+                  <label style={{ fontSize: "0.75rem", color: "var(--text-color, #333)" }}>Stock</label>
+                  <input type="number" min="0" step="any" value={item.stock_actual || ""} onChange={(e) => handleItemChange(index, "stock_actual", e.target.value)} style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1", background: "var(--bg-card, #fff)", color: "var(--text-color, #333)" }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.75rem", color: "var(--text-color, #333)" }}>Cantidad requerida *</label>
                   <input type="number" min="0.1" step="any" value={item.cantidad_solicitada} onChange={(e) => handleItemChange(index, "cantidad_solicitada", e.target.value)} style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1", background: "var(--bg-card, #fff)", color: "var(--text-color, #333)" }} />
                 </div>
                 <div>
-                  <label style={{ fontSize: "0.75rem", color: "var(--text-color, #333)" }}>Unidad</label>
-                  <input type="text" value={item.unidad_medida} onChange={(e) => handleItemChange(index, "unidad_medida", e.target.value)} style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1", background: "var(--bg-card, #fff)", color: "var(--text-color, #333)" }} />
+                  <label style={{ fontSize: "0.75rem", color: "var(--text-color, #64748b)" }}>Cantidad aprobada</label>
+                  <input type="text" value="" disabled placeholder="Será suministrada por gerencia" style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px dashed #cbd5e1", background: "#f8fafc", color: "#94a3b8", cursor: "not-allowed" }} />
                 </div>
                 {form.compras_tipo_requisicion === "SERVICIO" && (
                   <div style={{ gridColumn: "1 / -1" }}>
