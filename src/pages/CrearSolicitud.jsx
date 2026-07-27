@@ -99,7 +99,7 @@ export default function CrearSolicitud() {
       return setMensaje("⚠️ Debes seleccionar una prioridad.");
     }
 
-    if (!form.descripcion) {
+    if (!isComprasRender && !form.descripcion) {
       return setMensaje("⚠️ Debes agregar una descripción general obligatoria.");
     }
 
@@ -131,6 +131,10 @@ export default function CrearSolicitud() {
       // Enriquecer descripción
       const extraInst = form.maint_category === "Instalación" ? `\n[INSTALACIÓN: ${form.instalacion_desc}]` : "";
       finalDesc = `[${form.maint_category.toUpperCase()} - ${form.maint_type.toUpperCase()}]${extraInst}\n${form.descripcion}`;
+    } else if (isCompras) {
+      finalDesc = form.compras_items.length > 0 
+        ? `Solicitud de Compras: ${form.compras_items[0].descripcion}` 
+        : "Solicitud de Compras";
     }
 
     // 3. Insertar solicitud
@@ -350,13 +354,17 @@ export default function CrearSolicitud() {
           )}
 
           {/* Descripción */}
-          <label>Descripción general *</label>
-          <textarea
-            rows="5"
-            value={form.descripcion}
-            onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
-            placeholder="Describe el problema o necesidad detalladamente..."
-          />
+          {!isComprasRender && (
+            <>
+              <label>Descripción general *</label>
+              <textarea
+                rows="5"
+                value={form.descripcion}
+                onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
+                placeholder="Describe el problema o necesidad detalladamente..."
+              />
+            </>
+          )}
 
           {mensaje && (
             <p className="crear-msg" data-type={mensaje.includes("✅") ? "success" : "error"}>
