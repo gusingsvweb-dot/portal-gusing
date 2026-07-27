@@ -141,7 +141,7 @@ export default function CrearSolicitud() {
     const { data: insertedData, error: insertError } = await supabase.from(st("solicitudes")).insert([
       {
         tipo_solicitud_id: finalTipoId || null,
-        prioridad_id: form.prioridad_id,
+        prioridad_id: form.prioridad_id || null,
         descripcion: finalDesc,
         justificacion: "N/A",
         usuario_id: usuarioActual?.usuario,
@@ -166,7 +166,7 @@ export default function CrearSolicitud() {
       const { error: errorDetalle } = await supabase.from("compras_solicitudes_detalle").insert([{
         solicitud_id: newSolicitudId,
         tipo_requisicion: form.compras_tipo_requisicion,
-        categoria_compra: form.compras_categoria,
+        categoria_compra: form.compras_categoria || null,
         estado_compra: "PENDIENTE",
         cargo_solicitante_snapshot: usuarioActual?.cargo || "N/A",
         proceso_solicitante_snapshot: usuarioActual?.areadetrabajo || "N/A",
