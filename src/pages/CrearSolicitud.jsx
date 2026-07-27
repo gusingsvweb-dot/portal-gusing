@@ -235,10 +235,11 @@ export default function CrearSolicitud() {
       
       const prioridadNombre = prioridades.find(p => String(p.id) === String(form.prioridad_id))?.nombre || "";
       const resumen = finalDesc.length > 80 ? finalDesc.substring(0, 80) + "…" : finalDesc;
+      const prefix = areaNombre.charAt(0).toUpperCase();
       await notifyRoles(
         [areaNombre, "gerencia"],
         `🔔 Nueva Solicitud${prioridadNombre ? ` — Prioridad ${prioridadNombre}` : ""}`,
-        `${usuarioActual?.usuario || "Sistema"} (${usuarioActual?.areadetrabajo || "—"}) creó la solicitud M-${nextConsecutivo}: "${resumen}"`,
+        `${usuarioActual?.usuario || "Sistema"} (${usuarioActual?.areadetrabajo || "—"}) creó la solicitud ${prefix}-${nextConsecutivo}: "${resumen}"`,
         null,
         "info"
       );

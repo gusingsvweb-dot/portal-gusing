@@ -35,14 +35,13 @@ export default function GerenciaCompras() {
         prioridades ( nombre ),
         estados ( nombre ),
         areas ( nombre ),
-        compras_solicitudes_detalle ( * ),
+        compras_solicitudes_detalle!inner ( * ),
         compras_solicitud_items ( * ),
         compras_cotizaciones (
           *,
           compras_proveedores ( razon_social, nit_cedula )
         )
       `))
-      .eq("area_id", 4) // destino Compras
       .in("estado_id", [14, 18, 19, 23, 24])
       .order("id", { ascending: false });
 

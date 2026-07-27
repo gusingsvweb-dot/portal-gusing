@@ -41,10 +41,9 @@ export default function Compras() {
         prioridades ( nombre ),
         estados ( nombre ),
         areas ( nombre ),
-        compras_solicitudes_detalle ( * ),
+        compras_solicitudes_detalle!inner ( * ),
         compras_solicitud_items ( * )
       `))
-      .eq("area_id", 4)
       .in("estado_id", [1, 14, 17, 18, 19, 23, 24])
       .order("id", { ascending: false });
 

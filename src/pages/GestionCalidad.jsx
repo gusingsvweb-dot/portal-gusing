@@ -34,9 +34,9 @@ export default function GestionCalidad() {
       tipos_solicitud ( nombre ),
       prioridades ( nombre ),
       estados ( nombre ),
-      areas ( nombre )
+      areas ( nombre ),
+      compras_solicitudes_detalle!inner(solicitud_id)
     `))
-    .eq("area_id", 4)
     .eq("estado_id", 1)  // SOLO pendientes, NO 17
     .order("id", { ascending: false });
 
