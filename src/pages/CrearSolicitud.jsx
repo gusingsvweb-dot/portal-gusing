@@ -132,6 +132,9 @@ export default function CrearSolicitud() {
       const extraInst = form.maint_category === "Instalación" ? `\n[INSTALACIÓN: ${form.instalacion_desc}]` : "";
       finalDesc = `[${form.maint_category.toUpperCase()} - ${form.maint_type.toUpperCase()}]${extraInst}\n${form.descripcion}`;
     } else if (isComprasRender) {
+      if (tiposFiltrados.length > 0) {
+        finalTipoId = tiposFiltrados[0].id;
+      }
       finalDesc = form.compras_items.length > 0 
         ? `Solicitud de Compras: ${form.compras_items[0].descripcion}` 
         : "Solicitud de Compras";
