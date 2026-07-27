@@ -178,6 +178,7 @@ export default function CrearSolicitud() {
 
       if (errorDetalle) {
         console.error("Error guardando detalle compras:", errorDetalle);
+        return setMensaje(`❌ Error guardando detalle de compras: ${errorDetalle.message}`);
       } else {
         const itemsToInsert = form.compras_items
           .filter(i => i.descripcion && Number(i.cantidad_solicitada) > 0)
@@ -193,7 +194,11 @@ export default function CrearSolicitud() {
           }));
         
         if (itemsToInsert.length > 0) {
-          await supabase.from("compras_solicitud_items").insert(itemsToInsert);
+          const { error: itemsError } = await supabase.from("compras_solicitud_items").insert(itemsToInsert);
+          if (itemsError) {
+            console.error("Error guardando items compras:", itemsError);
+            return setMensaje(`❌ Error guardando ítems de compras: ${itemsError.message}`);
+          }
         }
 
         // Subir cotizaciones adjuntas si existen
@@ -209,7 +214,7 @@ export default function CrearSolicitud() {
                 .from("compras_adjuntos")
                 .getPublicUrl(`cotizaciones/${fileName}`);
                 
-              await supabase.from("compras_adjuntos").insert([{
+              const { error: adjError } = await supabase.from("compras_adjuntos").insert([{
                 solicitud_id: newSolicitudId,
                 tipo: 'COTIZACION_PREVIA',
                 path: publicUrlData.publicUrl,
@@ -217,6 +222,10 @@ export default function CrearSolicitud() {
                 mime_type: file.type,
                 tamano: file.size
               }]);
+              if (adjError) {
+                console.error("Error guardando adjuntos compras:", adjError);
+                return setMensaje(`❌ Error guardando adjuntos de compras: ${adjError.message}`);
+              }
             } else {
               console.error("Error subiendo archivo:", uploadError);
             }
