@@ -131,7 +131,7 @@ export default function CrearSolicitud() {
       // Enriquecer descripción
       const extraInst = form.maint_category === "Instalación" ? `\n[INSTALACIÓN: ${form.instalacion_desc}]` : "";
       finalDesc = `[${form.maint_category.toUpperCase()} - ${form.maint_type.toUpperCase()}]${extraInst}\n${form.descripcion}`;
-    } else if (isCompras) {
+    } else if (isComprasRender) {
       finalDesc = form.compras_items.length > 0 
         ? `Solicitud de Compras: ${form.compras_items[0].descripcion}` 
         : "Solicitud de Compras";
@@ -170,7 +170,7 @@ export default function CrearSolicitud() {
         estado_compra: "PENDIENTE",
         cargo_solicitante_snapshot: usuarioActual?.cargo || "N/A",
         proceso_solicitante_snapshot: usuarioActual?.areadetrabajo || "N/A",
-        observaciones_requerimiento: form.descripcion
+        observaciones_requerimiento: form.compras_observaciones || null
       }]);
 
       if (errorDetalle) {
@@ -254,7 +254,8 @@ export default function CrearSolicitud() {
       compras_tipo_requisicion: "",
       compras_categoria: "",
       compras_items: [{ descripcion: "", stock_actual: "", cantidad_solicitada: "", unidad_medida: "UNIDAD", equipo_identificacion_interna: "", observaciones: "" }],
-      compras_archivos: []
+      compras_archivos: [],
+      compras_observaciones: ""
     });
   }
 

@@ -236,6 +236,19 @@ export default function CamposDinamicos({ tipo, areaId, form, setForm, isManteni
             </ul>
           )}
         </div>
+
+        <div style={{ marginTop: "15px" }}>
+          <label style={{ display: "block", marginBottom: "6px", fontWeight: "700", fontSize: "0.85rem", color: "#047857" }}>
+            4. Observaciones al Requerimiento (Opcional)
+          </label>
+          <textarea
+            rows="3"
+            value={form.compras_observaciones || ""}
+            onChange={(e) => setForm({ ...form, compras_observaciones: e.target.value })}
+            placeholder="Añade cualquier observación extra para el requerimiento..."
+            style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1", background: "var(--bg-card, #fff)", color: "var(--text-color, #333)", resize: "vertical" }}
+          />
+        </div>
       </div>
     );
   }
