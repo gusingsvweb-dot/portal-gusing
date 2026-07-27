@@ -7,16 +7,18 @@
 /* LISTA IZQUIERDA */
 .gc-list {
   width: 320px;
-  background: var(--bg-app);
+  background: var(--bg-card);
+  backdrop-filter: blur(10px);
   padding: 20px;
   border-radius: 12px;
   height: calc(100vh - 160px);
   overflow-y: auto;
   border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-main);
 }
 
 .gc-item {
-  background: var(--bg-card);
+  background: var(--bg-app);
   padding: 14px;
   border-radius: 10px;
   border: 1px solid var(--border-color);
@@ -50,10 +52,12 @@
 .gc-detail {
   flex: 1;
   background: var(--bg-card);
+  backdrop-filter: blur(10px);
   padding: 25px;
   border-radius: 12px;
   border: 1px solid var(--border-color);
   color: var(--text-main);
+  box-shadow: var(--shadow-main);
 }
 
 .gc-grid {
@@ -102,6 +106,7 @@
 
 .gc-history {
   background: var(--bg-card);
+  backdrop-filter: blur(10px);
   margin: 40px auto;
   padding: 25px;
   width: 90%;

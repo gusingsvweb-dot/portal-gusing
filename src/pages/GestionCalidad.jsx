@@ -19,6 +19,7 @@ export default function GestionCalidad() {
   const [busqueda, setBusqueda] = useState("");
   const [filtroTipo, setFiltroTipo] = useState("");
   const [filtroArea, setFiltroArea] = useState("");
+  const [manualConsec, setManualConsec] = useState("");
   const [pagina, setPagina] = useState(1);
   const ITEMS_POR_PAGINA = 8;
 
@@ -119,31 +120,65 @@ export default function GestionCalidad() {
   }, []);
 
   // ======================================================
-  // GENERAR CONSECUTIVO (USANDO RPC)
+  // ASIGNAR CONSECUTIVO AUTOMATICO O MANUAL
   // ======================================================
-  async function asignarConsecutivo() {
+  async function asignarConsecutivo(esManual = false) {
     if (!selected) return;
-
     setError("");
+    setMensajeExito("");
 
-    // Llamar al procedimiento almacenado que maneja la concurrencia y formato atómicamente
-    const { data, error: errRpc } = await supabase.rpc("rpc_compras_asignar_consecutivo", {
-      p_solicitud_id: selected.id,
-      p_actor_id: usuarioActual?.id || usuarioActual?.usuario // Si usuario_id no es UUID, se debe enviar el UUID real de auth.users si aplica
-    });
+    try {
+      if (esManual) {
+        if (!manualConsec || isNaN(manualConsec) || Number(manualConsec) <= 0) {
+          setError("El consecutivo manual debe ser un número válido mayor a 0.");
+          return;
+        }
 
-    if (errRpc) {
-      setError(`Error asignando consecutivo: ${errRpc.message}`);
-      console.error(errRpc);
-      return;
+        // Verificar que no exista ya
+        const { data: existe, error: errExiste } = await supabase
+          .from(st("solicitudes"))
+          .select("id")
+          .eq("consecutivo", Number(manualConsec))
+          .limit(1);
+
+        if (errExiste) throw errExiste;
+
+        if (existe && existe.length > 0) {
+          setError(`El consecutivo ${manualConsec} ya existe. Por favor usa otro.`);
+          return;
+        }
+
+        // Asignar manual
+        const { error: updError } = await supabase
+          .from(st("solicitudes"))
+          .update({
+            consecutivo: Number(manualConsec),
+            estado_id: 17 // Pasa a estado "RevisiónCompras"
+          })
+          .eq("id", selected.id);
+
+        if (updError) throw updError;
+        setMensajeExito(`¡Consecutivo manual ${manualConsec} asignado con éxito!`);
+        setManualConsec("");
+      } else {
+        // Asignar automático mediante RPC
+        const { data, error: errRpc } = await supabase.rpc("rpc_compras_asignar_consecutivo", {
+          p_solicitud_id: selected.id,
+          p_actor_id: usuarioActual?.id || usuarioActual?.usuario
+        });
+
+        if (errRpc) throw errRpc;
+        setMensajeExito(`¡Consecutivo automático asignado con éxito! Número: ${data?.consecutivo}`);
+      }
+
+      setTimeout(() => setMensajeExito(""), 5000);
+      setSelected(null);
+      await loadSolicitudes();
+      await loadHistorial();
+    } catch (err) {
+      console.error("Error al asignar consecutivo:", err);
+      setError(`Error al asignar consecutivo: ${err.message}`);
     }
-
-    setMensajeExito(`¡Consecutivo asignado con éxito! Número: ${data?.consecutivo}`);
-    setTimeout(() => setMensajeExito(""), 5000);
-
-    setSelected(null);
-    await loadSolicitudes();
-    await loadHistorial();
   }
 
   // ======================================================
@@ -248,9 +283,29 @@ export default function GestionCalidad() {
             {error && <p className="gc-error">{error}</p>}
             {mensajeExito && <p className="gc-success" style={{ color: "green", background: "#ecfdf5", padding: "10px", borderRadius: "8px", border: "1px solid #10b981" }}>{mensajeExito}</p>}
 
-            <button className="gc-btn" onClick={asignarConsecutivo}>
-              Asignar consecutivo automático
-            </button>
+            <div style={{ display: "flex", gap: "10px", marginTop: "15px", alignItems: "center" }}>
+              <button className="gc-btn" onClick={() => asignarConsecutivo(false)}>
+                Asignar automático
+              </button>
+              
+              <div style={{ display: "flex", gap: "5px", alignItems: "center", marginLeft: "auto" }}>
+                <input 
+                  type="number"
+                  className="gc-input"
+                  placeholder="Cons. Manual..."
+                  value={manualConsec}
+                  onChange={(e) => setManualConsec(e.target.value)}
+                  style={{ width: "130px", marginTop: "0" }}
+                />
+                <button 
+                  className="gc-btn" 
+                  style={{ background: "#475569" }}
+                  onClick={() => asignarConsecutivo(true)}
+                >
+                  Asignar manual
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
