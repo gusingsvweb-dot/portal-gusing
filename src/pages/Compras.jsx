@@ -32,22 +32,53 @@ export default function Compras() {
   // CARGAR SOLICITUDES
   // ===================================
   async function loadSolicitudes() {
-    // 1(Pendiente), 17(Rev), 18(Ger), 23(CrearOC), 24(RevOC), 19(Comprar), 14(Fin)
-    const { data, error } = await supabase
-      .from(st("solicitudes"))
-      .select(ss(`
-        *,
-        tipos_solicitud ( nombre ),
-        prioridades ( nombre ),
-        estados ( nombre ),
-        areas ( nombre ),
-        compras_solicitudes_detalle!inner ( * ),
-        compras_solicitud_items ( * )
-      `))
-      .in("estado_id", [1, 14, 17, 18, 19, 23, 24])
-      .order("id", { ascending: false });
+    try {
+      const [
+        { data: solRaw, error: solErr },
+        { data: tiposRaw },
+        { data: prioRaw },
+        { data: estRaw },
+        { data: arsRaw }
+      ] = await Promise.all([
+        supabase
+          .from(st("solicitudes"))
+          .select(ss(`
+            *,
+            compras_solicitudes_detalle!inner ( * ),
+            compras_solicitud_items ( * ),
+            compras_cotizaciones (
+              *,
+              compras_proveedores ( razon_social, nit )
+            )
+          `))
+          .in("estado_id", [1, 14, 17, 18, 19, 23, 24])
+          .order("id", { ascending: false }),
+        supabase.from(st("tipos_solicitud")).select("*"),
+        supabase.from(st("prioridades")).select("*"),
+        supabase.from(st("estados")).select("*"),
+        supabase.from(st("areas")).select("*")
+      ]);
 
-    if (!error) setSolicitudes(data || []);
+      if (solErr) throw solErr;
+
+      const tMap = new Map(tiposRaw?.map(t => [t.id, t]));
+      const pMap = new Map(prioRaw?.map(p => [p.id, p]));
+      const eMap = new Map(estRaw?.map(e => [e.id, e]));
+      const aMap = new Map(arsRaw?.map(a => [a.id, a]));
+
+      const hydrated = (solRaw || []).map(s => ({
+        ...s,
+        tipos_solicitud: tMap.get(s.tipo_solicitud_id),
+        prioridades: pMap.get(s.prioridad_id),
+        estados: eMap.get(s.estado_id),
+        areas: aMap.get(s.area_id)
+      }));
+
+      setSolicitudes(hydrated);
+    } catch (err) {
+      console.error("Error cargando compras:", err);
+      setSolicitudes([]);
+    }
   }
 
   useEffect(() => { loadSolicitudes(); }, []);

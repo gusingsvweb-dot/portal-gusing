@@ -26,43 +26,91 @@ export default function GestionCalidad() {
   // CARGAR SOLICITUDES PARA COMPRAS:
   // Estado 1 (Pendiente) + Estado 17 (RevisiónCompras)
   // ======================================================
- async function loadSolicitudes() {
-  const { data, error } = await supabase
-    .from(st("solicitudes"))
-    .select(ss(`
-      *,
-      tipos_solicitud ( nombre ),
-      prioridades ( nombre ),
-      estados ( nombre ),
-      areas ( nombre ),
-      compras_solicitudes_detalle!inner(solicitud_id)
-    `))
-    .eq("estado_id", 1)  // SOLO pendientes, NO 17
-    .order("id", { ascending: false });
+  async function loadSolicitudes() {
+    try {
+      const [
+        { data: solRaw, error: solErr },
+        { data: tiposRaw },
+        { data: prioRaw },
+        { data: estRaw },
+        { data: arsRaw }
+      ] = await Promise.all([
+        supabase
+          .from(st("solicitudes"))
+          .select(ss(`
+            *,
+            compras_solicitudes_detalle!inner(solicitud_id)
+          `))
+          .eq("estado_id", 1)  // SOLO pendientes, NO 17
+          .order("id", { ascending: false }),
+        supabase.from(st("tipos_solicitud")).select("*"),
+        supabase.from(st("prioridades")).select("*"),
+        supabase.from(st("estados")).select("*"),
+        supabase.from(st("areas")).select("*")
+      ]);
 
-  if (!error) setSolicitudes(data || []);
-}
+      if (solErr) throw solErr;
+
+      const tMap = new Map(tiposRaw?.map(t => [t.id, t]));
+      const pMap = new Map(prioRaw?.map(p => [p.id, p]));
+      const eMap = new Map(estRaw?.map(e => [e.id, e]));
+      const aMap = new Map(arsRaw?.map(a => [a.id, a]));
+
+      const hydrated = (solRaw || []).map(s => ({
+        ...s,
+        tipos_solicitud: tMap.get(s.tipo_solicitud_id),
+        prioridades: pMap.get(s.prioridad_id),
+        estados: eMap.get(s.estado_id),
+        areas: aMap.get(s.area_id)
+      }));
+
+      setSolicitudes(hydrated);
+    } catch (err) {
+      console.error("Error cargando solicitudes (Calidad):", err);
+      setSolicitudes([]);
+    }
+  }
 
 
   // ======================================================
   // CARGAR HISTORIAL (radicados con consecutivo)
   // ======================================================
   async function loadHistorial() {
-    const { data, error } = await supabase
-      .from(st("solicitudes"))
-      .select(ss(`
-        id,
-        consecutivo,
-        created_at,
-        area_solicitante,
-        usuario_id,
-        tipos_solicitud ( nombre )
-      `))
-      .eq("area_id", 4)
-      .not("consecutivo", "is", null)
-      .order("consecutivo", { ascending: false });
+    try {
+      const [
+        { data: histRaw, error: histErr },
+        { data: tiposRaw }
+      ] = await Promise.all([
+        supabase
+          .from(st("solicitudes"))
+          .select(ss(`
+            id,
+            consecutivo,
+            created_at,
+            area_solicitante,
+            usuario_id,
+            tipo_solicitud_id,
+            compras_solicitudes_detalle!inner(solicitud_id)
+          `))
+          .not("consecutivo", "is", null)
+          .order("id", { ascending: false }),
+        supabase.from(st("tipos_solicitud")).select("*")
+      ]);
 
-    if (!error) setHistorial(data || []);
+      if (histErr) throw histErr;
+
+      const tMap = new Map(tiposRaw?.map(t => [t.id, t]));
+
+      const hydrated = (histRaw || []).map(h => ({
+        ...h,
+        tipos_solicitud: tMap.get(h.tipo_solicitud_id)
+      }));
+
+      setHistorial(hydrated);
+    } catch (err) {
+      console.error("Error cargando historial (Calidad):", err);
+      setHistorial([]);
+    }
   }
 
   useEffect(() => {
