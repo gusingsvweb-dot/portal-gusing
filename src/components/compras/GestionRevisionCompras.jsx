@@ -142,7 +142,7 @@ export default function GestionRevisionCompras({ solicitud, onAprobar, onRechaza
 
       <div style={{ marginBottom: "15px" }}>
         <label style={{ display: "block", marginBottom: "5px", fontWeight: "600", fontSize: "0.85rem", color: "#475569" }}>Proveedor Recomendado *</label>
-        <select value={proveedorSeleccionado} onChange={(e) => setProveedorSeleccionado(e.target.value)} style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1", marginBottom: "10px" }}>
+        <select value={proveedorSeleccionado} onChange={(e) => setProveedorSeleccionado(e.target.value)} style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1", marginBottom: "10px", background: "#ffffff", color: "#1e293b" }}>
           <option value="">Seleccione proveedor...</option>
           <option value="NUEVO">+ Crear Nuevo Proveedor</option>
           {proveedores.map(p => (
@@ -152,8 +152,8 @@ export default function GestionRevisionCompras({ solicitud, onAprobar, onRechaza
         
         {proveedorSeleccionado === "NUEVO" && (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "10px", background: "#f1f5f9", padding: "10px", borderRadius: "6px" }}>
-            <input type="text" placeholder="NIT / Cédula" value={nuevoNit} onChange={e => setNuevoNit(e.target.value)} style={{ padding: "8px", borderRadius: "4px", border: "1px solid #cbd5e1" }} />
-            <input type="text" placeholder="Razón Social" value={nuevaRazonSocial} onChange={e => setNuevaRazonSocial(e.target.value)} style={{ padding: "8px", borderRadius: "4px", border: "1px solid #cbd5e1" }} />
+            <input type="text" placeholder="NIT / Cédula" value={nuevoNit} onChange={e => setNuevoNit(e.target.value)} style={{ padding: "8px", borderRadius: "4px", border: "1px solid #cbd5e1", background: "#ffffff", color: "#1e293b" }} />
+            <input type="text" placeholder="Razón Social" value={nuevaRazonSocial} onChange={e => setNuevaRazonSocial(e.target.value)} style={{ padding: "8px", borderRadius: "4px", border: "1px solid #cbd5e1", background: "#ffffff", color: "#1e293b" }} />
           </div>
         )}
       </div>
@@ -169,15 +169,15 @@ export default function GestionRevisionCompras({ solicitud, onAprobar, onRechaza
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
               <div>
                 <label style={{ fontSize: "0.7rem", color: "#64748b" }}>Valor Total ($) *</label>
-                <input type="number" value={cot.total} onChange={e => updateCotizacion(idx, "total", e.target.value)} style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1" }} />
+                <input type="number" value={cot.total} onChange={e => updateCotizacion(idx, "total", e.target.value)} style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1", background: "#ffffff", color: "#1e293b" }} />
               </div>
               <div>
                 <label style={{ fontSize: "0.7rem", color: "#64748b" }}>Fecha Entrega Est.</label>
-                <input type="date" value={cot.fecha_entrega_estimada} onChange={e => updateCotizacion(idx, "fecha_entrega_estimada", e.target.value)} style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1" }} />
+                <input type="date" value={cot.fecha_entrega_estimada} onChange={e => updateCotizacion(idx, "fecha_entrega_estimada", e.target.value)} style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1", background: "#ffffff", color: "#1e293b", colorScheme: "light" }} />
               </div>
               <div style={{ gridColumn: "1 / -1" }}>
                 <label style={{ fontSize: "0.7rem", color: "#64748b" }}>Condiciones de Pago</label>
-                <input type="text" placeholder="Ej: 30 días, Contado..." value={cot.condiciones_pago} onChange={e => updateCotizacion(idx, "condiciones_pago", e.target.value)} style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1" }} />
+                <input type="text" placeholder="Ej: 30 días, Contado..." value={cot.condiciones_pago} onChange={e => updateCotizacion(idx, "condiciones_pago", e.target.value)} style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1", background: "#ffffff", color: "#1e293b" }} />
               </div>
             </div>
           </div>
@@ -189,7 +189,7 @@ export default function GestionRevisionCompras({ solicitud, onAprobar, onRechaza
 
       <div style={{ marginBottom: "15px" }}>
         <label style={{ display: "block", marginBottom: "5px", fontWeight: "600", fontSize: "0.85rem", color: "#475569" }}>Comentarios / Justificación (Opcional)</label>
-        <textarea className="comp-textarea" style={{ width: "100%", minHeight: "60px", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1" }}
+        <textarea className="comp-textarea" style={{ width: "100%", minHeight: "60px", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1", background: "#ffffff", color: "#1e293b" }}
           placeholder="Justificación de la elección del proveedor o comentarios adicionales..."
           value={comentario}
           onChange={e => setComentario(e.target.value)}
