@@ -278,7 +278,6 @@ export default function Navbar() {
     }
   };
 
-  const menu = MENUS[rol] || MENUS.general;
 
   return (
     <nav className="nav-wrapper">
