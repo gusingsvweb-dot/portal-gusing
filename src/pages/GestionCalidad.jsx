@@ -91,9 +91,10 @@ export default function GestionCalidad() {
             area_solicitante,
             usuario_id,
             tipo_solicitud_id,
-            compras_solicitudes_detalle!inner(solicitud_id)
+            compras_solicitudes_detalle!inner(solicitud_id, consecutivo_oficial, estado_compra)
           `))
           .not("consecutivo", "is", null)
+          .neq("estado_id", 1) // Asegurar que NO son los pendientes (recién creados)
           .order("id", { ascending: false }),
         supabase.from(st("tipos_solicitud")).select("*")
       ]);
@@ -264,11 +265,12 @@ export default function GestionCalidad() {
   // HISTORIAL FILTRADO Y PAGINADO
   // ======================================================
   const historialFiltrado = historial
-    .filter((h) =>
-      `${h.consecutivo} ${h.tipos_solicitud?.nombre} ${h.area_solicitante} ${h.usuario_id}`
+    .filter((h) => {
+      const consOficial = h.compras_solicitudes_detalle?.[0]?.consecutivo_oficial || h.compras_solicitudes_detalle?.consecutivo_oficial || h.consecutivo;
+      return `${consOficial} ${h.tipos_solicitud?.nombre} ${h.area_solicitante} ${h.usuario_id}`
         .toLowerCase()
-        .includes(busqueda.toLowerCase())
-    )
+        .includes(busqueda.toLowerCase());
+    })
     .filter((h) => (filtroTipo ? h.tipos_solicitud?.nombre === filtroTipo : true))
     .filter((h) => (filtroArea ? h.area_solicitante === filtroArea : true));
 
@@ -457,9 +459,11 @@ export default function GestionCalidad() {
                 {historialPaginado.map((h) => (
                   <tr key={h.id}>
                     <td>
-                      <strong>{h.consecutivo}</strong>
+                      {h.compras_solicitudes_detalle?.[0]?.consecutivo_oficial ||
+                       h.compras_solicitudes_detalle?.consecutivo_oficial ||
+                       h.consecutivo}
                     </td>
-                    <td>{h.tipos_solicitud?.nombre}</td>
+                    <td>{h.tipos_solicitud?.nombre || "N/A"}</td>
                     <td>{h.usuario_id}</td>
                     <td>{h.area_solicitante}</td>
                     <td>{new Date(h.created_at).toLocaleDateString()}</td>
