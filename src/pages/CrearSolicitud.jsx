@@ -106,17 +106,21 @@ export default function CrearSolicitud() {
     setLoading(true);
     setMensaje("");
 
-    // 1. Calcular Consecutivo para el Área destino
-    let nextConsecutivo = 1;
-    const { data: maxData, error: maxError } = await supabase
-      .from(st("solicitudes"))
-      .select(ss("consecutivo"))
-      .eq("area_id", form.area_id)
-      .order("consecutivo", { ascending: false })
-      .limit(1);
+    // 1. Calcular Consecutivo para el Área destino (excepto Compras, que lo asigna Calidad)
+    let nextConsecutivo = null;
+    
+    if (!isComprasRender) {
+      nextConsecutivo = 1;
+      const { data: maxData, error: maxError } = await supabase
+        .from(st("solicitudes"))
+        .select(ss("consecutivo"))
+        .eq("area_id", form.area_id)
+        .order("consecutivo", { ascending: false })
+        .limit(1);
 
-    if (!maxError && maxData.length > 0) {
-      nextConsecutivo = (maxData[0].consecutivo || 0) + 1;
+      if (!maxError && maxData.length > 0) {
+        nextConsecutivo = (maxData[0].consecutivo || 0) + 1;
+      }
     }
 
     // 2. Determinar tipo_solicitud_id final
