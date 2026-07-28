@@ -124,7 +124,12 @@ export default function Compras() {
     // Generar consecutivo de OC (ej. OC- timestamp corto)
     const numOC = `OC-${Date.now().toString().slice(-6)}`;
     const detalle = selected.compras_solicitudes_detalle?.[0];
-    const cotizacionId = detalle?.cotizacion_seleccionada_id;
+    
+    // Fallback: si por alguna razón no se guardó la cotización seleccionada, usar la primera
+    let cotizacionId = detalle?.cotizacion_seleccionada_id;
+    if (!cotizacionId && selected.compras_cotizaciones?.length > 0) {
+      cotizacionId = selected.compras_cotizaciones[0].id;
+    }
     
     // Buscar el proveedor asociado a esa cotización
     const cotizacion = selected.compras_cotizaciones?.find(c => c.id === cotizacionId);
