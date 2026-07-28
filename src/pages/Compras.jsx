@@ -148,6 +148,7 @@ export default function Compras() {
     const nextConsecutivo = (maxResult && maxResult.length > 0 && maxResult[0].consecutivo_numero) 
       ? maxResult[0].consecutivo_numero + 1 
       : 1;
+    const currentYear = new Date().getFullYear();
 
     const numOC = `OC-${nextConsecutivo}`;
 
@@ -157,7 +158,8 @@ export default function Compras() {
       proveedor_id: proveedorId,
       cotizacion_id: cotizacionId,
       numero_oc: numOC,
-      consecutivo_numero: nextConsecutivo
+      consecutivo_numero: nextConsecutivo,
+      consecutivo_anio: currentYear
     });
 
     if (errInsert) {
@@ -167,7 +169,8 @@ export default function Compras() {
         proveedor_id: proveedorId,
         cotizacion_id: cotizacionId,
         numero_oc: numOC,
-        consecutivo_numero: nextConsecutivo
+        consecutivo_numero: nextConsecutivo,
+        consecutivo_anio: currentYear
       });
       if (errRetry) {
         setError(`Error creando OC: ${errRetry.message}`);
