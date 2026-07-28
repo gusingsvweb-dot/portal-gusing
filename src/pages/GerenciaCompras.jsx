@@ -465,7 +465,7 @@ function InfoGrid({ data }) {
               return (
               <div key={cot.id} style={{ border: isSelected ? '2px solid #10b981' : '1px solid #cbd5e1', padding: '10px', borderRadius: '6px', background: isSelected ? '#ecfdf5' : '#fff' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
-                  <strong>Proveedor: {cot.compras_proveedores?.razon_social} ({cot.compras_proveedores?.nit})</strong>
+                  <strong>Proveedor: {cot.compras_proveedores?.razon_social} (NIT: {cot.compras_proveedores?.nit})</strong>
                   {isSelected && <span style={{ background: '#10b981', color: '#fff', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem' }}>Recomendada</span>}
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', fontSize: '0.85rem' }}>
