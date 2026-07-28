@@ -194,14 +194,60 @@ export default function GestionCalidad() {
         setMensajeExito(`¡Consecutivo manual ${manualConsec} asignado con éxito!`);
         setManualConsec("");
       } else {
-        // Asignar automático mediante RPC
-        const { data, error: errRpc } = await supabase.rpc("rpc_compras_asignar_consecutivo", {
-          p_solicitud_id: selected.id,
-          p_actor_id: realUserId
-        });
+        // ASIGNACIÓN AUTOMÁTICA DESDE EL FRONTEND
+        // Evitamos el RPC porque este hardcodea la tabla "solicitudes" oficial
+        // y corrompe los datos si estamos en modo NO OFICIAL.
 
-        if (errRpc) throw errRpc;
-        setMensajeExito(`¡Consecutivo automático asignado con éxito! Número: ${data?.consecutivo}`);
+        // 1. Obtener el próximo consecutivo
+        const v_anio = new Date().getFullYear();
+        const { data: maxData, error: maxError } = await supabase
+          .from("compras_solicitudes_detalle")
+          .select("consecutivo_numero")
+          .eq("consecutivo_anio", v_anio)
+          .order("consecutivo_numero", { ascending: false })
+          .limit(1);
+
+        if (maxError) throw maxError;
+        const nextConsec = (maxData && maxData.length > 0) ? (maxData[0].consecutivo_numero + 1) : 1;
+        const v_consecutivo_oficial = String(nextConsec).padStart(3, '0');
+
+        // 2. Actualizar la tabla de solicitudes correcta (Oficial o NO_Oficial)
+        const { error: updError } = await supabase
+          .from(st("solicitudes"))
+          .update({
+            consecutivo: nextConsec,
+            estado_id: 17 // Pasa a estado "RevisiónCompras"
+          })
+          .eq("id", selected.id);
+
+        if (updError) throw updError;
+
+        // 3. Crear el detalle de compras
+        const { error: detError } = await supabase
+          .from("compras_solicitudes_detalle")
+          .upsert({
+            solicitud_id: selected.id,
+            estado_compra: 'REVISION_COMPRAS',
+            consecutivo_numero: nextConsec,
+            consecutivo_anio: v_anio,
+            consecutivo_oficial: v_consecutivo_oficial,
+            consecutivo_asignado_por: realUserId,
+            tipo_requisicion: 'MATERIAL'
+          }, { onConflict: 'solicitud_id' });
+          
+        if (detError) throw detError;
+
+        // 4. Registrar evento
+        await supabase.from("compras_eventos").insert([{
+          solicitud_id: selected.id,
+          tipo_evento: "CONSECUTIVO_ASIGNADO",
+          estado_anterior: "PENDIENTE",
+          estado_nuevo: "REVISION_COMPRAS",
+          actor_id: realUserId,
+          comentario: `Radicado ${v_consecutivo_oficial}`
+        }]);
+
+        setMensajeExito(`¡Consecutivo automático asignado con éxito! Número: ${v_consecutivo_oficial}`);
       }
 
       setTimeout(() => setMensajeExito(""), 5000);
