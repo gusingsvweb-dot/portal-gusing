@@ -11,6 +11,8 @@ export default function GestionCalidad() {
 
   const [solicitudes, setSolicitudes] = useState([]);
   const [historial, setHistorial] = useState([]);
+  const [selectedItems, setSelectedItems] = useState([]);
+  const [selectedAdjuntos, setSelectedAdjuntos] = useState([]);
   const [selected, setSelected] = useState(null);
   const [error, setError] = useState("");
   const [mensajeExito, setMensajeExito] = useState("");
@@ -121,7 +123,37 @@ export default function GestionCalidad() {
   }, []);
 
   // ======================================================
-  // ASIGNAR CONSECUTIVO AUTOMATICO O MANUAL
+  // CARGAR ITEMS Y ADJUNTOS DE COMPRAS AL SELECCIONAR
+  // ======================================================
+  useEffect(() => {
+    async function loadDetallesAdicionales() {
+      if (!selected) {
+        setSelectedItems([]);
+        setSelectedAdjuntos([]);
+        return;
+      }
+
+      try {
+        const [
+          { data: items },
+          { data: adjuntos }
+        ] = await Promise.all([
+          supabase.from("compras_solicitud_items").select("*").eq("solicitud_id", selected.id),
+          supabase.from("compras_adjuntos").select("*").eq("solicitud_id", selected.id)
+        ]);
+        
+        setSelectedItems(items || []);
+        setSelectedAdjuntos(adjuntos || []);
+      } catch (err) {
+        console.error("Error cargando detalles adicionales:", err);
+      }
+    }
+    
+    loadDetallesAdicionales();
+  }, [selected]);
+
+  // ======================================================
+  // ASIGNAR CONSECUTIVO (Automático o Manual)
   // ======================================================
   async function asignarConsecutivo(esManual = false) {
     if (!selected) return;
@@ -315,9 +347,11 @@ export default function GestionCalidad() {
 
               <h4>{s.tipos_solicitud?.nombre}</h4>
 
-              <p>
-                <strong>Prioridad:</strong> {s.prioridades?.nombre}
-              </p>
+              {s.prioridades?.nombre && (
+                <p>
+                  <strong>Prioridad:</strong> {s.prioridades?.nombre}
+                </p>
+              )}
               <p>
                 <strong>Usuario solicitante:</strong> {s.usuario_id}
               </p>
@@ -344,9 +378,11 @@ export default function GestionCalidad() {
               <p>
                 <strong>Área destino:</strong> {selected.areas?.nombre}
               </p>
-              <p>
-                <strong>Prioridad:</strong> {selected.prioridades?.nombre}
-              </p>
+              {selected.prioridades?.nombre && (
+                <p>
+                  <strong>Prioridad:</strong> {selected.prioridades?.nombre}
+                </p>
+              )}
               <p>
                 <strong>Usuario solicitante:</strong> {selected.usuario_id}
               </p>
@@ -375,6 +411,47 @@ export default function GestionCalidad() {
                     <p className="gc-box">{selected.descripcion}</p>
                     <h4>Observaciones de Compra</h4>
                     <p className="gc-box">{detalleCompra.observaciones_requerimiento || "No aplica"}</p>
+
+                    {selectedItems.length > 0 && (
+                      <div style={{ marginTop: "15px" }}>
+                        <h4>Ítems Solicitados</h4>
+                        <table className="gc-table" style={{ width: "100%", fontSize: "0.9rem", borderCollapse: "collapse" }}>
+                          <thead>
+                            <tr style={{ background: "rgba(0,0,0,0.05)" }}>
+                              <th style={{ padding: "8px", border: "1px solid #ddd" }}>Item</th>
+                              <th style={{ padding: "8px", border: "1px solid #ddd" }}>Descripción</th>
+                              <th style={{ padding: "8px", border: "1px solid #ddd" }}>Cant.</th>
+                              <th style={{ padding: "8px", border: "1px solid #ddd" }}>U. Medida</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {selectedItems.map((item, idx) => (
+                              <tr key={idx}>
+                                <td style={{ padding: "8px", border: "1px solid #ddd" }}>{idx + 1}</td>
+                                <td style={{ padding: "8px", border: "1px solid #ddd" }}>{item.descripcion}</td>
+                                <td style={{ padding: "8px", border: "1px solid #ddd" }}>{item.cantidad_solicitada}</td>
+                                <td style={{ padding: "8px", border: "1px solid #ddd" }}>{item.unidad_medida}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+
+                    {selectedAdjuntos.length > 0 && (
+                      <div style={{ marginTop: "15px" }}>
+                        <h4>Adjuntos / Cotizaciones</h4>
+                        <ul style={{ listStyleType: "none", padding: 0 }}>
+                          {selectedAdjuntos.map((adj, idx) => (
+                            <li key={idx} style={{ marginBottom: "5px" }}>
+                              <a href={adj.path} target="_blank" rel="noopener noreferrer" style={{ color: "#2563eb", textDecoration: "none" }}>
+                                📎 {adj.nombre}
+                              </a>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </>
                 );
               }
