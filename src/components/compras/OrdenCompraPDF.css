@@ -397,3 +397,38 @@
     print-color-adjust: exact;
   }
 }
+
+/* OBSERVATIONS PAGE 2 */
+.oc-fr-obs2-header {
+  background-color: #8faadc;
+  color: #000;
+  font-weight: bold;
+  text-align: center;
+  padding: 6px;
+  font-size: 11px;
+  border-left: 2px solid #0000ff;
+  border-right: 2px solid #0000ff;
+  border-bottom: 2px solid #0000ff;
+}
+
+.oc-fr-obs2-lines {
+  display: flex;
+  flex-direction: column;
+}
+
+.oc-fr-obs2-line {
+  height: 24px;
+  border-left: 2px solid #0000ff;
+  border-right: 2px solid #0000ff;
+  border-bottom: 1px solid #000;
+}
+.oc-fr-obs2-line:last-child {
+  border-bottom: 2px solid #0000ff;
+}
+
+/* Ensure the page breaks properly when printing */
+@media print {
+  .page-break-before {
+    page-break-before: always;
+  }
+}

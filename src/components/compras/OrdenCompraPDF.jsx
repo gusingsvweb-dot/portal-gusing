@@ -81,7 +81,7 @@ export default function OrdenCompraPDF({ solicitudId, onClose }) {
               </div>
               <div className="oc-fr-codes">
                 <div className="oc-fr-row-code">CODIGO:<br/>FR-CO-07</div>
-                <div className="oc-fr-row-code no-bottom">Página 1 de 1</div>
+                <div className="oc-fr-row-code no-bottom">Página 1 de 2</div>
               </div>
             </div>
 
@@ -161,15 +161,15 @@ export default function OrdenCompraPDF({ solicitudId, onClose }) {
                 </thead>
                 <tbody>
                   {items.sort((a,b) => a.orden - b.orden).map((it) => {
-                    const cant = Number(it.cantidad_solicitada || 0);
-                    // Approximate unit price if total is known, or keep it 0 since it might not be per-item in cotizacion
-                    const unitario = 0; // The DB doesn't have per-item prices for cotizacion yet. We'll show empty or 0.
+                    const cant = Number(it.cantidad_solicitada || 1);
+                    const avgTotal = Number(cotizacion?.total || 0) / (items.length || 1);
+                    const unitario = avgTotal / cant;
                     return (
                       <tr key={it.id}>
                         <td style={{textAlign: 'center'}}>{cant}</td>
                         <td>{it.descripcion} {it.referencia ? ` (Ref: ${it.referencia})` : ""}</td>
-                        <td style={{textAlign: 'right'}}>-</td>
-                        <td style={{textAlign: 'right'}}>-</td>
+                        <td style={{textAlign: 'right'}}>${unitario.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</td>
+                        <td style={{textAlign: 'right'}}>${avgTotal.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</td>
                       </tr>
                     );
                   })}
@@ -235,6 +235,37 @@ export default function OrdenCompraPDF({ solicitudId, onClose }) {
               </div>
             </div>
             
+          </div>
+        <div className="oc-pdf-page page-break-before" style={{ marginTop: '30px' }}>
+          <div className="oc-fr-wrapper">
+            {/* 1. HEADER (Same as page 1) */}
+            <div className="oc-fr-header">
+              <div className="oc-fr-logo-cell">
+                <img src="https://gqspcolombia.org/wp-content/uploads/2025/09/21.png" alt="Logo" className="oc-fr-logo" />
+              </div>
+              <div className="oc-fr-titles">
+                <div className="oc-fr-row-title">COMPRAS</div>
+                <div className="oc-fr-row-title2">TITULO: ORDEN DE COMPRA</div>
+                <div className="oc-fr-row-title-split">
+                  <div className="oc-fr-col-50">VERSION 06</div>
+                  <div className="oc-fr-col-50 no-right">FECHA DE VIGENCIA: <br/>01 DE SEPTIEMBRE DE 2022</div>
+                </div>
+              </div>
+              <div className="oc-fr-codes">
+                <div className="oc-fr-row-code">CODIGO:<br/>FR-CO-07</div>
+                <div className="oc-fr-row-code no-bottom">Página 2 de 2</div>
+              </div>
+            </div>
+
+            {/* OBSERVATIONS PAGE 2 */}
+            <div className="oc-fr-obs2-header">
+              OBSERVACIONES Y/O SEGUIMIENTO A LA ORDEN DE COMPRA
+            </div>
+            <div className="oc-fr-obs2-lines">
+              {Array.from({ length: 35 }).map((_, i) => (
+                <div key={`obs-line-${i}`} className="oc-fr-obs2-line"></div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
