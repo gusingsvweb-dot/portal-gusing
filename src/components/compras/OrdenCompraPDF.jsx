@@ -65,84 +65,176 @@ export default function OrdenCompraPDF({ solicitudId, onClose }) {
         </div>
 
         <div className="oc-pdf-page">
-          <div className="oc-header">
-            <div className="oc-logo-placeholder">
-              <h2>Gusing S.A.S</h2>
-              <p>NIT: 900.XXX.XXX-X</p>
+          <div className="oc-fr-wrapper">
+            {/* 1. HEADER */}
+            <div className="oc-fr-header">
+              <div className="oc-fr-logo-cell">
+                <img src="https://gqspcolombia.org/wp-content/uploads/2025/09/21.png" alt="Logo" className="oc-fr-logo" />
+              </div>
+              <div className="oc-fr-titles">
+                <div className="oc-fr-row-title">COMPRAS</div>
+                <div className="oc-fr-row-title2">TITULO: ORDEN DE COMPRA</div>
+                <div className="oc-fr-row-title-split">
+                  <div className="oc-fr-col-50">VERSION 06</div>
+                  <div className="oc-fr-col-50 no-right">FECHA DE VIGENCIA: <br/>01 DE SEPTIEMBRE DE 2022</div>
+                </div>
+              </div>
+              <div className="oc-fr-codes">
+                <div className="oc-fr-row-code">CODIGO:<br/>FR-CO-07</div>
+                <div className="oc-fr-row-code no-bottom">Página 1 de 1</div>
+              </div>
             </div>
-            <div className="oc-title-box">
-              <h1>ORDEN DE COMPRA</h1>
-              <p>Formato: FR-CO-07</p>
-            </div>
-            <div className="oc-meta-box">
-              <p><strong>N° OC:</strong> {oc.numero_oc}</p>
-              <p><strong>Fecha:</strong> {new Date(oc.created_at).toLocaleDateString()}</p>
-              <p><strong>Requisición:</strong> C-{sol.consecutivo}</p>
-            </div>
-          </div>
 
-          <div className="oc-section">
-            <h3>Datos del Proveedor</h3>
-            <div className="oc-grid-2">
-              <p><strong>Razón Social:</strong> {proveedor?.razon_social}</p>
-              <p><strong>NIT/Cédula:</strong> {proveedor?.nit}</p>
-              <p><strong>Teléfono:</strong> {proveedor?.telefono || "N/A"}</p>
-              <p><strong>Condiciones de Pago:</strong> {cotizacion?.condiciones_pago || "N/A"}</p>
-              <p><strong>Fecha Promesa Entrega:</strong> {cotizacion?.fecha_compromiso_entrega || "N/A"}</p>
+            {/* 2. COMPANY INFO */}
+            <div className="oc-fr-section oc-fr-bg-gray">
+              <strong>Información de Laboratorios Gusing S.A.S</strong>
             </div>
-          </div>
+            <div className="oc-fr-company-info">
+              <div className="oc-fr-company-left">
+                <div>NIT 832.000.435-6</div>
+                <div>Cra 10 Este # 30 - 03 Tel: 781 75 98</div>
+                <div>San Mateo - Soacha</div>
+              </div>
+              <div className="oc-fr-company-right">
+                <div className="oc-fr-row-gray">ORDEN DE COMPRA</div>
+                <div className="oc-fr-row-val">No {oc.numero_oc}</div>
+              </div>
+            </div>
 
-          <div className="oc-section">
-            <h3>Detalle de Ítems</h3>
-            <table className="oc-table">
-              <thead>
-                <tr>
-                  <th>Ítem</th>
-                  <th>Descripción</th>
-                  <th>Ref.</th>
-                  <th>Cant.</th>
-                  <th>Und.</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.sort((a,b) => a.orden - b.orden).map((it) => (
-                  <tr key={it.id}>
-                    <td>{it.orden}</td>
-                    <td>{it.descripcion}</td>
-                    <td>{it.referencia || "-"}</td>
-                    <td>{it.cantidad_solicitada}</td>
-                    <td>{it.unidad_medida}</td>
+            {/* 3. PROVIDER INFO */}
+            <div className="oc-fr-section oc-fr-bg-gray">
+              <strong>SEÑORES</strong>
+            </div>
+            <div className="oc-fr-provider-info">
+              <div className="oc-fr-prov-left">
+                <div className="oc-fr-prov-row">
+                  <div className="oc-fr-lbl">NOMBRE DEL PROVEEDOR:</div>
+                  <div className="oc-fr-val">{proveedor?.razon_social}</div>
+                </div>
+                <div className="oc-fr-prov-row">
+                  <div className="oc-fr-lbl">Contacto:</div>
+                  <div className="oc-fr-val">{proveedor?.contacto || ""}</div>
+                </div>
+                <div className="oc-fr-prov-row">
+                  <div className="oc-fr-lbl">Correo:</div>
+                  <div className="oc-fr-val">{proveedor?.correo || ""}</div>
+                </div>
+                <div className="oc-fr-prov-row">
+                  <div className="oc-fr-lbl">Dirección:</div>
+                  <div className="oc-fr-val">{proveedor?.direccion || ""}</div>
+                </div>
+                <div className="oc-fr-prov-row">
+                  <div className="oc-fr-lbl">TEL:</div>
+                  <div className="oc-fr-val">{proveedor?.telefono || ""}</div>
+                </div>
+                <div className="oc-fr-prov-row no-bottom">
+                  <div className="oc-fr-lbl">NIT:</div>
+                  <div className="oc-fr-val">{proveedor?.nit || ""}</div>
+                </div>
+              </div>
+              <div className="oc-fr-prov-right">
+                <div className="oc-fr-row-gray">N° de Requisición</div>
+                <div className="oc-fr-row-val">C-{sol.consecutivo}</div>
+                <div className="oc-fr-row-gray">FECHA DE LA ORDEN DE COMPRA</div>
+                <div className="oc-fr-row-val">{new Date(oc.created_at).toLocaleDateString('es-CO')}</div>
+                <div className="oc-fr-row-gray">Número de cotización</div>
+                <div className="oc-fr-row-val no-bottom">{cotizacion?.id || ""}</div>
+              </div>
+            </div>
+
+            {/* 4. COMPROMISE DATE */}
+            <div className="oc-fr-compromise">
+              <div className="oc-fr-lbl-comp">Fecha de Compromiso de Entrega:</div>
+              <div className="oc-fr-val-comp">{cotizacion?.fecha_compromiso_entrega || "dd/mm/yy"}</div>
+            </div>
+
+            {/* 5. ITEMS TABLE */}
+            <div className="oc-fr-table-wrapper">
+              <table className="oc-fr-table">
+                <thead>
+                  <tr className="oc-fr-bg-gray">
+                    <th style={{width: '10%'}}>CANTIDAD</th>
+                    <th style={{width: '60%'}}>CONCEPTO</th>
+                    <th style={{width: '15%'}}>V.UNITARIO</th>
+                    <th style={{width: '15%'}}>V.TOTAL</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {items.sort((a,b) => a.orden - b.orden).map((it) => {
+                    const cant = Number(it.cantidad_solicitada || 0);
+                    // Approximate unit price if total is known, or keep it 0 since it might not be per-item in cotizacion
+                    const unitario = 0; // The DB doesn't have per-item prices for cotizacion yet. We'll show empty or 0.
+                    return (
+                      <tr key={it.id}>
+                        <td style={{textAlign: 'center'}}>{cant}</td>
+                        <td>{it.descripcion} {it.referencia ? ` (Ref: ${it.referencia})` : ""}</td>
+                        <td style={{textAlign: 'right'}}>-</td>
+                        <td style={{textAlign: 'right'}}>-</td>
+                      </tr>
+                    );
+                  })}
+                  {/* Fill empty rows to make it look like the Excel sheet */}
+                  {Array.from({ length: Math.max(0, 15 - items.length) }).map((_, i) => (
+                    <tr key={`empty-${i}`}>
+                      <td>&nbsp;</td>
+                      <td></td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
-          <div className="oc-totals">
-            <div className="oc-totals-box">
-              <p><strong>Subtotal:</strong> ${Number(cotizacion?.subtotal || 0).toLocaleString()}</p>
-              <p><strong>Impuestos:</strong> ${Number(cotizacion?.impuestos || 0).toLocaleString()}</p>
-              <p><strong>Descuento:</strong> ${Number(cotizacion?.descuento || 0).toLocaleString()}</p>
-              <p className="oc-total-final"><strong>TOTAL:</strong> ${Number(cotizacion?.total || 0).toLocaleString()} {cotizacion?.moneda}</p>
+            {/* 6. TOTALS */}
+            <div className="oc-fr-totals">
+              <div className="oc-fr-tot-empty"></div>
+              <div className="oc-fr-tot-values">
+                <div className="oc-fr-tot-row">
+                  <div className="oc-fr-tot-lbl">SUB-TOTAL</div>
+                  <div className="oc-fr-tot-val">${Number(cotizacion?.subtotal || cotizacion?.total || 0).toLocaleString()}</div>
+                </div>
+                <div className="oc-fr-tot-row">
+                  <div className="oc-fr-tot-lbl">DESCUENTO</div>
+                  <div className="oc-fr-tot-val">$0</div>
+                </div>
+                <div className="oc-fr-tot-row">
+                  <div className="oc-fr-tot-lbl">TOTAL FACTURA</div>
+                  <div className="oc-fr-tot-val">${Number(cotizacion?.total || 0).toLocaleString()}</div>
+                </div>
+                <div className="oc-fr-tot-row">
+                  <div className="oc-fr-tot-lbl">IVA</div>
+                  <div className="oc-fr-tot-val">$0</div>
+                </div>
+                <div className="oc-fr-tot-row">
+                  <div className="oc-fr-tot-lbl">RETEFUENTE</div>
+                  <div className="oc-fr-tot-val">$0</div>
+                </div>
+                <div className="oc-fr-tot-row no-bottom">
+                  <div className="oc-fr-tot-lbl">TOTAL NETO</div>
+                  <div className="oc-fr-tot-val">${Number(cotizacion?.total || 0).toLocaleString()}</div>
+                </div>
+              </div>
             </div>
-          </div>
-          
-          {cotizacion?.observaciones && (
-            <div className="oc-section">
-              <h3>Observaciones</h3>
-              <p>{cotizacion.observaciones}</p>
-            </div>
-          )}
 
-          <div className="oc-signatures">
-            <div className="oc-sig-box">
-              <div className="oc-sig-line"></div>
-              <p>Aprobado por Gerencia</p>
+            {/* 7. OBSERVATIONS */}
+            <div className="oc-fr-obs-section">
+              <div className="oc-fr-obs-header">ANOTACIONES DE LA ORDEN DE COMPRA EN LA PAGINA DE OBSERVACIONES Y/O SEGUIMIENTO</div>
+              <div className="oc-fr-obs-content">
+                {cotizacion?.observaciones || " "}
+              </div>
             </div>
-            <div className="oc-sig-box">
-              <div className="oc-sig-line"></div>
-              <p>Elaborado por Compras</p>
+
+            {/* 8. SIGNATURES */}
+            <div className="oc-fr-signatures">
+              <div className="oc-fr-sig-box">
+                <div className="oc-fr-sig-line">FIRMA Y FECHA DE REVISADO</div>
+              </div>
+              <div className="oc-fr-sig-box no-right">
+                <div className="oc-fr-sig-line">FIRMA Y FECHA DE AUTORIZADO</div>
+              </div>
             </div>
+            
           </div>
         </div>
       </div>
