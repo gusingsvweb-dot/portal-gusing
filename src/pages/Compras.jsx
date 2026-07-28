@@ -120,14 +120,41 @@ export default function Compras() {
     if (!selected) return;
     
     setError("");
-    const { data: numOC, error: errRpc } = await supabase.rpc("rpc_compras_generar_numero_oc", {
-      p_solicitud_id: selected.id,
-      p_creador_id: usuarioActual?.id || usuarioActual?.usuario
+
+    // Generar consecutivo de OC (ej. OC- timestamp corto)
+    const numOC = `OC-${Date.now().toString().slice(-6)}`;
+    const detalle = selected.compras_solicitudes_detalle?.[0];
+    const cotizacionId = detalle?.cotizacion_seleccionada_id;
+    
+    // Buscar el proveedor asociado a esa cotización
+    const cotizacion = selected.compras_cotizaciones?.find(c => c.id === cotizacionId);
+    const proveedorId = cotizacion?.proveedor_id;
+
+    if (!cotizacionId || !proveedorId) {
+      setError("Falta seleccionar cotización o proveedor en pasos anteriores.");
+      return;
+    }
+
+    // Insertar OC
+    const { error: errInsert } = await supabase.from(st("ordenes_compra")).insert({
+      solicitud_id: selected.id,
+      proveedor_id: proveedorId,
+      cotizacion_id: cotizacionId,
+      numero_oc: numOC
     });
 
-    if (errRpc) {
-      setError(`Error generando Orden de Compra: ${errRpc.message}`);
-      return;
+    if (errInsert) {
+      // Intenta con el nombre base si falló el alias, o maneja el error general.
+      const { error: errRetry } = await supabase.from("compras_ordenes_compra").insert({
+        solicitud_id: selected.id,
+        proveedor_id: proveedorId,
+        cotizacion_id: cotizacionId,
+        numero_oc: numOC
+      });
+      if (errRetry) {
+        setError(`Error creando OC: ${errRetry.message}`);
+        return;
+      }
     }
 
     await updateEstado(selected.id, 24, {
