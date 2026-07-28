@@ -51,7 +51,8 @@ export default function Compras() {
             compras_cotizaciones (
               *,
               compras_proveedores ( razon_social, nit )
-            )
+            ),
+            compras_ordenes_compra ( * )
           `))
           .in("estado_id", [1, 14, 17, 18, 19, 23, 24])
           .order("id", { ascending: false }),
@@ -117,8 +118,8 @@ export default function Compras() {
     });
   }
 
-  // 23 -> 24
-  async function enviarOrdenRevision() {
+  // 23 (Generar Borrador)
+  async function generarOrdenBorrador() {
     if (!selected) return;
     
     setError("");
@@ -166,22 +167,48 @@ export default function Compras() {
 
     if (errInsert) {
       // Intenta con el nombre base si falló el alias, o maneja el error general.
-      const { error: errRetry } = await supabase.from("compras_ordenes_compra").insert({
+      const { data: retryData, error: errRetry } = await supabase.from("compras_ordenes_compra").insert({
         solicitud_id: selected.id,
         proveedor_id: proveedorId,
         cotizacion_id: cotizacionId,
         numero_oc: numOC,
         consecutivo_numero: nextConsecutivo,
         consecutivo_anio: currentYear
-      });
+      }).select();
+      
       if (errRetry) {
         setError(`Error creando OC: ${errRetry.message}`);
         return;
       }
+      
+      // Update local state to show the draft
+      setSelected({
+        ...selected,
+        compras_ordenes_compra: retryData
+      });
+    } else {
+      // We need to fetch the inserted data since we didn't use .select() on errInsert attempt, or just reload everything
+      loadSolicitudes();
+      // For immediate UI update in modal:
+      setSelected({
+        ...selected,
+        compras_ordenes_compra: [{
+          solicitud_id: selected.id,
+          proveedor_id: proveedorId,
+          cotizacion_id: cotizacionId,
+          numero_oc: numOC,
+          consecutivo_numero: nextConsecutivo,
+          consecutivo_anio: currentYear
+        }]
+      });
     }
+  }
 
+  async function enviarGerenciaOC() {
+    if (!selected) return;
+    const oc = selected.compras_ordenes_compra?.[0];
     await updateEstado(selected.id, 24, {
-      comentario_compras: `Orden de Compra Generada: ${numOC}`,
+      comentario_compras: `Orden de Compra Generada: ${oc?.numero_oc}`,
     });
   }
 
@@ -363,11 +390,25 @@ export default function Compras() {
               {selected.estado_id === 23 && (
                 <div className="action-area">
                   <h4>Generación de Orden de Compra</h4>
-                  <p className="note-text">Se generará la Orden de Compra automáticamente usando el proveedor y cotización seleccionados en Gerencia.</p>
-                  {error && <p className="error-msg">{error}</p>}
-                  <div className="modal-footer-actions">
-                    <button className="btn-execute" onClick={enviarOrdenRevision}>Generar Orden y Enviar a Revisión</button>
-                  </div>
+                  
+                  {selected.compras_ordenes_compra && selected.compras_ordenes_compra.length > 0 ? (
+                    <>
+                      <p className="note-text" style={{ color: '#166534' }}>✅ Orden de compra generada en borrador. Revísala antes de enviarla.</p>
+                      {error && <p className="error-msg">{error}</p>}
+                      <div className="modal-footer-actions">
+                        <button className="btn-execute" onClick={() => setShowPDF(true)} style={{ backgroundColor: '#64748b' }}>📄 Revisar PDF (Borrador)</button>
+                        <button className="btn-execute" onClick={enviarGerenciaOC}>Enviar a Gerencia (OC)</button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <p className="note-text">Se generará la Orden de Compra automáticamente usando el proveedor y cotización seleccionados en Gerencia.</p>
+                      {error && <p className="error-msg">{error}</p>}
+                      <div className="modal-footer-actions">
+                        <button className="btn-execute" onClick={generarOrdenBorrador}>Generar Orden de Compra (Borrador)</button>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
 
