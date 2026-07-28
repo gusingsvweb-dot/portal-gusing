@@ -224,6 +224,21 @@ export default function Navbar() {
     []
   );
 
+  let currentMenuKey = rol;
+  // Si el rol es general pero el área es Aseguramiento de Calidad, mostrarle un menú útil
+  if (rol === "general" && usuarioActual?.areadetrabajo === "Aseguramiento de Calidad") {
+    currentMenuKey = "calidad_general";
+  }
+
+  const menu = MENUS[currentMenuKey] || (
+    currentMenuKey === "calidad_general" 
+      ? {
+          title: "Aseguramiento de Calidad",
+          items: [{ to: "/gestioncalidad", label: "Gestión", icon: "🧪" }]
+        }
+      : MENUS.general
+  );
+
   const getNotificationRoute = (n) => {
     if (!n.pedido_id) return null;
 
@@ -297,19 +312,27 @@ export default function Navbar() {
       </div>
 
       <div className="nav-links-container">
-        {canNavScrollLeft && (
-          <button className="nav-scroll-arrow" onClick={() => scrollNav(-1)} aria-label="Anterior">‹</button>
-        )}
-        <div className="nav-links" ref={navLinksRef} onScroll={checkNavScroll}>
-          {menu.items.map((item) => (
-            <NavLink key={item.to} to={item.to} end>
-              <span>{item.icon}</span>
-              {item.label}
-            </NavLink>
-          ))}
-        </div>
-        {canNavScrollRight && (
-          <button className="nav-scroll-arrow" onClick={() => scrollNav(1)} aria-label="Siguiente">›</button>
+        {menu.items?.length > 0 && (
+          <>
+            {canNavScrollLeft && (
+              <button className="nav-scroll-arrow" onClick={() => scrollNav(-1)}>
+                ‹
+              </button>
+            )}
+            <div className="nav-links" ref={navLinksRef}>
+              {menu.items.map((item, index) => (
+                <NavLink key={index} to={item.to} className={({ isActive }) => (isActive ? "active" : "")}>
+                  <span style={{ fontSize: "1.1rem" }}>{item.icon}</span>
+                  {item.label}
+                </NavLink>
+              ))}
+            </div>
+            {canNavScrollRight && (
+              <button className="nav-scroll-arrow" onClick={() => scrollNav(1)}>
+                ›
+              </button>
+            )}
+          </>
         )}
       </div>
 
