@@ -441,7 +441,7 @@ function InfoGrid({ data }) {
             {adjuntos.map(adj => (
               <a
                 key={adj.id}
-                href={adj.url_archivo}
+                href={adj.path}
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{
