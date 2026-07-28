@@ -40,7 +40,7 @@ export default function GestionCalidad() {
           .from(st("solicitudes"))
           .select(ss(`
             *,
-            compras_solicitudes_detalle!inner(solicitud_id)
+            compras_solicitudes_detalle!inner(*)
           `))
           .eq("estado_id", 1)  // SOLO pendientes, NO 17
           .order("id", { ascending: false }),
@@ -355,14 +355,42 @@ export default function GestionCalidad() {
               </p>
             </div>
 
-            <h4>Descripción</h4>
-            <p className="gc-box">{selected.descripcion}</p>
+            {(() => {
+              const detalleCompra = Array.isArray(selected.compras_solicitudes_detalle) 
+                ? selected.compras_solicitudes_detalle[0] 
+                : selected.compras_solicitudes_detalle;
 
-            <h4>Justificación</h4>
-            <p className="gc-box">{selected.justificacion || "No aplica"}</p>
+              if (detalleCompra) {
+                return (
+                  <>
+                    <div className="gc-grid" style={{ marginTop: '10px' }}>
+                      <p>
+                        <strong>Tipo de Requisición:</strong> {detalleCompra.tipo_requisicion}
+                      </p>
+                      <p>
+                        <strong>Categoría:</strong> {detalleCompra.categoria_compra || "N/A"}
+                      </p>
+                    </div>
+                    <h4>Descripción</h4>
+                    <p className="gc-box">{selected.descripcion}</p>
+                    <h4>Observaciones de Compra</h4>
+                    <p className="gc-box">{detalleCompra.observaciones_requerimiento || "No aplica"}</p>
+                  </>
+                );
+              }
+
+              return (
+                <>
+                  <h4>Descripción</h4>
+                  <p className="gc-box">{selected.descripcion}</p>
+
+                  <h4>Justificación</h4>
+                  <p className="gc-box">{selected.justificacion || "No aplica"}</p>
+                </>
+              );
+            })()}
 
             {error && <p className="gc-error">{error}</p>}
-            {mensajeExito && <p className="gc-success" style={{ color: "green", background: "#ecfdf5", padding: "10px", borderRadius: "8px", border: "1px solid #10b981" }}>{mensajeExito}</p>}
 
             <div style={{ display: "flex", gap: "10px", marginTop: "15px", alignItems: "center" }}>
               <button className="gc-btn" onClick={() => asignarConsecutivo(false)}>
