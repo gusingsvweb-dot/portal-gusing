@@ -305,6 +305,9 @@
   border-radius: 6px;
   font-family: inherit;
   font-size: 0.9rem;
+  background-color: #ffffff;
+  color: #1e293b;
+  color-scheme: light;
 }
 
 .modal-footer-actions {
