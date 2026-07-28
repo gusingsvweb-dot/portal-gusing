@@ -371,6 +371,22 @@ function InfoGrid({ data }) {
   const items = data.compras_solicitud_items || [];
   const cotizaciones = data.compras_cotizaciones || [];
 
+  const [adjuntos, setAdjuntos] = React.useState([]);
+
+  React.useEffect(() => {
+    async function loadAdjuntos() {
+      if (data?.id) {
+        const { data: adjData } = await supabase
+          .from("compras_adjuntos")
+          .select("*")
+          .eq("solicitud_id", data.id)
+          .eq("tipo", "COTIZACION_PREVIA");
+        if (adjData) setAdjuntos(adjData);
+      }
+    }
+    loadAdjuntos();
+  }, [data?.id]);
+
   return (
     <>
       <div className="info-grid">
@@ -399,11 +415,9 @@ function InfoGrid({ data }) {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
               <thead>
                 <tr style={{ background: '#f1f5f9', textAlign: 'left' }}>
-                  <th style={{ padding: '8px', borderBottom: '2px solid #cbd5e1' }}>Item</th>
+                  <th style={{ padding: '8px', borderBottom: '2px solid #cbd5e1', width: '50px' }}>Item</th>
                   <th style={{ padding: '8px', borderBottom: '2px solid #cbd5e1' }}>Descripción</th>
-                  <th style={{ padding: '8px', borderBottom: '2px solid #cbd5e1' }}>Ref.</th>
-                  <th style={{ padding: '8px', borderBottom: '2px solid #cbd5e1' }}>Cant.</th>
-                  <th style={{ padding: '8px', borderBottom: '2px solid #cbd5e1' }}>U. Medida</th>
+                  <th style={{ padding: '8px', borderBottom: '2px solid #cbd5e1', width: '80px', textAlign: 'center' }}>Cant.</th>
                 </tr>
               </thead>
               <tbody>
@@ -411,13 +425,33 @@ function InfoGrid({ data }) {
                   <tr key={it.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
                     <td style={{ padding: '8px' }}>{it.orden}</td>
                     <td style={{ padding: '8px' }}>{it.descripcion}</td>
-                    <td style={{ padding: '8px' }}>{it.referencia || '-'}</td>
-                    <td style={{ padding: '8px' }}>{it.cantidad_solicitada}</td>
-                    <td style={{ padding: '8px' }}>{it.unidad_medida}</td>
+                    <td style={{ padding: '8px', textAlign: 'center' }}><strong>{it.cantidad_solicitada}</strong></td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {adjuntos.length > 0 && (
+        <div className="desc-section" style={{ marginTop: '15px' }}>
+          <h4>Soportes Subidos (Cotizaciones Cliente)</h4>
+          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginTop: '5px' }}>
+            {adjuntos.map(adj => (
+              <a
+                key={adj.id}
+                href={adj.url_archivo}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: "inline-block", padding: "6px 12px", background: "#e2e8f0",
+                  color: "#1e293b", borderRadius: "6px", textDecoration: "none", fontSize: "0.85rem", fontWeight: "bold"
+                }}
+              >
+                📄 Ver Soporte
+              </a>
+            ))}
           </div>
         </div>
       )}
