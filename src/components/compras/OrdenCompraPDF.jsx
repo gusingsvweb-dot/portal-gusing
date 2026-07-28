@@ -85,7 +85,7 @@ export default function OrdenCompraPDF({ solicitudId, onClose }) {
             <h3>Datos del Proveedor</h3>
             <div className="oc-grid-2">
               <p><strong>Razón Social:</strong> {proveedor?.razon_social}</p>
-              <p><strong>NIT/Cédula:</strong> {proveedor?.nit_cedula}</p>
+              <p><strong>NIT/Cédula:</strong> {proveedor?.nit}</p>
               <p><strong>Teléfono:</strong> {proveedor?.telefono || "N/A"}</p>
               <p><strong>Condiciones de Pago:</strong> {cotizacion?.condiciones_pago || "N/A"}</p>
               <p><strong>Fecha Promesa Entrega:</strong> {cotizacion?.fecha_compromiso_entrega || "N/A"}</p>
