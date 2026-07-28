@@ -236,6 +236,8 @@ export default function OrdenCompraPDF({ solicitudId, onClose }) {
             </div>
             
           </div>
+        </div>
+        
         <div className="oc-pdf-page page-break-before" style={{ marginTop: '30px' }}>
           <div className="oc-fr-wrapper">
             {/* 1. HEADER (Same as page 1) */}
