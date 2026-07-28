@@ -176,23 +176,24 @@ export default function GestionCalidad() {
             consecutivo_numero: Number(manualConsec),
             consecutivo_anio: v_anio,
             consecutivo_oficial: v_consecutivo_oficial,
+            consecutivo_oficial: manualConsecFormateado,
             consecutivo_asignado_por: realUserId,
             tipo_requisicion: 'MATERIAL'
           }, { onConflict: 'solicitud_id' });
           
         if (detError) throw detError;
         
-        // Evento manual
+        // 4. Registrar evento
         await supabase.from("compras_eventos").insert([{
           solicitud_id: selected.id,
           tipo_evento: "CONSECUTIVO_ASIGNADO",
           estado_anterior: "PENDIENTE",
           estado_nuevo: "REVISION_COMPRAS",
           actor_id: realUserId,
-          comentario: `Radicado Manual ${v_consecutivo_oficial}`
+          comentario: `Radicado (Manual) ${manualConsecFormateado}`
         }]);
 
-        setMensajeExito(`¡Consecutivo manual ${manualConsec} asignado con éxito!`);
+        window.alert(`¡Consecutivo manual asignado con éxito!\n\nNÚMERO: ${manualConsecFormateado}`);
         setManualConsec("");
       } else {
         // ASIGNACIÓN AUTOMÁTICA DESDE EL FRONTEND
@@ -238,7 +239,7 @@ export default function GestionCalidad() {
           
         if (detError) throw detError;
 
-        // 4. Registrar evento
+        // Registrar evento
         await supabase.from("compras_eventos").insert([{
           solicitud_id: selected.id,
           tipo_evento: "CONSECUTIVO_ASIGNADO",
@@ -248,10 +249,9 @@ export default function GestionCalidad() {
           comentario: `Radicado ${v_consecutivo_oficial}`
         }]);
 
-        setMensajeExito(`¡Consecutivo automático asignado con éxito! Número: ${v_consecutivo_oficial}`);
+        window.alert(`¡Consecutivo automático asignado con éxito!\n\nNÚMERO: ${v_consecutivo_oficial}`);
       }
 
-      setTimeout(() => setMensajeExito(""), 5000);
       setSelected(null);
       await loadSolicitudes();
       await loadHistorial();
