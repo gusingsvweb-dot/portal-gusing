@@ -66,7 +66,7 @@ export default function GestionRevisionCompras({ solicitud, onAprobar, onRechaza
     let finalProvId = proveedorSeleccionado;
     if (proveedorSeleccionado === "NUEVO") {
       const { data: pData, error: pErr } = await supabase.from("compras_proveedores").insert([{
-        nit_cedula: nuevoNit,
+        nit: nuevoNit,
         razon_social: nuevaRazonSocial
       }]).select();
 
@@ -146,7 +146,7 @@ export default function GestionRevisionCompras({ solicitud, onAprobar, onRechaza
           <option value="">Seleccione proveedor...</option>
           <option value="NUEVO">+ Crear Nuevo Proveedor</option>
           {proveedores.map(p => (
-            <option key={p.id} value={p.id}>{p.razon_social} ({p.nit_cedula})</option>
+            <option key={p.id} value={p.id}>{p.razon_social} ({p.nit})</option>
           ))}
         </select>
         
