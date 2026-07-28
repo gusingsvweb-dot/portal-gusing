@@ -121,8 +121,6 @@ export default function Compras() {
     
     setError("");
 
-    // Generar consecutivo de OC (ej. OC- timestamp corto)
-    const numOC = `OC-${Date.now().toString().slice(-6)}`;
     const detalle = selected.compras_solicitudes_detalle?.[0];
     
     // Fallback: si por alguna razón no se guardó la cotización seleccionada, usar la primera
@@ -140,12 +138,26 @@ export default function Compras() {
       return;
     }
 
+    // Obtener consecutivo maximo
+    const { data: maxResult } = await supabase
+      .from("compras_ordenes_compra")
+      .select("consecutivo_numero")
+      .order("consecutivo_numero", { ascending: false })
+      .limit(1);
+
+    const nextConsecutivo = (maxResult && maxResult.length > 0 && maxResult[0].consecutivo_numero) 
+      ? maxResult[0].consecutivo_numero + 1 
+      : 1;
+
+    const numOC = `OC-${nextConsecutivo}`;
+
     // Insertar OC
     const { error: errInsert } = await supabase.from(st("ordenes_compra")).insert({
       solicitud_id: selected.id,
       proveedor_id: proveedorId,
       cotizacion_id: cotizacionId,
-      numero_oc: numOC
+      numero_oc: numOC,
+      consecutivo_numero: nextConsecutivo
     });
 
     if (errInsert) {
@@ -154,7 +166,8 @@ export default function Compras() {
         solicitud_id: selected.id,
         proveedor_id: proveedorId,
         cotizacion_id: cotizacionId,
-        numero_oc: numOC
+        numero_oc: numOC,
+        consecutivo_numero: nextConsecutivo
       });
       if (errRetry) {
         setError(`Error creando OC: ${errRetry.message}`);
