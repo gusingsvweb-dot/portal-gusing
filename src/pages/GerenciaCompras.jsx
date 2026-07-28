@@ -358,7 +358,7 @@ function Card({ data, onClick }) {
     <div className="gcg-card" onClick={onClick}>
       <div className="card-top">
         <span className="card-id">{data.consecutivo ? `C-${data.consecutivo}` : `#${data.id}`}</span>
-        <span className="card-priority">{data.prioridades?.nombre}</span>
+        {data.prioridades?.nombre && <span className="card-priority">{data.prioridades?.nombre}</span>}
       </div>
       <h4 className="card-title">{data.tipos_solicitud?.nombre}</h4>
       <p className="card-area">{data.estados?.nombre}</p>
@@ -376,7 +376,7 @@ function InfoGrid({ data }) {
       <div className="info-grid">
         <div><strong>Solicitante:</strong> <p>{data.usuario_id}</p></div>
         <div><strong>Area:</strong> <p>{data.area_solicitante}</p></div>
-        <div><strong>Prioridad:</strong> <p>{data.prioridades?.nombre}</p></div>
+        {data.prioridades?.nombre && <div><strong>Prioridad:</strong> <p>{data.prioridades?.nombre}</p></div>}
       </div>
 
       {detalle && (
