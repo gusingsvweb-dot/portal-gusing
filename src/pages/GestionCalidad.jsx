@@ -128,6 +128,10 @@ export default function GestionCalidad() {
     setMensajeExito("");
 
     try {
+      // Obtener el ID de auth.users real
+      const { data: authData } = await supabase.auth.getUser();
+      const realUserId = authData?.user?.id || null;
+
       if (esManual) {
         if (!manualConsec || isNaN(manualConsec) || Number(manualConsec) <= 0) {
           setError("El consecutivo manual debe ser un número válido mayor a 0.");
@@ -148,7 +152,7 @@ export default function GestionCalidad() {
           return;
         }
 
-        // Asignar manual
+        // Asignar manual (update solicitudes)
         const { error: updError } = await supabase
           .from(st("solicitudes"))
           .update({
@@ -158,13 +162,42 @@ export default function GestionCalidad() {
           .eq("id", selected.id);
 
         if (updError) throw updError;
+        
+        // Asignar manual (update compras_solicitudes_detalle)
+        const v_anio = new Date().getFullYear();
+        const v_consecutivo_oficial = String(manualConsec).padStart(3, '0');
+        
+        const { error: detError } = await supabase
+          .from("compras_solicitudes_detalle")
+          .upsert({
+            solicitud_id: selected.id,
+            estado_compra: 'REVISION_COMPRAS',
+            consecutivo_numero: Number(manualConsec),
+            consecutivo_anio: v_anio,
+            consecutivo_oficial: v_consecutivo_oficial,
+            consecutivo_asignado_por: realUserId,
+            tipo_requisicion: 'MATERIAL'
+          }, { onConflict: 'solicitud_id' });
+          
+        if (detError) throw detError;
+        
+        // Evento manual
+        await supabase.from("compras_eventos").insert([{
+          solicitud_id: selected.id,
+          tipo_evento: "CONSECUTIVO_ASIGNADO",
+          estado_anterior: "PENDIENTE",
+          estado_nuevo: "REVISION_COMPRAS",
+          actor_id: realUserId,
+          comentario: `Radicado Manual ${v_consecutivo_oficial}`
+        }]);
+
         setMensajeExito(`¡Consecutivo manual ${manualConsec} asignado con éxito!`);
         setManualConsec("");
       } else {
         // Asignar automático mediante RPC
         const { data, error: errRpc } = await supabase.rpc("rpc_compras_asignar_consecutivo", {
           p_solicitud_id: selected.id,
-          p_actor_id: usuarioActual?.id || usuarioActual?.usuario
+          p_actor_id: realUserId
         });
 
         if (errRpc) throw errRpc;
