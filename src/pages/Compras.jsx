@@ -19,6 +19,8 @@ export default function Compras() {
   const [showPDF, setShowPDF] = useState(false);
   const [accion, setAccion] = useState("");
   const [error, setError] = useState("");
+  const [soporteFile, setSoporteFile] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const aprobador = usuarioActual?.usuario || usuarioActual?.username || "COMPRAS";
 
@@ -186,12 +188,48 @@ export default function Compras() {
   // 19 -> 14
   async function ejecutarCompra() {
     if (!selected) return;
-    if (!accion.trim()) { setError("Detalle de compra requerido"); return; }
+    if (!accion.trim() && !soporteFile) { setError("Soporte de pago o detalle de compra requerido"); return; }
+
+    setError("");
+    setIsUploading(true);
+
+    let urlSoporte = "";
+    if (soporteFile) {
+      const fileName = `${selected.id}_${Date.now()}_${soporteFile.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+      const { error: uploadError } = await supabase.storage
+        .from("compras_adjuntos")
+        .upload(`soportes_pago/${fileName}`, soporteFile, { cacheControl: '3600', upsert: false });
+      
+      if (uploadError) {
+        setError(`Error subiendo archivo: ${uploadError.message}`);
+        setIsUploading(false);
+        return;
+      }
+      
+      const { data: publicUrlData } = supabase.storage
+        .from("compras_adjuntos")
+        .getPublicUrl(`soportes_pago/${fileName}`);
+        
+      urlSoporte = publicUrlData.publicUrl;
+
+      await supabase.from("compras_adjuntos").insert([{
+        solicitud_id: selected.id,
+        tipo: 'SOPORTE_PAGO',
+        path: urlSoporte,
+        nombre: soporteFile.name,
+        mime_type: soporteFile.type,
+        tamano: soporteFile.size
+      }]);
+    }
+
+    const finalAccion = [accion, urlSoporte ? `Soporte de pago adjunto: ${urlSoporte}` : ""].filter(Boolean).join("\n\n");
 
     await updateEstado(selected.id, 14, {
       fecha_cierre: new Date().toISOString(),
-      accion_realizada: accion
+      accion_realizada: finalAccion
     });
+    
+    setIsUploading(false);
   }
 
   // HELPER GENERICO
@@ -231,6 +269,7 @@ export default function Compras() {
     setComentario("");
     setAccion("");
     setError("");
+    setSoporteFile(null);
   };
 
   return (
@@ -350,14 +389,21 @@ export default function Compras() {
                     <button className="btn-execute" onClick={() => setShowPDF(true)} style={{ flex: 1, backgroundColor: '#3b82f6' }}>📄 Ver PDF Orden</button>
                   </div>
 
+                  <div style={{ marginBottom: "10px" }}>
+                    <label style={{ display: "block", marginBottom: "5px", fontWeight: "600", fontSize: "0.85rem", color: "#475569" }}>Adjuntar Soporte de Pago</label>
+                    <input type="file" onChange={(e) => setSoporteFile(e.target.files[0])} style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1", background: "#ffffff", color: "#1e293b", colorScheme: "light" }} />
+                  </div>
+
                   <textarea className="comp-textarea"
-                    placeholder="Soporte de pago o link..."
+                    placeholder="Soporte de pago o link (Opcional si subes archivo)..."
                     value={accion}
                     onChange={e => setAccion(e.target.value)}
                   />
                   {error && <p className="error-msg">{error}</p>}
                   <div className="modal-footer-actions">
-                    <button className="btn-execute" onClick={ejecutarCompra}>Finalizar Compra</button>
+                    <button className="btn-execute" onClick={ejecutarCompra} disabled={isUploading}>
+                      {isUploading ? "Subiendo..." : "Finalizar Compra"}
+                    </button>
                   </div>
                 </div>
               )}
