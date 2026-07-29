@@ -37,13 +37,21 @@ export default function OrdenCompraPDF({ solicitudId, onClose }) {
         const cotId = oc?.cotizacion_id || detalle?.cotizacion_seleccionada_id;
         const cotizacion = sol.compras_cotizaciones?.find(c => c.id === cotId);
         
+        const provSnapshot = oc?.proveedor_snapshot || {};
         setData({ sol, oc, detalle, items, cotizacion });
         setEditValues({
           subtotal: oc?.subtotal ?? cotizacion?.subtotal ?? cotizacion?.total ?? 0,
           descuento_valor: oc?.descuento_valor ?? 0,
           iva_valor: oc?.iva_valor ?? 0,
           retefuente_valor: oc?.retefuente_valor ?? 0,
-          observaciones: oc?.observaciones ?? cotizacion?.observaciones ?? ""
+          observaciones: oc?.observaciones ?? cotizacion?.observaciones ?? "",
+          fecha_compromiso_entrega: oc?.fecha_compromiso_entrega ?? cotizacion?.fecha_compromiso_entrega ?? "",
+          prov_razon_social: provSnapshot.razon_social ?? proveedor?.razon_social ?? "",
+          prov_contacto: provSnapshot.contacto ?? proveedor?.contacto ?? "",
+          prov_correo: provSnapshot.correo ?? proveedor?.correo ?? "",
+          prov_direccion: provSnapshot.direccion ?? proveedor?.direccion ?? "",
+          prov_telefono: provSnapshot.telefono ?? proveedor?.telefono ?? "",
+          prov_nit: provSnapshot.nit ?? proveedor?.nit ?? ""
         });
       } catch (err) {
         setError(err.message);
@@ -79,7 +87,16 @@ export default function OrdenCompraPDF({ solicitudId, onClose }) {
         iva_valor: Number(editValues.iva_valor),
         retefuente_valor: Number(editValues.retefuente_valor),
         total_neto: total_neto,
-        observaciones: editValues.observaciones
+        observaciones: editValues.observaciones,
+        fecha_compromiso_entrega: editValues.fecha_compromiso_entrega,
+        proveedor_snapshot: {
+          razon_social: editValues.prov_razon_social,
+          contacto: editValues.prov_contacto,
+          correo: editValues.prov_correo,
+          direccion: editValues.prov_direccion,
+          telefono: editValues.prov_telefono,
+          nit: editValues.prov_nit
+        }
       })
       .eq("id", oc.id);
 
@@ -111,6 +128,16 @@ export default function OrdenCompraPDF({ solicitudId, onClose }) {
   const currentRetefuente = editValues?.retefuente_valor ?? 0;
   const calcTotalFactura = Number(currentSubtotal) - Number(currentDescuento);
   const calcTotalNeto = calcTotalFactura + Number(currentIva) - Number(currentRetefuente);
+
+  const displayProv = {
+    razon_social: oc?.proveedor_snapshot?.razon_social ?? proveedor?.razon_social ?? "",
+    contacto: oc?.proveedor_snapshot?.contacto ?? proveedor?.contacto ?? "",
+    correo: oc?.proveedor_snapshot?.correo ?? proveedor?.correo ?? "",
+    direccion: oc?.proveedor_snapshot?.direccion ?? proveedor?.direccion ?? "",
+    telefono: oc?.proveedor_snapshot?.telefono ?? proveedor?.telefono ?? "",
+    nit: oc?.proveedor_snapshot?.nit ?? proveedor?.nit ?? ""
+  };
+  const displayFecha = oc?.fecha_compromiso_entrega ?? cotizacion?.fecha_compromiso_entrega ?? "dd/mm/yy";
 
   return (
     <div className="oc-pdf-overlay">
@@ -170,27 +197,51 @@ export default function OrdenCompraPDF({ solicitudId, onClose }) {
               <div className="oc-fr-prov-left">
                 <div className="oc-fr-prov-row">
                   <div className="oc-fr-lbl">NOMBRE DEL PROVEEDOR:</div>
-                  <div className="oc-fr-val">{proveedor?.razon_social}</div>
+                  <div className="oc-fr-val">
+                    {canEdit ? (
+                      <input type="text" value={editValues?.prov_razon_social || ""} onChange={e => handleChange('prov_razon_social', e.target.value)} style={{ width: '100%', border: '1px solid #ccc' }} />
+                    ) : displayProv.razon_social}
+                  </div>
                 </div>
                 <div className="oc-fr-prov-row">
                   <div className="oc-fr-lbl">Contacto:</div>
-                  <div className="oc-fr-val">{proveedor?.contacto || ""}</div>
+                  <div className="oc-fr-val">
+                    {canEdit ? (
+                      <input type="text" value={editValues?.prov_contacto || ""} onChange={e => handleChange('prov_contacto', e.target.value)} style={{ width: '100%', border: '1px solid #ccc' }} />
+                    ) : displayProv.contacto}
+                  </div>
                 </div>
                 <div className="oc-fr-prov-row">
                   <div className="oc-fr-lbl">Correo:</div>
-                  <div className="oc-fr-val">{proveedor?.correo || ""}</div>
+                  <div className="oc-fr-val">
+                    {canEdit ? (
+                      <input type="text" value={editValues?.prov_correo || ""} onChange={e => handleChange('prov_correo', e.target.value)} style={{ width: '100%', border: '1px solid #ccc' }} />
+                    ) : displayProv.correo}
+                  </div>
                 </div>
                 <div className="oc-fr-prov-row">
                   <div className="oc-fr-lbl">Dirección:</div>
-                  <div className="oc-fr-val">{proveedor?.direccion || ""}</div>
+                  <div className="oc-fr-val">
+                    {canEdit ? (
+                      <input type="text" value={editValues?.prov_direccion || ""} onChange={e => handleChange('prov_direccion', e.target.value)} style={{ width: '100%', border: '1px solid #ccc' }} />
+                    ) : displayProv.direccion}
+                  </div>
                 </div>
                 <div className="oc-fr-prov-row">
                   <div className="oc-fr-lbl">TEL:</div>
-                  <div className="oc-fr-val">{proveedor?.telefono || ""}</div>
+                  <div className="oc-fr-val">
+                    {canEdit ? (
+                      <input type="text" value={editValues?.prov_telefono || ""} onChange={e => handleChange('prov_telefono', e.target.value)} style={{ width: '100%', border: '1px solid #ccc' }} />
+                    ) : displayProv.telefono}
+                  </div>
                 </div>
                 <div className="oc-fr-prov-row no-bottom">
                   <div className="oc-fr-lbl">NIT:</div>
-                  <div className="oc-fr-val">{proveedor?.nit || ""}</div>
+                  <div className="oc-fr-val">
+                    {canEdit ? (
+                      <input type="text" value={editValues?.prov_nit || ""} onChange={e => handleChange('prov_nit', e.target.value)} style={{ width: '100%', border: '1px solid #ccc' }} />
+                    ) : displayProv.nit}
+                  </div>
                 </div>
               </div>
               <div className="oc-fr-prov-right">
@@ -206,7 +257,11 @@ export default function OrdenCompraPDF({ solicitudId, onClose }) {
             {/* 4. COMPROMISE DATE */}
             <div className="oc-fr-compromise">
               <div className="oc-fr-lbl-comp">Fecha de Compromiso de Entrega:</div>
-              <div className="oc-fr-val-comp">{cotizacion?.fecha_compromiso_entrega || "dd/mm/yy"}</div>
+              <div className="oc-fr-val-comp">
+                {canEdit ? (
+                  <input type="text" value={editValues?.fecha_compromiso_entrega || ""} onChange={e => handleChange('fecha_compromiso_entrega', e.target.value)} style={{ width: '200px', border: '1px solid #ccc' }} placeholder="Ej: 01-01-2024 o Inmediata" />
+                ) : displayFecha}
+              </div>
             </div>
 
             {/* 5. ITEMS TABLE */}
