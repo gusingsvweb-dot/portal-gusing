@@ -200,7 +200,7 @@ export default function OrdenCompraPDF({ solicitudId, onClose }) {
                   <div className="oc-fr-lbl">NOMBRE DEL PROVEEDOR:</div>
                   <div className="oc-fr-val">
                     {canEdit ? (
-                      <input type="text" value={editValues?.prov_razon_social || ""} onChange={e => handleChange('prov_razon_social', e.target.value)} style={{ width: '100%', border: '1px solid #ccc' }} />
+                      <input type="text" value={editValues?.prov_razon_social || ""} onChange={e => handleChange('prov_razon_social', e.target.value)} style={{ width: '100%', border: '1px solid #ccc', backgroundColor: '#ffffff', color: '#000000', colorScheme: 'light' }} />
                     ) : displayProv.razon_social}
                   </div>
                 </div>
@@ -208,7 +208,7 @@ export default function OrdenCompraPDF({ solicitudId, onClose }) {
                   <div className="oc-fr-lbl">Contacto:</div>
                   <div className="oc-fr-val">
                     {canEdit ? (
-                      <input type="text" value={editValues?.prov_contacto || ""} onChange={e => handleChange('prov_contacto', e.target.value)} style={{ width: '100%', border: '1px solid #ccc' }} />
+                      <input type="text" value={editValues?.prov_contacto || ""} onChange={e => handleChange('prov_contacto', e.target.value)} style={{ width: '100%', border: '1px solid #ccc', backgroundColor: '#ffffff', color: '#000000', colorScheme: 'light' }} />
                     ) : displayProv.contacto}
                   </div>
                 </div>
@@ -216,7 +216,7 @@ export default function OrdenCompraPDF({ solicitudId, onClose }) {
                   <div className="oc-fr-lbl">Correo:</div>
                   <div className="oc-fr-val">
                     {canEdit ? (
-                      <input type="text" value={editValues?.prov_correo || ""} onChange={e => handleChange('prov_correo', e.target.value)} style={{ width: '100%', border: '1px solid #ccc' }} />
+                      <input type="text" value={editValues?.prov_correo || ""} onChange={e => handleChange('prov_correo', e.target.value)} style={{ width: '100%', border: '1px solid #ccc', backgroundColor: '#ffffff', color: '#000000', colorScheme: 'light' }} />
                     ) : displayProv.correo}
                   </div>
                 </div>
@@ -224,7 +224,7 @@ export default function OrdenCompraPDF({ solicitudId, onClose }) {
                   <div className="oc-fr-lbl">Dirección:</div>
                   <div className="oc-fr-val">
                     {canEdit ? (
-                      <input type="text" value={editValues?.prov_direccion || ""} onChange={e => handleChange('prov_direccion', e.target.value)} style={{ width: '100%', border: '1px solid #ccc' }} />
+                      <input type="text" value={editValues?.prov_direccion || ""} onChange={e => handleChange('prov_direccion', e.target.value)} style={{ width: '100%', border: '1px solid #ccc', backgroundColor: '#ffffff', color: '#000000', colorScheme: 'light' }} />
                     ) : displayProv.direccion}
                   </div>
                 </div>
@@ -232,7 +232,7 @@ export default function OrdenCompraPDF({ solicitudId, onClose }) {
                   <div className="oc-fr-lbl">TEL:</div>
                   <div className="oc-fr-val">
                     {canEdit ? (
-                      <input type="text" value={editValues?.prov_telefono || ""} onChange={e => handleChange('prov_telefono', e.target.value)} style={{ width: '100%', border: '1px solid #ccc' }} />
+                      <input type="text" value={editValues?.prov_telefono || ""} onChange={e => handleChange('prov_telefono', e.target.value)} style={{ width: '100%', border: '1px solid #ccc', backgroundColor: '#ffffff', color: '#000000', colorScheme: 'light' }} />
                     ) : displayProv.telefono}
                   </div>
                 </div>
@@ -240,7 +240,7 @@ export default function OrdenCompraPDF({ solicitudId, onClose }) {
                   <div className="oc-fr-lbl">NIT:</div>
                   <div className="oc-fr-val">
                     {canEdit ? (
-                      <input type="text" value={editValues?.prov_nit || ""} onChange={e => handleChange('prov_nit', e.target.value)} style={{ width: '100%', border: '1px solid #ccc' }} />
+                      <input type="text" value={editValues?.prov_nit || ""} onChange={e => handleChange('prov_nit', e.target.value)} style={{ width: '100%', border: '1px solid #ccc', backgroundColor: '#ffffff', color: '#000000', colorScheme: 'light' }} />
                     ) : displayProv.nit}
                   </div>
                 </div>
@@ -260,7 +260,7 @@ export default function OrdenCompraPDF({ solicitudId, onClose }) {
               <div className="oc-fr-lbl-comp">Fecha de Compromiso de Entrega:</div>
               <div className="oc-fr-val-comp">
                 {canEdit ? (
-                  <input type="text" value={editValues?.fecha_compromiso_entrega || ""} onChange={e => handleChange('fecha_compromiso_entrega', e.target.value)} style={{ width: '200px', border: '1px solid #ccc' }} placeholder="Ej: 01-01-2024 o Inmediata" />
+                  <input type="text" value={editValues?.fecha_compromiso_entrega || ""} onChange={e => handleChange('fecha_compromiso_entrega', e.target.value)} style={{ width: '200px', border: '1px solid #ccc', backgroundColor: '#ffffff', color: '#000000', colorScheme: 'light' }} placeholder="Ej: 01-01-2024 o Inmediata" />
                 ) : displayFecha}
               </div>
             </div>
@@ -311,7 +311,7 @@ export default function OrdenCompraPDF({ solicitudId, onClose }) {
                   <div className="oc-fr-tot-lbl">SUB-TOTAL</div>
                   <div className="oc-fr-tot-val">
                     {canEdit ? (
-                      <input type="number" value={editValues?.subtotal || ""} onChange={e => handleChange('subtotal', e.target.value)} style={{ width: '100px', textAlign: 'right', border: '1px solid #ccc' }} />
+                      <input type="number" value={editValues?.subtotal || ""} onChange={e => handleChange('subtotal', e.target.value)} style={{ width: '100px', textAlign: 'right', border: '1px solid #ccc', backgroundColor: '#ffffff', color: '#000000', colorScheme: 'light' }} />
                     ) : (
                       `$${Number(oc?.subtotal ?? cotizacion?.subtotal ?? cotizacion?.total ?? 0).toLocaleString()}`
                     )}
@@ -321,7 +321,7 @@ export default function OrdenCompraPDF({ solicitudId, onClose }) {
                   <div className="oc-fr-tot-lbl">DESCUENTO</div>
                   <div className="oc-fr-tot-val">
                     {canEdit ? (
-                      <input type="number" value={editValues?.descuento_valor || ""} onChange={e => handleChange('descuento_valor', e.target.value)} style={{ width: '100px', textAlign: 'right', border: '1px solid #ccc' }} />
+                      <input type="number" value={editValues?.descuento_valor || ""} onChange={e => handleChange('descuento_valor', e.target.value)} style={{ width: '100px', textAlign: 'right', border: '1px solid #ccc', backgroundColor: '#ffffff', color: '#000000', colorScheme: 'light' }} />
                     ) : (
                       `$${Number(oc?.descuento_valor ?? 0).toLocaleString()}`
                     )}
@@ -335,7 +335,7 @@ export default function OrdenCompraPDF({ solicitudId, onClose }) {
                   <div className="oc-fr-tot-lbl">IVA</div>
                   <div className="oc-fr-tot-val">
                     {canEdit ? (
-                      <input type="number" value={editValues?.iva_valor || ""} onChange={e => handleChange('iva_valor', e.target.value)} style={{ width: '100px', textAlign: 'right', border: '1px solid #ccc' }} />
+                      <input type="number" value={editValues?.iva_valor || ""} onChange={e => handleChange('iva_valor', e.target.value)} style={{ width: '100px', textAlign: 'right', border: '1px solid #ccc', backgroundColor: '#ffffff', color: '#000000', colorScheme: 'light' }} />
                     ) : (
                       `$${Number(oc?.iva_valor ?? 0).toLocaleString()}`
                     )}
@@ -345,7 +345,7 @@ export default function OrdenCompraPDF({ solicitudId, onClose }) {
                   <div className="oc-fr-tot-lbl">RETEFUENTE</div>
                   <div className="oc-fr-tot-val">
                     {canEdit ? (
-                      <input type="number" value={editValues?.retefuente_valor || ""} onChange={e => handleChange('retefuente_valor', e.target.value)} style={{ width: '100px', textAlign: 'right', border: '1px solid #ccc' }} />
+                      <input type="number" value={editValues?.retefuente_valor || ""} onChange={e => handleChange('retefuente_valor', e.target.value)} style={{ width: '100px', textAlign: 'right', border: '1px solid #ccc', backgroundColor: '#ffffff', color: '#000000', colorScheme: 'light' }} />
                     ) : (
                       `$${Number(oc?.retefuente_valor ?? 0).toLocaleString()}`
                     )}
@@ -366,7 +366,7 @@ export default function OrdenCompraPDF({ solicitudId, onClose }) {
                   <textarea 
                     value={editValues?.observaciones || ""} 
                     onChange={e => handleChange('observaciones', e.target.value)}
-                    style={{ width: '100%', border: '1px solid #ccc', minHeight: '60px', fontFamily: 'inherit', resize: 'vertical', padding: '5px' }}
+                    style={{ width: '100%', border: '1px solid #ccc', minHeight: '60px', fontFamily: 'inherit', resize: 'vertical', padding: '5px', backgroundColor: '#ffffff', color: '#000000', colorScheme: 'light' }}
                   />
                 ) : (
                   oc?.observaciones || cotizacion?.observaciones || " "
