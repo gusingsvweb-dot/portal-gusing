@@ -192,27 +192,27 @@ export default function OrdenCompraPDF({ solicitudId, onClose }) {
               <div className="oc-fr-tot-values">
                 <div className="oc-fr-tot-row">
                   <div className="oc-fr-tot-lbl">SUB-TOTAL</div>
-                  <div className="oc-fr-tot-val">${Number(cotizacion?.subtotal || cotizacion?.total || 0).toLocaleString()}</div>
+                  <div className="oc-fr-tot-val">${Number(oc?.subtotal ?? cotizacion?.subtotal ?? cotizacion?.total ?? 0).toLocaleString()}</div>
                 </div>
                 <div className="oc-fr-tot-row">
                   <div className="oc-fr-tot-lbl">DESCUENTO</div>
-                  <div className="oc-fr-tot-val">$0</div>
+                  <div className="oc-fr-tot-val">${Number(oc?.descuento_valor ?? 0).toLocaleString()}</div>
                 </div>
                 <div className="oc-fr-tot-row">
                   <div className="oc-fr-tot-lbl">TOTAL FACTURA</div>
-                  <div className="oc-fr-tot-val">${Number(cotizacion?.total || 0).toLocaleString()}</div>
+                  <div className="oc-fr-tot-val">${(Number(oc?.subtotal ?? cotizacion?.subtotal ?? cotizacion?.total ?? 0) - Number(oc?.descuento_valor ?? 0)).toLocaleString()}</div>
                 </div>
                 <div className="oc-fr-tot-row">
                   <div className="oc-fr-tot-lbl">IVA</div>
-                  <div className="oc-fr-tot-val">$0</div>
+                  <div className="oc-fr-tot-val">${Number(oc?.iva_valor ?? 0).toLocaleString()}</div>
                 </div>
                 <div className="oc-fr-tot-row">
                   <div className="oc-fr-tot-lbl">RETEFUENTE</div>
-                  <div className="oc-fr-tot-val">$0</div>
+                  <div className="oc-fr-tot-val">${Number(oc?.retefuente_valor ?? 0).toLocaleString()}</div>
                 </div>
                 <div className="oc-fr-tot-row no-bottom">
                   <div className="oc-fr-tot-lbl">TOTAL NETO</div>
-                  <div className="oc-fr-tot-val">${Number(cotizacion?.total || 0).toLocaleString()}</div>
+                  <div className="oc-fr-tot-val">${Number(oc?.total_neto ?? (Number(oc?.subtotal ?? cotizacion?.subtotal ?? cotizacion?.total ?? 0) - Number(oc?.descuento_valor ?? 0) + Number(oc?.iva_valor ?? 0) - Number(oc?.retefuente_valor ?? 0))).toLocaleString()}</div>
                 </div>
               </div>
             </div>
@@ -221,7 +221,7 @@ export default function OrdenCompraPDF({ solicitudId, onClose }) {
             <div className="oc-fr-obs-section">
               <div className="oc-fr-obs-header">ANOTACIONES DE LA ORDEN DE COMPRA EN LA PAGINA DE OBSERVACIONES Y/O SEGUIMIENTO</div>
               <div className="oc-fr-obs-content">
-                {cotizacion?.observaciones || " "}
+                {oc?.observaciones || cotizacion?.observaciones || " "}
               </div>
             </div>
 
