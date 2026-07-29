@@ -6,6 +6,8 @@ export default function OrdenCompraPDF({ solicitudId, onClose }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [editValues, setEditValues] = useState(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     async function loadData() {
@@ -36,6 +38,13 @@ export default function OrdenCompraPDF({ solicitudId, onClose }) {
         const cotizacion = sol.compras_cotizaciones?.find(c => c.id === cotId);
         
         setData({ sol, oc, detalle, items, cotizacion });
+        setEditValues({
+          subtotal: oc?.subtotal ?? cotizacion?.subtotal ?? cotizacion?.total ?? 0,
+          descuento_valor: oc?.descuento_valor ?? 0,
+          iva_valor: oc?.iva_valor ?? 0,
+          retefuente_valor: oc?.retefuente_valor ?? 0,
+          observaciones: oc?.observaciones ?? cotizacion?.observaciones ?? ""
+        });
       } catch (err) {
         setError(err.message);
       } finally {
@@ -51,15 +60,67 @@ export default function OrdenCompraPDF({ solicitudId, onClose }) {
 
   const { sol, oc, detalle, items, cotizacion } = data;
   const proveedor = cotizacion?.compras_proveedores;
+  const canEdit = sol?.estado_id === 23;
 
   const handlePrint = () => {
     window.print();
   };
 
+  const handleSave = async () => {
+    setSaving(true);
+    const total_factura = Number(editValues.subtotal) - Number(editValues.descuento_valor);
+    const total_neto = total_factura + Number(editValues.iva_valor) - Number(editValues.retefuente_valor);
+
+    const { error: updErr } = await supabase
+      .from("compras_ordenes_compra")
+      .update({
+        subtotal: Number(editValues.subtotal),
+        descuento_valor: Number(editValues.descuento_valor),
+        iva_valor: Number(editValues.iva_valor),
+        retefuente_valor: Number(editValues.retefuente_valor),
+        total_neto: total_neto,
+        observaciones: editValues.observaciones
+      })
+      .eq("id", oc.id);
+
+    setSaving(false);
+    if (updErr) {
+      alert(`Error guardando: ${updErr.message}`);
+    } else {
+      alert("Cambios guardados correctamente.");
+      // Actualizar el estado local para reflejar los cambios
+      setData({
+        ...data,
+        oc: {
+          ...oc,
+          ...editValues,
+          total_neto
+        }
+      });
+    }
+  };
+
+  const handleChange = (field, val) => {
+    setEditValues(prev => ({ ...prev, [field]: val }));
+  };
+
+  // Cálculos dinámicos
+  const currentSubtotal = editValues?.subtotal ?? 0;
+  const currentDescuento = editValues?.descuento_valor ?? 0;
+  const currentIva = editValues?.iva_valor ?? 0;
+  const currentRetefuente = editValues?.retefuente_valor ?? 0;
+  const calcTotalFactura = Number(currentSubtotal) - Number(currentDescuento);
+  const calcTotalNeto = calcTotalFactura + Number(currentIva) - Number(currentRetefuente);
+
   return (
     <div className="oc-pdf-overlay">
       <div className="oc-pdf-container">
         <div className="oc-pdf-actions no-print">
+          {canEdit && (
+            <button className="oc-btn-print" onClick={handleSave} disabled={saving} style={{ backgroundColor: '#eab308', marginRight: '10px' }}>
+              {saving ? '⏳ Guardando...' : '💾 Guardar Cambios'}
+            </button>
+          )}
           <button className="oc-btn-print" onClick={handlePrint}>🖨 Imprimir PDF</button>
           <button className="oc-btn-close" onClick={onClose}>✖ Cerrar</button>
         </div>
@@ -192,27 +253,51 @@ export default function OrdenCompraPDF({ solicitudId, onClose }) {
               <div className="oc-fr-tot-values">
                 <div className="oc-fr-tot-row">
                   <div className="oc-fr-tot-lbl">SUB-TOTAL</div>
-                  <div className="oc-fr-tot-val">${Number(oc?.subtotal ?? cotizacion?.subtotal ?? cotizacion?.total ?? 0).toLocaleString()}</div>
+                  <div className="oc-fr-tot-val">
+                    {canEdit ? (
+                      <input type="number" value={editValues?.subtotal || ""} onChange={e => handleChange('subtotal', e.target.value)} style={{ width: '100px', textAlign: 'right', border: '1px solid #ccc' }} />
+                    ) : (
+                      `$${Number(oc?.subtotal ?? cotizacion?.subtotal ?? cotizacion?.total ?? 0).toLocaleString()}`
+                    )}
+                  </div>
                 </div>
                 <div className="oc-fr-tot-row">
                   <div className="oc-fr-tot-lbl">DESCUENTO</div>
-                  <div className="oc-fr-tot-val">${Number(oc?.descuento_valor ?? 0).toLocaleString()}</div>
+                  <div className="oc-fr-tot-val">
+                    {canEdit ? (
+                      <input type="number" value={editValues?.descuento_valor || ""} onChange={e => handleChange('descuento_valor', e.target.value)} style={{ width: '100px', textAlign: 'right', border: '1px solid #ccc' }} />
+                    ) : (
+                      `$${Number(oc?.descuento_valor ?? 0).toLocaleString()}`
+                    )}
+                  </div>
                 </div>
                 <div className="oc-fr-tot-row">
                   <div className="oc-fr-tot-lbl">TOTAL FACTURA</div>
-                  <div className="oc-fr-tot-val">${(Number(oc?.subtotal ?? cotizacion?.subtotal ?? cotizacion?.total ?? 0) - Number(oc?.descuento_valor ?? 0)).toLocaleString()}</div>
+                  <div className="oc-fr-tot-val">${calcTotalFactura.toLocaleString()}</div>
                 </div>
                 <div className="oc-fr-tot-row">
                   <div className="oc-fr-tot-lbl">IVA</div>
-                  <div className="oc-fr-tot-val">${Number(oc?.iva_valor ?? 0).toLocaleString()}</div>
+                  <div className="oc-fr-tot-val">
+                    {canEdit ? (
+                      <input type="number" value={editValues?.iva_valor || ""} onChange={e => handleChange('iva_valor', e.target.value)} style={{ width: '100px', textAlign: 'right', border: '1px solid #ccc' }} />
+                    ) : (
+                      `$${Number(oc?.iva_valor ?? 0).toLocaleString()}`
+                    )}
+                  </div>
                 </div>
                 <div className="oc-fr-tot-row">
                   <div className="oc-fr-tot-lbl">RETEFUENTE</div>
-                  <div className="oc-fr-tot-val">${Number(oc?.retefuente_valor ?? 0).toLocaleString()}</div>
+                  <div className="oc-fr-tot-val">
+                    {canEdit ? (
+                      <input type="number" value={editValues?.retefuente_valor || ""} onChange={e => handleChange('retefuente_valor', e.target.value)} style={{ width: '100px', textAlign: 'right', border: '1px solid #ccc' }} />
+                    ) : (
+                      `$${Number(oc?.retefuente_valor ?? 0).toLocaleString()}`
+                    )}
+                  </div>
                 </div>
                 <div className="oc-fr-tot-row no-bottom">
                   <div className="oc-fr-tot-lbl">TOTAL NETO</div>
-                  <div className="oc-fr-tot-val">${Number(oc?.total_neto ?? (Number(oc?.subtotal ?? cotizacion?.subtotal ?? cotizacion?.total ?? 0) - Number(oc?.descuento_valor ?? 0) + Number(oc?.iva_valor ?? 0) - Number(oc?.retefuente_valor ?? 0))).toLocaleString()}</div>
+                  <div className="oc-fr-tot-val">${calcTotalNeto.toLocaleString()}</div>
                 </div>
               </div>
             </div>
@@ -221,7 +306,15 @@ export default function OrdenCompraPDF({ solicitudId, onClose }) {
             <div className="oc-fr-obs-section">
               <div className="oc-fr-obs-header">ANOTACIONES DE LA ORDEN DE COMPRA EN LA PAGINA DE OBSERVACIONES Y/O SEGUIMIENTO</div>
               <div className="oc-fr-obs-content">
-                {oc?.observaciones || cotizacion?.observaciones || " "}
+                {canEdit ? (
+                  <textarea 
+                    value={editValues?.observaciones || ""} 
+                    onChange={e => handleChange('observaciones', e.target.value)}
+                    style={{ width: '100%', border: '1px solid #ccc', minHeight: '60px', fontFamily: 'inherit', resize: 'vertical', padding: '5px' }}
+                  />
+                ) : (
+                  oc?.observaciones || cotizacion?.observaciones || " "
+                )}
               </div>
             </div>
 

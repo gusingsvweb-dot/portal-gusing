@@ -7,7 +7,6 @@ import { useAuth } from "../context/AuthContext";
 import "./Compras.css";
 import GestionRevisionCompras from "../components/compras/GestionRevisionCompras";
 import OrdenCompraPDF from "../components/compras/OrdenCompraPDF";
-import EditarOCModal from "../components/compras/EditarOCModal";
 
 export default function Compras() {
   const { usuarioActual } = useAuth();
@@ -22,7 +21,6 @@ export default function Compras() {
   const [error, setError] = useState("");
   const [soporteFile, setSoporteFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [showEditOC, setShowEditOC] = useState(false);
 
   const aprobador = usuarioActual?.usuario || usuarioActual?.username || "COMPRAS";
 
@@ -398,7 +396,6 @@ export default function Compras() {
                       <p className="note-text" style={{ color: '#166534' }}>✅ Orden de compra generada en borrador. Revísala antes de enviarla.</p>
                       {error && <p className="error-msg">{error}</p>}
                       <div className="modal-footer-actions">
-                        <button className="btn-execute" onClick={() => setShowEditOC(true)} style={{ backgroundColor: '#eab308', color: '#fff' }}>✏️ Editar Valores</button>
                         <button className="btn-execute" onClick={() => setShowPDF(true)} style={{ backgroundColor: '#64748b' }}>📄 Revisar PDF (Borrador)</button>
                         <button className="btn-execute" onClick={enviarGerenciaOC}>Enviar a Gerencia (OC)</button>
                       </div>
@@ -467,17 +464,6 @@ export default function Compras() {
 
       {showPDF && selected && (
         <OrdenCompraPDF solicitudId={selected.id} onClose={() => setShowPDF(false)} />
-      )}
-      {showEditOC && selected && selected.compras_ordenes_compra?.[0] && (
-        <EditarOCModal 
-          oc={selected.compras_ordenes_compra[0]}
-          cotizacion={selected.compras_cotizaciones?.find(c => c.id === selected.compras_ordenes_compra[0].cotizacion_id)}
-          onClose={() => setShowEditOC(false)}
-          onSaved={() => {
-            setShowEditOC(false);
-            loadSolicitudes(); // reload to get the updated OC values
-          }}
-        />
       )}
       
       <Footer />
