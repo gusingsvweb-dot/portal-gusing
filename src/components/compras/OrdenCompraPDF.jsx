@@ -36,6 +36,7 @@ export default function OrdenCompraPDF({ solicitudId, onClose }) {
         // La cotización que está en la OC o la seleccionada en detalle
         const cotId = oc?.cotizacion_id || detalle?.cotizacion_seleccionada_id;
         const cotizacion = sol.compras_cotizaciones?.find(c => c.id === cotId);
+        const proveedor = cotizacion?.compras_proveedores;
         
         const provSnapshot = oc?.proveedor_snapshot || {};
         setData({ sol, oc, detalle, items, cotizacion });
