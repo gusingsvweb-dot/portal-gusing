@@ -117,7 +117,7 @@ export default function KpisMantenimiento() {
     ).sort((a, b) => b[1] - a[1]).slice(0, 6);
 
     const porEstado = {
-      Pendientes: solicitudes.filter(s => s.estado_id === 1).length,
+      Pendientes: solicitudes.filter(s => s.estado_id === 1 || s.estado_id === 25).length,
       "En Proceso": solicitudes.filter(s => s.estado_id === 13).length,
       Finalizados: solicitudes.filter(s => [14, 15].includes(s.estado_id)).length,
     };

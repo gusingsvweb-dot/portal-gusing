@@ -7,7 +7,7 @@ import { useSearchParams } from "react-router-dom";
 import { notifyUserByUsername, notifyRoles } from "../api/notifications";
 import "./Mantenimiento.css";
 
-const NEXT_STATE = { 1: 13, 13: 14, 14: 15, 15: 15 };
+const NEXT_STATE = { 1: 13, 25: 13, 13: 14, 14: 15, 15: 15 };
 const PRIORITY_LABEL = { 1: "Baja", 2: "Media", 3: "Alta" };
 const PRIORITY_CLASS = { 1: "priority-low", 2: "priority-medium", 3: "priority-high" };
 
@@ -115,7 +115,7 @@ export default function TecnicoMantenimiento() {
 
   const stats = useMemo(() => ({
     total: filtered.length,
-    pendientes: filtered.filter(s => s.estado_id === 1).length,
+    pendientes: filtered.filter(s => s.estado_id === 1 || s.estado_id === 25).length,
     proceso: filtered.filter(s => s.estado_id === 13).length,
     finalizados: filtered.filter(s => [14, 15].includes(s.estado_id)).length,
   }), [filtered]);
@@ -334,7 +334,7 @@ export default function TecnicoMantenimiento() {
             {/* KANBAN BOARD */}
             <div className="mant-board">
               <KanbanColumn title="Asignadas" type="pending" icon="⏳"
-                items={filtered.filter(s => s.estado_id === 1)} onCardClick={openModal} />
+                items={filtered.filter(s => s.estado_id === 1 || s.estado_id === 25)} onCardClick={openModal} />
               <KanbanColumn title="En Proceso" type="process" icon="⚙️"
                 items={filtered.filter(s => s.estado_id === 13)} onCardClick={openModal} />
               <KanbanColumn title="Terminadas" type="done" icon="✅"
@@ -496,7 +496,7 @@ export default function TecnicoMantenimiento() {
               )}
               {selected.estado_id < 14 && (
                 <button className="mant-btn-action primary" onClick={avanzarEstado} disabled={saving}>
-                  {saving ? "Guardando..." : selected.estado_id === 1 ? "Iniciar Trabajo →" : "Finalizar y Cerrar Ticket ✓"}
+                  {saving ? "Guardando..." : (selected.estado_id === 1 || selected.estado_id === 25) ? "Iniciar Trabajo →" : "Finalizar y Cerrar Ticket ✓"}
                 </button>
               )}
             </div>

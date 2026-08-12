@@ -102,7 +102,7 @@ export default function MisSolicitudes() {
       // 2. Filtro por Estado y Pendiente Calificar
       if (soloCalificar && s.estado_id !== 14) return false;
       if (!soloCalificar && filtroEstado !== "Todos") {
-        if (filtroEstado === "Pendientes" && s.estado_id !== 1) return false;
+        if (filtroEstado === "Pendientes" && s.estado_id !== 1 && s.estado_id !== 25) return false;
         if (filtroEstado === "En Proceso" && s.estado_id !== 13) return false;
         if (filtroEstado === "Finalizadas" && s.estado_id !== 14) return false;
         if (filtroEstado === "Cerradas" && s.estado_id !== 15) return false;
