@@ -341,24 +341,6 @@ export default function Mantenimiento() {
     setSaving(false);
     loadData();
     setSelected(prev => ({ ...prev, tecnico_asignado: tecnico }));
-
-    if (tecnico && selected.usuario_id) {
-      await notifyUserByUsername(
-        selected.usuario_id,
-        "👷 Técnico Asignado",
-        `Se asignó a ${tecnico} para atender tu solicitud M-${selected.consecutivo}.`,
-        selected.id
-      );
-    }
-    if (tecnico) {
-      await notifyRoles(
-        ["tecnicomantenimiento"],
-        "🔧 Nueva Asignación de Ticket",
-        `El ticket M-${selected.consecutivo} ha sido asignada a ${tecnico}. Revisa tu tablero.`,
-        selected.id,
-        "info"
-      );
-    }
   };
 
   const saveManual = async () => {
