@@ -3,10 +3,13 @@ import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
 import { supabase, st, ss } from "../api/supabaseClient";
 import { useAuth } from "../context/AuthContext";
+import { useSearchParams } from "react-router-dom";
 import "./MisSolicitudes.css";
 
 export default function MisSolicitudes() {
   const { usuarioActual } = useAuth();
+  const [searchParams] = useSearchParams();
+  const targetId = searchParams.get("id");
   const [solicitudes, setSolicitudes] = useState([]);
   const [selected, setSelected] = useState(null);
   const [activeTab, setActiveTab] = useState("Todas");
@@ -57,6 +60,13 @@ export default function MisSolicitudes() {
       }));
 
       setSolicitudes(hydrated);
+
+      if (targetId) {
+        const req = hydrated.find(r => String(r.id) === String(targetId));
+        if (req) {
+          setSelected(req);
+        }
+      }
 
     } catch (err) {
       console.error("Error cargando solicitudes:", err);

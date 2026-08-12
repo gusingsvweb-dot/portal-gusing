@@ -263,7 +263,8 @@ export default function Navbar() {
       direcciontecnica: "/direccion-tecnica",
       garantiacalidad: "/garantiacalidad",
       usuario: "/usuario/mis-solicitudes",
-      atencion: "/pedidos-curso"
+      atencion: "/pedidos-curso",
+      tecnicomantenimiento: "/tecnico-mantenimiento"
     };
     const base = routes[rol] || "/dashboard";
     return `${base}?id=${n.pedido_id}`;

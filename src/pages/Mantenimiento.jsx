@@ -3,7 +3,7 @@ import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
 import { supabase, st, ss } from "../api/supabaseClient";
 import { useAuth } from "../context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { notifyUserByUsername, notifyRoles } from "../api/notifications";
 import "./Mantenimiento.css";
 
@@ -13,6 +13,8 @@ const PRIORITY_CLASS = { 1: "priority-low", 2: "priority-medium", 3: "priority-h
 
 export default function Mantenimiento() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const targetId = searchParams.get("id");
   const { usuarioActual } = useAuth();
   const pillsRef = useRef(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -106,6 +108,19 @@ export default function Mantenimiento() {
       setSolicitudes(hydrated);
       setProveedores(provRaw || []);
       setAllRepuestos(repsRaw || []);
+
+      if (targetId) {
+        const req = hydrated.find(r => String(r.id) === String(targetId));
+        if (req) {
+          setSelected(req);
+          setAccion("");
+          setPrioridadId(req.prioridad_id || "");
+          setProveedorId(req.proveedor_id || "");
+          setConsumos([]);
+          setRepuesto("");
+          setCantidad(1);
+        }
+      }
 
     } catch (err) {
       console.error("Error en loadData:", err);

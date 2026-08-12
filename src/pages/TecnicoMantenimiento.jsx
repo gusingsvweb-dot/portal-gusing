@@ -3,6 +3,7 @@ import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
 import { supabase, st } from "../api/supabaseClient";
 import { useAuth } from "../context/AuthContext";
+import { useSearchParams } from "react-router-dom";
 import { notifyUserByUsername, notifyRoles } from "../api/notifications";
 import "./Mantenimiento.css";
 
@@ -12,6 +13,8 @@ const PRIORITY_CLASS = { 1: "priority-low", 2: "priority-medium", 3: "priority-h
 
 export default function TecnicoMantenimiento() {
   const { usuarioActual } = useAuth();
+  const [searchParams] = useSearchParams();
+  const targetId = searchParams.get("id");
   const [solicitudes, setSolicitudes] = useState([]);
   const [allRepuestos, setAllRepuestos] = useState([]);
   const [selected, setSelected] = useState(null);
@@ -68,6 +71,15 @@ export default function TecnicoMantenimiento() {
 
       setSolicitudes(hydrated);
       setAllRepuestos(repsRaw || []);
+
+      if (targetId) {
+        const req = hydrated.find(r => String(r.id) === String(targetId));
+        if (req) {
+          setSelected(req);
+          setAccion("");
+          setConsumos([]);
+        }
+      }
 
     } catch (err) {
       console.error("Error en loadData:", err);
