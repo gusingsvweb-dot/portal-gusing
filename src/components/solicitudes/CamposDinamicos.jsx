@@ -39,7 +39,7 @@ export default function CamposDinamicos({ tipo, areaId, form, setForm, isManteni
               style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1" }}
             >
               <option value="">Seleccione categoría...</option>
-              <option value="Equipo">Mantenimiento a Equipos de Producción</option>
+              <option value="Equipo">Mantenimiento a Equipos</option>
               <option value="Instalación">Mantenimiento a Instalaciones</option>
               <option value="Computador">Mantenimiento a Equipos de Cómputo</option>
             </select>
