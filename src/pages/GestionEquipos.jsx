@@ -315,7 +315,7 @@ export default function GestionEquipos() {
       <div className="mant-container">
         <header className="mant-header-section">
           <div>
-            <h2 className="mant-title">Gestión de Activos Fijos</h2>
+            <h2 className="mant-title">Listado Maestro</h2>
             <p className="mant-subtitle">
               Inventario centralizado de infraestructura y equipos — {activos.length} equipos registrados
             </p>
