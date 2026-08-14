@@ -766,7 +766,7 @@ export default function Mantenimiento() {
               {selected.estado_id < 14 && (
                 <>
                   {(selected.estado_id === 1 || selected.estado_id === 25) ? (
-                    (activeRole === "tecnico" || !selected.tecnico_asignado || activeRole === "gerencia") && (
+                    (usuarioActual?.rol === "tecnicomantenimiento" || !selected.tecnico_asignado || usuarioActual?.rol === "gerencia") && (
                       <button className="mant-btn-action primary" onClick={avanzarEstado} disabled={saving}>
                         {saving ? "Guardando..." : "Iniciar Trabajo →"}
                       </button>
