@@ -349,6 +349,7 @@ export default function Navbar() {
                 <NavLink 
                   key={index} 
                   to={item.to} 
+                  end
                   className={({ isActive }) => (isActive ? "active" : "")}
                   onClick={() => {
                     if (navLinksRef.current) {
