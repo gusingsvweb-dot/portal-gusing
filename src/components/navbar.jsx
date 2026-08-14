@@ -36,28 +36,30 @@ export default function Navbar() {
     setCanNavScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
   }, []);
 
-  const handleNavScroll = useCallback(() => {
-    if (navLinksRef.current) {
-      sessionStorage.setItem("navScrollPosition", navLinksRef.current.scrollLeft);
-    }
-    checkNavScroll();
-  }, [checkNavScroll]);
-
   const scrollNav = (dir) => {
     const el = navLinksRef.current;
     if (el) el.scrollBy({ left: dir * 200, behavior: "smooth" });
   };
 
   useEffect(() => {
-    if (navLinksRef.current) {
-      const savedScroll = sessionStorage.getItem("navScrollPosition");
-      if (savedScroll) {
-        navLinksRef.current.scrollLeft = parseInt(savedScroll, 10);
+    const restoreScroll = () => {
+      if (navLinksRef.current) {
+        const savedScroll = sessionStorage.getItem("navScrollPosition");
+        if (savedScroll) {
+          navLinksRef.current.scrollLeft = parseInt(savedScroll, 10);
+        }
+        checkNavScroll();
       }
-    }
-    checkNavScroll();
+    };
+
+    restoreScroll();
+    const tId = setTimeout(restoreScroll, 100);
+
     window.addEventListener("resize", checkNavScroll);
-    return () => window.removeEventListener("resize", checkNavScroll);
+    return () => {
+      clearTimeout(tId);
+      window.removeEventListener("resize", checkNavScroll);
+    };
   }, [checkNavScroll]);
 
   useEffect(() => {
@@ -342,9 +344,18 @@ export default function Navbar() {
                 ‹
               </button>
             )}
-            <div className="nav-links" ref={navLinksRef} onScroll={handleNavScroll}>
+            <div className="nav-links" ref={navLinksRef}>
               {menu.items.map((item, index) => (
-                <NavLink key={index} to={item.to} className={({ isActive }) => (isActive ? "active" : "")}>
+                <NavLink 
+                  key={index} 
+                  to={item.to} 
+                  className={({ isActive }) => (isActive ? "active" : "")}
+                  onClick={() => {
+                    if (navLinksRef.current) {
+                      sessionStorage.setItem("navScrollPosition", navLinksRef.current.scrollLeft);
+                    }
+                  }}
+                >
                   <span style={{ fontSize: "1.1rem" }}>{item.icon}</span>
                   {item.label}
                 </NavLink>
