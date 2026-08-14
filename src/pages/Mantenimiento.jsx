@@ -377,8 +377,10 @@ export default function Mantenimiento() {
     setSelected(prev => ({ ...prev, ...updateData, estados: updateData.estado_id === 25 ? { id: 25, nombre: "Asignado" } : prev.estados }));
 
     if (tecnico) {
+      // El técnico viene como "JUAN ANDRES BELTRAN", pero el usuario en la BD es "juan.andres.beltran"
+      const techUsername = tecnico.toLowerCase().replace(/\s+/g, ".");
       await notifyUserByUsername(
-        tecnico,
+        techUsername,
         "👷 Ticket Asignado",
         `Se te ha asignado el ticket M-${selected.consecutivo || selected.id} para ${selected.activos?.nombre || "equipo"}.`,
         selected.id
