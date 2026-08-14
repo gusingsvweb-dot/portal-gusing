@@ -285,10 +285,12 @@ export default function CrearSolicitud() {
       <Navbar />
 
       <div className="crear-wrapper">
-        <h2>📝 Crear Nueva Solicitud</h2>
-        <p className="crear-sub">
-          Completa la información para generar una solicitud al área correspondiente.
-        </p>
+        <div className="crear-header-container">
+          <h2>📝 Crear Nueva Solicitud</h2>
+          <p className="crear-sub">
+            Completa la información para generar una solicitud al área correspondiente.
+          </p>
+        </div>
 
         <div className="crear-card">
 
