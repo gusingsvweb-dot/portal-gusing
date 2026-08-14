@@ -96,8 +96,8 @@ export default function Navbar() {
           { to: "/pedidos-finalizados", label: "Cerrados", icon: "📂" },
           { to: "/consolidado", label: "Consolidado", icon: "📊" },
           { to: "/dashboard", label: "Métricas", icon: "📈" },
-          { to: "/usuario/mis-solicitudes", label: "Mis Pedidos", icon: "📋" },
-          { to: "/usuario/crear-solicitud", label: "Nuevo Pedido", icon: "➕" },
+          { to: "/usuario/mis-solicitudes", label: "Mis Solicitudes", icon: "📋" },
+          { to: "/usuario/crear-solicitud", label: "Nueva Solicitud", icon: "➕" },
         ],
       },
 
@@ -113,8 +113,8 @@ export default function Navbar() {
           { to: "/consolidado", label: "Consolidado", icon: "📊" },
           { to: "/dashboard", label: "Métricas", icon: "📈" },
           { to: "/kpis-mantenimiento", label: "Mantenimiento Stats", icon: "🛠️" },
-          { to: "/usuario/mis-solicitudes", label: "Mis Pedidos", icon: "📋" },
-          { to: "/usuario/crear-solicitud", label: "Nuevo Pedido", icon: "➕" },
+          { to: "/usuario/mis-solicitudes", label: "Mis Solicitudes", icon: "📋" },
+          { to: "/usuario/crear-solicitud", label: "Nueva Solicitud", icon: "➕" },
         ],
       },
 
@@ -131,8 +131,8 @@ export default function Navbar() {
         items: [
           { to: "/bodega", label: "Pendientes", icon: "📦" },
           { to: "/pedidos-curso", label: "En Curso", icon: "⚡" },
-          { to: "/usuario/mis-solicitudes", label: "Mis Pedidos", icon: "📋" },
-          { to: "/usuario/crear-solicitud", label: "Nuevo Pedido", icon: "➕" },
+          { to: "/usuario/mis-solicitudes", label: "Mis Solicitudes", icon: "📋" },
+          { to: "/usuario/crear-solicitud", label: "Nueva Solicitud", icon: "➕" },
         ],
       },
 
@@ -159,8 +159,8 @@ export default function Navbar() {
           { to: "/microbiologia", label: "Análisis", icon: "🔬" },
           { to: "/pedidos-curso", label: "En Curso", icon: "⚡" },
           { to: "/calendario", label: "Agenda", icon: "📅" },
-          { to: "/usuario/mis-solicitudes", label: "Mis Pedidos", icon: "📋" },
-          { to: "/usuario/crear-solicitud", label: "Nuevo Pedido", icon: "➕" },
+          { to: "/usuario/mis-solicitudes", label: "Mis Solicitudes", icon: "📋" },
+          { to: "/usuario/crear-solicitud", label: "Nueva Solicitud", icon: "➕" },
         ],
       },
 
@@ -191,8 +191,8 @@ export default function Navbar() {
           { to: "/ControlCalidad", label: "Inspección", icon: "🔍" },
           { to: "/pedidos-curso", label: "En Curso", icon: "⚡" },
           { to: "/calendario", label: "Agenda", icon: "📅" },
-          { to: "/usuario/mis-solicitudes", label: "Mis Pedidos", icon: "📋" },
-          { to: "/usuario/crear-solicitud", label: "Nuevo Pedido", icon: "➕" },
+          { to: "/usuario/mis-solicitudes", label: "Mis Solicitudes", icon: "📋" },
+          { to: "/usuario/crear-solicitud", label: "Nueva Solicitud", icon: "➕" },
         ],
       },
 
@@ -215,8 +215,8 @@ export default function Navbar() {
       usuario: {
         title: "Portal Usuario",
         items: [
-          { to: "/usuario/mis-solicitudes", label: "Mis Pedidos", icon: "📋" },
-          { to: "/usuario/crear-solicitud", label: "Nuevo", icon: "➕" },
+          { to: "/usuario/mis-solicitudes", label: "Mis Solicitudes", icon: "📋" },
+          { to: "/usuario/crear-solicitud", label: "Nueva Solicitud", icon: "➕" },
         ],
       },
 
