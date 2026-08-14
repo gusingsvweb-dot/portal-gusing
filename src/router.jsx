@@ -142,7 +142,7 @@ export default function AppRouter() {
       <Route
         path="/usuario/mis-solicitudes"
         element={
-          usuarioActual?.rol === "usuario"
+          usuarioActual
             ? <MisSolicitudes />
             : <Navigate to="/" />
         }
@@ -153,7 +153,7 @@ export default function AppRouter() {
       <Route
         path="/usuario/crear-solicitud"
         element={
-          usuarioActual?.rol === "usuario"
+          usuarioActual
             ? <CrearSolicitud />
             : <Navigate to="/" />
         }
