@@ -938,7 +938,7 @@ function KanbanCard({ data, onClick }) {
   return (
     <div className={`mant-card ${priorityClass} ${isUrgent ? "card-urgent" : ""}`} onClick={onClick}>
       <div className="card-top">
-        <span className="card-id-tag">{data.consecutivo ? `M-${data.consecutivo}` : `#${data.id}`}</span>
+        <span className="card-id-tag">{getTicketCode(data)}</span>
         <span className={`card-prio-badge prio-${data.prioridad_id}`}>{data.prioridades?.nombre || PRIORITY_LABEL[data.prioridad_id]}</span>
       </div>
 
