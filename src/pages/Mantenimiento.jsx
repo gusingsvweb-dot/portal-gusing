@@ -375,6 +375,15 @@ export default function Mantenimiento() {
     setSaving(false);
     loadData();
     setSelected(prev => ({ ...prev, ...updateData, estados: updateData.estado_id === 25 ? { id: 25, nombre: "Asignado" } : prev.estados }));
+
+    if (tecnico) {
+      await notifyUserByUsername(
+        tecnico,
+        "👷 Ticket Asignado",
+        `Se te ha asignado el ticket M-${selected.consecutivo || selected.id} para ${selected.activos?.nombre || "equipo"}.`,
+        selected.id
+      );
+    }
   };
 
   const saveManual = async () => {
@@ -753,9 +762,19 @@ export default function Mantenimiento() {
                 </button>
               )}
               {selected.estado_id < 14 && (
-                <button className="mant-btn-action primary" onClick={avanzarEstado} disabled={saving}>
-                  {saving ? "Guardando..." : (selected.estado_id === 1 || selected.estado_id === 25) ? "Iniciar Trabajo →" : "Finalizar y Cerrar Ticket ✓"}
-                </button>
+                <>
+                  {(selected.estado_id === 1 || selected.estado_id === 25) ? (
+                    (activeRole === "tecnico" || !selected.tecnico_asignado || activeRole === "gerencia") && (
+                      <button className="mant-btn-action primary" onClick={avanzarEstado} disabled={saving}>
+                        {saving ? "Guardando..." : "Iniciar Trabajo →"}
+                      </button>
+                    )
+                  ) : (
+                    <button className="mant-btn-action primary" onClick={avanzarEstado} disabled={saving}>
+                      {saving ? "Guardando..." : "Finalizar y Cerrar Ticket ✓"}
+                    </button>
+                  )}
+                </>
               )}
             </div>
           </div>
