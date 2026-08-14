@@ -772,10 +772,11 @@ export default function Mantenimiento() {
               <div className="modal-v2-body">
                 <div className="v2-form-group">
                   <label>Equipo Relacionado *</label>
-                  <select className="v2-select" value={manualForm.activo_id} onChange={e => setManualForm({ ...manualForm, activo_id: e.target.value })}>
-                    <option value="">Seleccione equipo...</option>
-                    {allActivos.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
-                  </select>
+                  <SearchableActivosSelect 
+                    activos={allActivos} 
+                    value={manualForm.activo_id} 
+                    onChange={val => setManualForm({ ...manualForm, activo_id: val })} 
+                  />
                 </div>
                 <div className="v2-form-row">
                   <div className="v2-form-group">
@@ -820,6 +821,65 @@ export default function Mantenimiento() {
 
       <Footer />
     </>
+  );
+}
+
+function SearchableActivosSelect({ activos, value, onChange }) {
+  const [search, setSearch] = useState("");
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef(null);
+
+  const selectedActivo = activos.find(a => String(a.id) === String(value));
+  const displayValue = open ? search : (selectedActivo ? `[${selectedActivo.codigo}] ${selectedActivo.nombre}` : "");
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (containerRef.current && !containerRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filtered = activos.filter(a => {
+    const q = search.toLowerCase();
+    return (a.nombre || "").toLowerCase().includes(q) || (a.codigo || "").toLowerCase().includes(q);
+  });
+
+  return (
+    <div ref={containerRef} style={{ position: "relative", width: "100%" }}>
+      <input
+        className="v2-select"
+        style={{ width: "100%", boxSizing: "border-box", cursor: "text" }}
+        placeholder="Buscar equipo por código o nombre..."
+        value={displayValue}
+        onChange={e => { setSearch(e.target.value); setOpen(true); onChange(""); }}
+        onFocus={() => { setOpen(true); setSearch(""); }}
+      />
+      {open && (
+        <div style={{
+          position: "absolute", top: "100%", left: 0, right: 0, 
+          background: "var(--bg-main, white)", border: "1px solid var(--border-color, #ccc)", borderRadius: "8px",
+          marginTop: "4px", maxHeight: "200px", overflowY: "auto", zIndex: 1000,
+          boxShadow: "0 4px 12px rgba(0,0,0,0.15)"
+        }}>
+          {filtered.length > 0 ? filtered.map(a => (
+            <div 
+              key={a.id} 
+              style={{ padding: "8px 12px", cursor: "pointer", borderBottom: "1px solid var(--border-color, #eee)", fontSize: "0.9rem", color: "var(--text-main, black)" }}
+              onMouseDown={() => { onChange(a.id); setOpen(false); }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "rgba(16, 185, 129, 0.1)"}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+            >
+              <strong>[{a.codigo}]</strong> {a.nombre}
+            </div>
+          )) : (
+            <div style={{ padding: "8px 12px", color: "var(--text-sub, #888)", fontSize: "0.9rem" }}>No se encontraron equipos...</div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
