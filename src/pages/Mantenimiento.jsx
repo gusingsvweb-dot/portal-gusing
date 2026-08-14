@@ -449,7 +449,7 @@ export default function Mantenimiento() {
               <button className="nav-pill-arrow" onClick={() => scrollPills(-1)} aria-label="Anterior">‹</button>
             )}
             <div className="mant-nav-pills" ref={pillsRef} onScroll={checkPillsScroll}>
-              <button className="nav-pill active" onClick={() => setShowManualForm(true)}>+ Intervención Manual</button>
+              <button className="nav-pill active" onClick={() => setShowManualForm(true)}>+ Añadir Ticket</button>
             </div>
             {canScrollRight && (
               <button className="nav-pill-arrow" onClick={() => scrollPills(1)} aria-label="Siguiente">›</button>
@@ -764,7 +764,7 @@ export default function Mantenimiento() {
           <div className="mant-modal-overlay-v2" onClick={() => setShowManualForm(false)}>
             <div className="mant-modal-content-centered" onClick={e => e.stopPropagation()}>
               <div className="modal-v2-header">
-                <h3>🛠️ Registro de Intervención Manual</h3>
+                <h3>🛠️ Añadir Ticket</h3>
                 <button className="close-btn-v2" onClick={() => setShowManualForm(false)}>✖</button>
               </div>
               <div className="modal-v2-body">
