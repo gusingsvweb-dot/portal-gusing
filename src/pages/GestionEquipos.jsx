@@ -70,14 +70,12 @@ export default function GestionEquipos() {
 
   const stats = useMemo(() => ({
     total: activos.length,
-    alta: activos.filter(a => a.criticidad === "Alta").length,
-    media: activos.filter(a => a.criticidad === "Media").length,
-    baja: activos.filter(a => a.criticidad === "Baja").length,
+    sac: activos.filter(a => a.sac === true || a.sac === "Sí" || a.sac === "TRUE" || a.sac === "true").length,
   }), [activos]);
 
   const filtered = useMemo(() => {
     let res = activos;
-    if (filtroCrit !== "todos") res = res.filter(a => a.criticidad === filtroCrit);
+    if (filtroCrit === "SAC") res = res.filter(a => a.sac === true || a.sac === "Sí" || a.sac === "TRUE" || a.sac === "true");
     if (filtroTipo !== "todos") res = res.filter(a => a.tipo === filtroTipo);
     if (filtroText.trim()) {
       const q = filtroText.toLowerCase();
@@ -333,14 +331,8 @@ export default function GestionEquipos() {
           <div className="activo-stat" onClick={() => setFiltroCrit("todos")} style={{ "--a": filtroCrit === "todos" ? "var(--mant-primary)" : "#94a3b8" }}>
             <span className="as-val">{stats.total}</span><span className="as-lbl">Total Equipos</span>
           </div>
-          <div className="activo-stat crit-alta" onClick={() => setFiltroCrit(filtroCrit === "Alta" ? "todos" : "Alta")} style={{ "--a": "#ef4444" }}>
-            <span className="as-val">{stats.alta}</span><span className="as-lbl">Criticidad Alta</span>
-          </div>
-          <div className="activo-stat crit-media" onClick={() => setFiltroCrit(filtroCrit === "Media" ? "todos" : "Media")} style={{ "--a": "#f59e0b" }}>
-            <span className="as-val">{stats.media}</span><span className="as-lbl">Criticidad Media</span>
-          </div>
-          <div className="activo-stat crit-baja" onClick={() => setFiltroCrit(filtroCrit === "Baja" ? "todos" : "Baja")} style={{ "--a": "#10b981" }}>
-            <span className="as-val">{stats.baja}</span><span className="as-lbl">Criticidad Baja</span>
+          <div className="activo-stat crit-alta" onClick={() => setFiltroCrit(filtroCrit === "SAC" ? "todos" : "SAC")} style={{ "--a": "#ef4444" }}>
+            <span className="as-val">{stats.sac}</span><span className="as-lbl">Equipos SAC</span>
           </div>
         </div>
 
@@ -378,11 +370,13 @@ export default function GestionEquipos() {
             {filtered.map(a => {
               const area = areas.find(ar => ar.id === a.area_id);
               return (
-                <div key={a.id} className={`asset-card-v2 crit-${a.criticidad?.toLowerCase() || "baja"}`} onClick={() => loadRutina(a)}>
+                <div key={a.id} className="asset-card-v2" onClick={() => loadRutina(a)}>
                   <div className="card-v2-header">
                     <span className="v2-id-tag">{a.codigo || `ID-${a.id}`}</span>
                     <div style={{ display: "flex", gap: "5px" }}>
-                      <span className={`v2-crit-badge crit-${a.criticidad?.toLowerCase() || "baja"}`}>{a.criticidad || "Baja"}</span>
+                      {(a.sac === true || a.sac === "Sí" || a.sac === "TRUE" || a.sac === "true") && (
+                        <span className="v2-crit-badge" style={{ background: '#fee2e2', color: '#b91c1c' }}>SAC</span>
+                      )}
                       <span className="v2-type-badge">{a.tipo}</span>
                     </div>
                   </div>
@@ -428,11 +422,10 @@ export default function GestionEquipos() {
                     </select>
                   </div>
                   <div className="v2-form-group">
-                    <label>Criticidad <span className="req">*</span></label>
-                    <select className="v2-select" value={form.criticidad} onChange={e => setForm({ ...form, criticidad: e.target.value })}>
-                      <option value="Alta">Alta (Crítico GMP)</option>
-                      <option value="Media">Media</option>
-                      <option value="Baja">Baja</option>
+                    <label>¿Es Sistema de Apoyo Crítico (SAC)?</label>
+                    <select className="v2-select" value={form.sac === true || form.sac === "Sí" || form.sac === "TRUE" || form.sac === "true" ? "Sí" : "No"} onChange={e => setForm({ ...form, sac: e.target.value === "Sí" })}>
+                      <option value="No">No</option>
+                      <option value="Sí">Sí (SAC)</option>
                     </select>
                   </div>
                 </div>
