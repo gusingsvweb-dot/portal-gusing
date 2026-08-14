@@ -185,6 +185,7 @@ export default function Mantenimiento() {
         s.descripcion?.toLowerCase().includes(q) ||
         s.tipos_solicitud?.nombre?.toLowerCase().includes(q) ||
         s.activos?.nombre?.toLowerCase().includes(q) ||
+        s.activos?.codigo?.toLowerCase().includes(q) ||
         s.area_solicitante?.toLowerCase().includes(q) ||
         String(s.consecutivo)?.includes(q)
       );
