@@ -71,6 +71,9 @@ export default function GestionEquipos() {
   const stats = useMemo(() => ({
     total: activos.length,
     sac: activos.filter(a => a.sac === true || a.sac === "Sí" || a.sac === "TRUE" || a.sac === "true").length,
+    instalaciones: activos.filter(a => a.tipo === "Instalación").length,
+    equipos: activos.filter(a => a.tipo === "Equipo").length,
+    computo: activos.filter(a => a.tipo === "Computador").length,
   }), [activos]);
 
   const filtered = useMemo(() => {
@@ -346,9 +349,9 @@ export default function GestionEquipos() {
           </div>
           
           <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-            <button className={`nav-pill ${filtroTipo === "Instalación" ? "active" : ""}`} onClick={() => setFiltroTipo(filtroTipo === "Instalación" ? "todos" : "Instalación")}>Instalaciones</button>
-            <button className={`nav-pill ${filtroTipo === "Equipo" ? "active" : ""}`} onClick={() => setFiltroTipo(filtroTipo === "Equipo" ? "todos" : "Equipo")}>Equipos</button>
-            <button className={`nav-pill ${filtroTipo === "Computador" ? "active" : ""}`} onClick={() => setFiltroTipo(filtroTipo === "Computador" ? "todos" : "Computador")}>Cómputo</button>
+            <button className={`nav-pill ${filtroTipo === "Instalación" ? "active" : ""}`} onClick={() => setFiltroTipo(filtroTipo === "Instalación" ? "todos" : "Instalación")}>Instalaciones ({stats.instalaciones})</button>
+            <button className={`nav-pill ${filtroTipo === "Equipo" ? "active" : ""}`} onClick={() => setFiltroTipo(filtroTipo === "Equipo" ? "todos" : "Equipo")}>Equipos ({stats.equipos})</button>
+            <button className={`nav-pill ${filtroTipo === "Computador" ? "active" : ""}`} onClick={() => setFiltroTipo(filtroTipo === "Computador" ? "todos" : "Computador")}>Cómputo ({stats.computo})</button>
           </div>
 
           {filtroCrit !== "todos" && (
