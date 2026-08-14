@@ -154,6 +154,8 @@ export default function Mantenimiento() {
     };
   }, [solicitudes]);
 
+  const [activeStat, setActiveStat] = useState("");
+
   const filtered = useMemo(() => {
     const q = filtro.toLowerCase();
     let res = solicitudes.filter(s => s.tipo_solicitud_id !== 5);
@@ -166,6 +168,16 @@ export default function Mantenimiento() {
       res = res.filter(s => String(s.proveedor_id) === String(filtroProveedor));
     }
 
+    if (activeStat === "pendientesCalificar") {
+      res = res.filter(s => s.estado_id === 14);
+    } else if (activeStat === "calificados") {
+      res = res.filter(s => s.calificacion_solicitante > 0);
+    } else if (activeStat === "pendientes") {
+      res = res.filter(s => [1, 25].includes(s.estado_id));
+    } else if (activeStat === "proceso") {
+      res = res.filter(s => [13, 26].includes(s.estado_id));
+    }
+
     if (q) {
       res = res.filter(s =>
         s.descripcion?.toLowerCase().includes(q) ||
@@ -176,7 +188,7 @@ export default function Mantenimiento() {
       );
     }
     return res;
-  }, [solicitudes, filtro, filtroTecnico, filtroProveedor]);
+  }, [solicitudes, filtro, filtroTecnico, filtroProveedor, activeStat]);
 
   const openModal = async (s) => {
     setSelected(s);
@@ -454,11 +466,11 @@ export default function Mantenimiento() {
 
         {/* STAT CARDS */}
         <div className="mant-stats-row">
-          <StatCard label="Total Tickets" value={stats.total} icon="🔧" accent="#6366f1" />
-          <StatCard label="Pendientes" value={stats.pendientes} icon="⏳" accent="#f59e0b" />
-          <StatCard label="En Proceso" value={stats.proceso} icon="⚙️" accent="#3b82f6" />
-          <StatCard label="Por Calificar" value={stats.pendientesCalificar} icon="⭐" accent="#ec4899" />
-          <StatCard label="Calificación Prom." value={stats.promedioCalificacion} icon="🏆" accent="#10b981" />
+          <StatCard label="Total Tickets" value={stats.total} icon="🔧" accent="#6366f1" onClick={() => setActiveStat("")} isActive={activeStat === ""} />
+          <StatCard label="Pendientes" value={stats.pendientes} icon="⏳" accent="#f59e0b" onClick={() => setActiveStat(activeStat === "pendientes" ? "" : "pendientes")} isActive={activeStat === "pendientes"} />
+          <StatCard label="En Proceso" value={stats.proceso} icon="⚙️" accent="#3b82f6" onClick={() => setActiveStat(activeStat === "proceso" ? "" : "proceso")} isActive={activeStat === "proceso"} />
+          <StatCard label="Por Calificar" value={stats.pendientesCalificar} icon="⭐" accent="#ec4899" onClick={() => setActiveStat(activeStat === "pendientesCalificar" ? "" : "pendientesCalificar")} isActive={activeStat === "pendientesCalificar"} />
+          <StatCard label="Calificación Prom." value={stats.promedioCalificacion} icon="🏆" accent="#10b981" onClick={() => setActiveStat(activeStat === "calificados" ? "" : "calificados")} isActive={activeStat === "calificados"} />
         </div>
 
         {/* FILTER BAR */}
@@ -811,9 +823,19 @@ export default function Mantenimiento() {
   );
 }
 
-function StatCard({ label, value, icon, accent }) {
+function StatCard({ label, value, icon, accent, onClick, isActive }) {
   return (
-    <div className="mant-stat-card" style={{ "--stat-accent": accent }}>
+    <div 
+      className={`mant-stat-card ${isActive ? "active" : ""}`} 
+      style={{ 
+        "--stat-accent": accent, 
+        cursor: onClick ? 'pointer' : 'default',
+        border: isActive ? `2px solid ${accent}` : 'none',
+        boxShadow: isActive ? `0 0 15px ${accent}40` : '',
+        transform: isActive ? 'scale(1.02)' : 'none'
+      }}
+      onClick={onClick}
+    >
       <div className="stat-card-icon">{icon}</div>
       <div className="stat-card-body">
         <span className="stat-card-value">{value}</span>
