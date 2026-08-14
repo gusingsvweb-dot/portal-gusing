@@ -49,6 +49,7 @@ export default function Mantenimiento() {
   const [filtroProveedor, setFiltroProveedor] = useState("todos");
   const [activeTab, setActiveTab] = useState("info");
   const [allPrioridades, setAllPrioridades] = useState([]);
+  const [allActivos, setAllActivos] = useState([]);
   const [showManualForm, setShowManualForm] = useState(false);
   const [manualForm, setManualForm] = useState({
     tipo_solicitud_id: "",
@@ -108,6 +109,7 @@ export default function Mantenimiento() {
       setSolicitudes(hydrated);
       setProveedores(provRaw || []);
       setAllRepuestos(repsRaw || []);
+      setAllActivos(actRaw || []);
 
       if (targetId) {
         const req = hydrated.find(r => String(r.id) === String(targetId));
@@ -772,10 +774,7 @@ export default function Mantenimiento() {
                   <label>Equipo Relacionado *</label>
                   <select className="v2-select" value={manualForm.activo_id} onChange={e => setManualForm({ ...manualForm, activo_id: e.target.value })}>
                     <option value="">Seleccione equipo...</option>
-                    {solicitudes.reduce((acc, s) => {
-                      if (s.activos && !acc.find(a => a.id === s.activo_id)) acc.push(s.activos);
-                      return acc;
-                    }, []).map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+                    {allActivos.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
                   </select>
                 </div>
                 <div className="v2-form-row">
@@ -785,6 +784,7 @@ export default function Mantenimiento() {
                       <option value="">Seleccione tipo...</option>
                       <option value="2">Mantenimiento Correctivo</option>
                       <option value="5">Mantenimiento Preventivo</option>
+                      <option value="6">Mantenimiento de Mejora</option>
                     </select>
                   </div>
                   <div className="v2-form-group">
