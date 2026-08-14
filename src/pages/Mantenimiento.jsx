@@ -929,6 +929,16 @@ function KanbanColumn({ title, type, icon, items, onCardClick }) {
   );
 }
 
+// Helper para obtener el código del ticket
+const getTicketCode = (ticket) => {
+  const num = ticket.consecutivo || ticket.id;
+  const tipo = ticket.tipo_solicitud_id;
+  if (tipo === 2 || tipo === 8) return `MC-${num}`;
+  if (tipo === 6 || tipo === 9) return `MM-${num}`;
+  if (tipo === 5) return `MP-${num}`;
+  return `M-${num}`;
+};
+
 function KanbanCard({ data, onClick }) {
   const priorityClass = PRIORITY_CLASS[data.prioridad_id] || "priority-low";
   const tagMatch = data.descripcion?.match(/^\[([^\]]+)\]/);
