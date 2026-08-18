@@ -286,7 +286,7 @@ export default function Navbar() {
 
     if (rol === "mantenimiento" || rol === "tecnicomantenimiento") {
       const t = (n.titulo || "").toLowerCase();
-      if (t.includes("stock") || t.includes("repuesto") || t.includes("inventario")) return "/mantenimiento/inventario";
+      if (t.includes("stock") || t.includes("repuesto") || t.includes("inventario")) return "/mantenimiento/repuestos";
       if (t.includes("plan") || t.includes("cronograma")) return "/mantenimiento/plan-maestro";
       if (t.includes("ticket") || t.includes("solicitud manual") || t.includes("equipo")) return `/mantenimiento/tickets${n.pedido_id ? `?id=${n.pedido_id}` : ''}`;
       return base;
