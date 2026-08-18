@@ -104,7 +104,7 @@ export default function GestionEquipos() {
   }
 
   async function saveEquipo() {
-    if (!form.nombre || !form.area_id) return alert("Nombre y Área son obligatorios");
+    if (!form.nombre || !form.area_id || !form.codigo) return alert("Nombre, Área y Código son obligatorios");
     setSaving(true);
     
     let currentUrls = [];
@@ -494,13 +494,13 @@ export default function GestionEquipos() {
                     </div>
                   )}
                 </div>
-                <div className="v2-form-row">
-                  <div className="v2-form-group">
-                    <label>Código Interno / TAG</label>
-                    <input className="v2-input" type="text" value={form.codigo}
-                      onChange={e => setForm({ ...form, codigo: e.target.value })} placeholder="TAG-001" />
+                  <div className="v2-form-row">
+                    <div className="v2-form-group">
+                      <label>Código Interno <span className="req">*</span></label>
+                      <input className="v2-input" type="text" value={form.codigo}
+                        onChange={e => setForm({ ...form, codigo: e.target.value })} placeholder="Ej: EQ-001" />
+                    </div>
                   </div>
-                </div>
                   <div className="v2-form-group">
                     <label>Manual / Hoja de Vida</label>
                     <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
