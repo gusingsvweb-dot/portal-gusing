@@ -241,7 +241,7 @@ export default function GestionEquipos() {
     const html = `
       <html>
         <head>
-          <title>Hoja de Rutina - ${selectedEquipo.nombre}</title>
+          <title>Hoja de Vida - ${selectedEquipo.nombre}</title>
           <style>
             body { font-family: sans-serif; padding: 40px; color: #333; }
             .header { display: flex; justify-content: space-between; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
@@ -257,7 +257,7 @@ export default function GestionEquipos() {
         </head>
         <body>
           <div class="header">
-            <div class="title">HOJA DE RUTINA Y MANTENIMIENTO</div>
+            <div class="title">HOJA DE VIDA Y MANTENIMIENTO</div>
             <div style="text-align: right">
               <div>Código: ${selectedEquipo.codigo || "N/A"}</div>
               <div>Fecha: ${new Date().toLocaleDateString()}</div>
@@ -470,7 +470,7 @@ export default function GestionEquipos() {
                   </div>
                 </div>
                   <div className="v2-form-group">
-                    <label>Manual / Hoja de Rutina (PDF)</label>
+                    <label>Manual / Hoja de Vida (PDF)</label>
                     <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
                       <input className="v2-input" type="file" accept=".pdf" onChange={e => setFile(e.target.files[0])} />
                       {form.manual_url && (
@@ -514,7 +514,7 @@ export default function GestionEquipos() {
                 <div className="v2-header-title">
                   <span className="icon-v2-header">{TIPO_ICON[selectedEquipo.tipo] || "🔩"}</span>
                   <div>
-                    <h3>Hoja de Rutina</h3>
+                    <h3>Hoja de Vida</h3>
                     <p>{selectedEquipo.nombre} | {selectedEquipo.codigo || "Sin código"} |&nbsp;
                       {(selectedEquipo.sac === true || selectedEquipo.sac === "Sí" || selectedEquipo.sac === "TRUE" || selectedEquipo.sac === "true") && (
                         <span className="v2-crit-badge" style={{ background: '#fee2e2', color: '#b91c1c' }}>SAC</span>
