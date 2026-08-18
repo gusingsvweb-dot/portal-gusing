@@ -22,6 +22,7 @@ export default function GestionEquipos() {
   const [rutinaLoading, setRutinaLoading] = useState(false);
   const [filtroText, setFiltroText] = useState("");
   const [filtroCrit, setFiltroCrit] = useState("todos");
+  const [filtroFrec, setFiltroFrec] = useState("todos");
   const [filtroTipo, setFiltroTipo] = useState("todos");
   const [saving, setSaving] = useState(false);
   const [proveedores, setProveedores] = useState([]);
@@ -74,11 +75,16 @@ export default function GestionEquipos() {
     instalaciones: activos.filter(a => a.tipo === "Instalación").length,
     equipos: activos.filter(a => a.tipo === "Equipo").length,
     computo: activos.filter(a => a.tipo === "Computador").length,
+    bimestral: activos.filter(a => a.criticidad === "Bimestral").length,
+    tetramestral: activos.filter(a => a.criticidad === "Tetramestral").length,
+    semestral: activos.filter(a => a.criticidad === "Semestral").length,
+    anual: activos.filter(a => a.criticidad === "Anual").length,
   }), [activos]);
 
   const filtered = useMemo(() => {
     let res = activos;
     if (filtroCrit === "SAC") res = res.filter(a => a.sac === true || a.sac === "Sí" || a.sac === "TRUE" || a.sac === "true");
+    if (filtroFrec !== "todos") res = res.filter(a => a.criticidad === filtroFrec);
     if (filtroTipo !== "todos") res = res.filter(a => a.tipo === filtroTipo);
     if (filtroText.trim()) {
       const q = filtroText.toLowerCase();
@@ -89,7 +95,7 @@ export default function GestionEquipos() {
       );
     }
     return res;
-  }, [activos, filtroCrit, filtroTipo, filtroText, areas]);
+  }, [activos, filtroCrit, filtroFrec, filtroTipo, filtroText, areas]);
 
   async function openEdit(a, e) {
     e.stopPropagation();
@@ -331,11 +337,23 @@ export default function GestionEquipos() {
 
         {/* STATS ROW */}
         <div className="activos-stats-row">
-          <div className="activo-stat" onClick={() => setFiltroCrit("todos")} style={{ "--a": filtroCrit === "todos" ? "var(--mant-primary)" : "#94a3b8" }}>
+          <div className="activo-stat" onClick={() => { setFiltroCrit("todos"); setFiltroFrec("todos"); }} style={{ "--a": filtroCrit === "todos" && filtroFrec === "todos" ? "var(--mant-primary)" : "#94a3b8" }}>
             <span className="as-val">{stats.total}</span><span className="as-lbl">Total Equipos</span>
           </div>
-          <div className="activo-stat crit-alta" onClick={() => setFiltroCrit(filtroCrit === "SAC" ? "todos" : "SAC")} style={{ "--a": "#ef4444" }}>
+          <div className="activo-stat crit-alta" onClick={() => { setFiltroCrit(filtroCrit === "SAC" ? "todos" : "SAC"); setFiltroFrec("todos"); }} style={{ "--a": "#ef4444" }}>
             <span className="as-val">{stats.sac}</span><span className="as-lbl">Equipos SAC</span>
+          </div>
+          <div className="activo-stat" onClick={() => { setFiltroFrec(filtroFrec === "Bimestral" ? "todos" : "Bimestral"); setFiltroCrit("todos"); }} style={{ "--a": filtroFrec === "Bimestral" ? "#d97706" : "var(--bg-card)" }}>
+            <span className="as-val">{stats.bimestral}</span><span className="as-lbl" style={{ fontSize: "0.75rem" }}>Bimestral</span>
+          </div>
+          <div className="activo-stat" onClick={() => { setFiltroFrec(filtroFrec === "Tetramestral" ? "todos" : "Tetramestral"); setFiltroCrit("todos"); }} style={{ "--a": filtroFrec === "Tetramestral" ? "#d97706" : "var(--bg-card)" }}>
+            <span className="as-val">{stats.tetramestral}</span><span className="as-lbl" style={{ fontSize: "0.75rem" }}>Tetramestral</span>
+          </div>
+          <div className="activo-stat" onClick={() => { setFiltroFrec(filtroFrec === "Semestral" ? "todos" : "Semestral"); setFiltroCrit("todos"); }} style={{ "--a": filtroFrec === "Semestral" ? "#d97706" : "var(--bg-card)" }}>
+            <span className="as-val">{stats.semestral}</span><span className="as-lbl" style={{ fontSize: "0.75rem" }}>Semestral</span>
+          </div>
+          <div className="activo-stat" onClick={() => { setFiltroFrec(filtroFrec === "Anual" ? "todos" : "Anual"); setFiltroCrit("todos"); }} style={{ "--a": filtroFrec === "Anual" ? "#d97706" : "var(--bg-card)" }}>
+            <span className="as-val">{stats.anual}</span><span className="as-lbl" style={{ fontSize: "0.75rem" }}>Anual</span>
           </div>
         </div>
 
@@ -355,8 +373,13 @@ export default function GestionEquipos() {
           </div>
 
           {filtroCrit !== "todos" && (
-            <span className={`v2-crit-badge crit-${filtroCrit.toLowerCase()}`} style={{ cursor: "pointer" }} onClick={() => setFiltroCrit("todos")}>
+            <span className={`v2-crit-badge crit-alta`} style={{ cursor: "pointer" }} onClick={() => setFiltroCrit("todos")}>
               {filtroCrit} ✖
+            </span>
+          )}
+          {filtroFrec !== "todos" && (
+            <span className={`v2-crit-badge`} style={{ cursor: "pointer", background: "#fef3c7", color: "#d97706" }} onClick={() => setFiltroFrec("todos")}>
+              {filtroFrec} ✖
             </span>
           )}
         </div>
