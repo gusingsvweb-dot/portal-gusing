@@ -27,6 +27,7 @@ export default function PlanMaestro() {
   // Filtros Motor Automático
   const [filtroMes, setFiltroMes] = useState("todos"); // "todos" | "0"-"11"
   const [filtroEstadoAuto, setFiltroEstadoAuto] = useState("todos"); // "todos"|"vencido"|"proximo"|"ok"
+  const [filtroFrecAuto, setFiltroFrecAuto] = useState("todos");
 
   // Filtros Cronograma Anual
   const [filtroTexto, setFiltroTexto] = useState("");
@@ -111,9 +112,12 @@ export default function PlanMaestro() {
         if (filtroEstadoAuto === "proximo" && (dias <= 0 || dias > 7)) return false;
         if (filtroEstadoAuto === "ok" && (dias <= 7)) return false;
       }
+      if (filtroFrecAuto !== "todos") {
+        if (p.activos?.criticidad !== filtroFrecAuto) return false;
+      }
       return true;
     });
-  }, [planesDeCategoria, filtroMes, filtroEstadoAuto]);
+  }, [planesDeCategoria, filtroMes, filtroEstadoAuto, filtroFrecAuto]);
 
   // ── Planes por semana (Vista Semanal) ──
   const semanasPorMes = useMemo(() => {
@@ -435,7 +439,7 @@ export default function PlanMaestro() {
             ⚙️ Motor Automático
           </button>
           <button className={`pm-tab ${activeTab === "semanal" ? "active" : ""}`} onClick={() => setActiveTab("semanal")}>
-            📆 Vista Semanal
+            📆 Vista Mensual
           </button>
           <button className={`pm-tab ${activeTab === "anual" ? "active" : ""}`} onClick={() => setActiveTab("anual")}>
             📅 Cronograma Anual {selectedYear}
@@ -492,6 +496,16 @@ export default function PlanMaestro() {
                   <option value="ok">✅ Al día</option>
                 </select>
               </div>
+              <div className="pm-filter-group">
+                <label>Frecuencia:</label>
+                <select className="v2-select" value={filtroFrecAuto} onChange={e => setFiltroFrecAuto(e.target.value)}>
+                  <option value="todos">Todas</option>
+                  <option value="Bimestral">Bimestral</option>
+                  <option value="Tetramestral">Tetramestral</option>
+                  <option value="Semestral">Semestral</option>
+                  <option value="Anual">Anual</option>
+                </select>
+              </div>
               {(filtroMes !== "todos" || filtroEstadoAuto !== "todos") && (
                 <span className="pm-filter-count">{planesFiltrados.length} plan{planesFiltrados.length !== 1 ? "es" : ""}</span>
               )}
@@ -513,7 +527,7 @@ export default function PlanMaestro() {
                     <div key={p.id} className={`pm-card ${isVencido ? "pm-card-vencido" : isProximo ? "pm-card-proximo" : ""}`}>
                       {isVencido && <div className="pm-vencido-stripe"></div>}
                       <div className="pm-card-header">
-                        <span className="pm-freq-badge">CADA {p.frecuencia_dias} DÍAS</span>
+                        <span className="pm-freq-badge">{p.activos?.criticidad?.toUpperCase() || "SIN FRECUENCIA"}</span>
                         <span className={`v2-crit-badge crit-${p.activos?.criticidad?.toLowerCase() || "baja"}`}>
                           {p.activos?.criticidad || "Baja"}
                         </span>
