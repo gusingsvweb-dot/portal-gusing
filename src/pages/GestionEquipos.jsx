@@ -385,6 +385,11 @@ export default function GestionEquipos() {
                   </div>
                   <div className="card-v2-icon">{TIPO_ICON[a.tipo] || "🔩"}</div>
                   <h4>{a.nombre}</h4>
+                  {a.criticidad && (
+                    <div style={{ fontSize: "0.8rem", color: "#d97706", marginBottom: "8px", fontWeight: "600" }}>
+                      ⏱️ Frecuencia: {a.criticidad}
+                    </div>
+                  )}
                   {a.descripcion && <p style={{ fontSize: "0.8rem", color: "#64748b", margin: "0 0 10px", lineHeight: "1.5" }}>{a.descripcion}</p>}
                   <div className="v2-location-info">📍 {area?.nombre || "Sin área"}</div>
                   <div className="card-v2-footer">
@@ -415,7 +420,7 @@ export default function GestionEquipos() {
                     onChange={e => setForm({ ...form, nombre: e.target.value })}
                     placeholder="Ej: Aire Acondicionado Central 1" />
                 </div>
-                <div className="v2-form-row">
+                <div className="v2-form-row-3">
                   <div className="v2-form-group">
                     <label>Tipo</label>
                     <select className="v2-select" value={form.tipo} onChange={e => setForm({ ...form, tipo: e.target.value })}>
@@ -430,6 +435,12 @@ export default function GestionEquipos() {
                       <option value="No">No</option>
                       <option value="Sí">Sí (SAC)</option>
                     </select>
+                  </div>
+                  <div className="v2-form-group">
+                    <label>Frecuencia de Mant.</label>
+                    <input className="v2-input" type="text" value={form.criticidad || ""}
+                      onChange={e => setForm({ ...form, criticidad: e.target.value })}
+                      placeholder="Ej: Semestral, 3 meses..." />
                   </div>
                 </div>
                 <div className="v2-form-group">
