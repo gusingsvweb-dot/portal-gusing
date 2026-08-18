@@ -444,7 +444,7 @@ export default function GestionEquipos() {
                     <label>Tipo</label>
                     <select className="v2-select" value={form.tipo} onChange={e => setForm({ ...form, tipo: e.target.value })}>
                       <option value="Equipo">Maquinaria / Equipo</option>
-                      <option value="Instalación">Instalación Civil</option>
+                      <option value="Instalación">Instalación/Área</option>
                       <option value="Computador">Equipo de Cómputo</option>
                     </select>
                   </div>
