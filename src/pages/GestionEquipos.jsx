@@ -505,9 +505,9 @@ export default function GestionEquipos() {
                   <div>
                     <h3>Hoja de Rutina</h3>
                     <p>{selectedEquipo.nombre} | {selectedEquipo.codigo || "Sin código"} |&nbsp;
-                      <span className={`v2-crit-badge crit-${selectedEquipo.criticidad?.toLowerCase() || "baja"}`}>
-                        {selectedEquipo.criticidad || "Baja"}
-                      </span>
+                      {(selectedEquipo.sac === true || selectedEquipo.sac === "Sí" || selectedEquipo.sac === "TRUE" || selectedEquipo.sac === "true") && (
+                        <span className="v2-crit-badge" style={{ background: '#fee2e2', color: '#b91c1c' }}>SAC</span>
+                      )}
                     </p>
                   </div>
                 </div>
@@ -571,13 +571,15 @@ export default function GestionEquipos() {
                             </select>
                           </div>
                         </div>
-                        <div className="v2-form-group">
-                          <label>Descripción del Problema</label>
-                          <input type="text" className="v2-input" value={manualIntForm.descripcion} onChange={e => setManualIntForm({...manualIntForm, descripcion: e.target.value})} />
-                        </div>
-                        <div className="v2-form-group">
-                          <label>Acción Realizada</label>
-                          <textarea className="v2-input" rows={2} value={manualIntForm.accion} onChange={e => setManualIntForm({...manualIntForm, accion: e.target.value})} />
+                        <div className="v2-form-row">
+                          <div className="v2-form-group">
+                            <label>Descripción del Problema</label>
+                            <textarea className="v2-input" rows={2} value={manualIntForm.descripcion} onChange={e => setManualIntForm({...manualIntForm, descripcion: e.target.value})} />
+                          </div>
+                          <div className="v2-form-group">
+                            <label>Acción Realizada</label>
+                            <textarea className="v2-input" rows={2} value={manualIntForm.accion} onChange={e => setManualIntForm({...manualIntForm, accion: e.target.value})} />
+                          </div>
                         </div>
                         <div style={{ textAlign: "right" }}>
                           <button className="v2-btn-primary" onClick={saveManualIntervention} disabled={saving}>
