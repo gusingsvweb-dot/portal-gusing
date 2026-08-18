@@ -265,16 +265,6 @@ export default function Navbar() {
   );
 
   const getNotificationRoute = (n) => {
-    if (!n.pedido_id) return null;
-
-    if (rol === "atencion") {
-      const t = (n.titulo || "").toLowerCase();
-      if (t.includes("autoriza")) {
-        return `/autorizar-despachos?id=${n.pedido_id}`;
-      }
-      return `/pedidos-curso?id=${n.pedido_id}`;
-    }
-
     const routes = {
       produccion: "/produccion",
       bodega: "/bodega",
@@ -291,7 +281,29 @@ export default function Navbar() {
       atencion: "/pedidos-curso",
       tecnicomantenimiento: "/tecnico-mantenimiento"
     };
+
     const base = routes[rol] || "/dashboard";
+
+    if (rol === "mantenimiento" || rol === "tecnicomantenimiento") {
+      const t = (n.titulo || "").toLowerCase();
+      if (t.includes("stock") || t.includes("repuesto") || t.includes("inventario")) return "/mantenimiento/inventario";
+      if (t.includes("plan") || t.includes("cronograma")) return "/mantenimiento/plan-maestro";
+      if (t.includes("ticket") || t.includes("solicitud manual") || t.includes("equipo")) return `/mantenimiento/tickets${n.pedido_id ? `?id=${n.pedido_id}` : ''}`;
+      return base;
+    }
+
+    if (!n.pedido_id) {
+      return base;
+    }
+
+    if (rol === "atencion") {
+      const t = (n.titulo || "").toLowerCase();
+      if (t.includes("autoriza")) {
+        return `/autorizar-despachos?id=${n.pedido_id}`;
+      }
+      return `/pedidos-curso?id=${n.pedido_id}`;
+    }
+
     return `${base}?id=${n.pedido_id}`;
   };
 
@@ -411,7 +423,7 @@ export default function Navbar() {
                         key={n.id}
                         className={`notif-item ${n.leida ? 'read' : 'unread'}`}
                         onClick={() => handleNotifClick(n)}
-                        style={{ cursor: n.pedido_id ? 'pointer' : 'default' }}
+                        style={{ cursor: 'pointer' }}
                       >
                         <div className="notif-content-wrapper">
                           <div className="notif-item-title">{n.titulo}</div>
@@ -423,10 +435,9 @@ export default function Navbar() {
                         </div>
 
                         <div className="notif-item-actions">
-                          {n.pedido_id && (
                             <button
                               className="notif-go-btn"
-                              title="Ver detalle del pedido"
+                              title="Ir a detalle"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleNotifClick(n);
@@ -434,7 +445,6 @@ export default function Navbar() {
                             >
                               ➡️
                             </button>
-                          )}
                           {!n.leida && (
                             <button
                               className="notif-mark-read-btn"
