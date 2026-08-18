@@ -242,34 +242,6 @@ export default function KpisMantenimiento() {
           </div>
         )}
 
-        {/* CRITICIDAD TABLE */}
-        <div className="kpi-chart-box" style={{ marginTop: "24px" }}>
-          <h3 className="kpi-chart-title">Detalle por Criticidad de Equipo</h3>
-          <table className="kpi-table">
-            <thead>
-              <tr><th>Criticidad</th><th>Solicitudes</th><th>% del Total</th><th>Distribución</th></tr>
-            </thead>
-            <tbody>
-              {Object.entries(stats.porCriticidad).map(([crit, count]) => {
-                const pct = stats.totalSol > 0 ? ((count / stats.totalSol) * 100).toFixed(1) : 0;
-                const colorMap = { Alta: "#ef4444", Media: "#f59e0b", Baja: "#10b981" };
-                const col = colorMap[crit] || "#94a3b8";
-                return (
-                  <tr key={crit}>
-                    <td><span className={`v2-crit-badge crit-${crit.toLowerCase()}`}>{crit}</span></td>
-                    <td style={{ fontWeight: "800" }}>{count}</td>
-                    <td style={{ color: "#64748b" }}>{pct}%</td>
-                    <td style={{ width: "40%" }}>
-                      <div style={{ background: "#f1f5f9", borderRadius: "99px", height: "8px", overflow: "hidden" }}>
-                        <div style={{ width: `${pct}%`, height: "100%", background: col, borderRadius: "99px", transition: "width 0.5s ease" }}></div>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
       </div>
       <Footer />
     </>
