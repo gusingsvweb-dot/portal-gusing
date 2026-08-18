@@ -531,17 +531,17 @@ export default function GestionEquipos() {
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px" }}>
                       <h4 className="v2-subtitle" style={{ margin: 0 }}>Historial de Intervenciones</h4>
                       <button className="v2-btn-primary" style={{ fontSize: "0.75rem", padding: "6px 12px" }} onClick={() => setShowManualInt(true)}>
-                        + Añadir Intervención Manual
+                        + Generar Ticket
                       </button>
                     </div>
 
                     {showManualInt && (
                       <div className="v2-inline-manual-form" style={{ background: "#f8fafc", padding: "15px", borderRadius: "12px", border: "1px solid #e2e8f0", marginBottom: "20px" }}>
                         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px" }}>
-                          <strong>Nueva Intervención Manual</strong>
+                          <strong>Nuevo Ticket</strong>
                           <button className="close-btn-v2" onClick={() => setShowManualInt(false)}>✖</button>
                         </div>
-                        <div className="v2-form-row">
+                        <div className="v2-form-row-3">
                           <div className="v2-form-group">
                             <label>Fecha</label>
                             <input type="date" className="v2-input" value={manualIntForm.fecha} onChange={e => setManualIntForm({...manualIntForm, fecha: e.target.value})} />
@@ -581,7 +581,7 @@ export default function GestionEquipos() {
                         </div>
                         <div style={{ textAlign: "right" }}>
                           <button className="v2-btn-primary" onClick={saveManualIntervention} disabled={saving}>
-                            {saving ? "Guardando..." : "Registrar en Historial"}
+                            {saving ? "Guardando..." : "Guardar Ticket"}
                           </button>
                         </div>
                       </div>
