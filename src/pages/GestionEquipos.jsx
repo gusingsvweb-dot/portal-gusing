@@ -343,18 +343,6 @@ export default function GestionEquipos() {
           <div className="activo-stat crit-alta" onClick={() => { setFiltroCrit(filtroCrit === "SAC" ? "todos" : "SAC"); setFiltroFrec("todos"); }} style={{ "--a": "#ef4444" }}>
             <span className="as-val">{stats.sac}</span><span className="as-lbl">Equipos SAC</span>
           </div>
-          <div className="activo-stat" onClick={() => { setFiltroFrec(filtroFrec === "Bimestral" ? "todos" : "Bimestral"); setFiltroCrit("todos"); }} style={{ "--a": filtroFrec === "Bimestral" ? "#d97706" : "var(--bg-card)" }}>
-            <span className="as-val">{stats.bimestral}</span><span className="as-lbl" style={{ fontSize: "0.75rem" }}>Bimestral</span>
-          </div>
-          <div className="activo-stat" onClick={() => { setFiltroFrec(filtroFrec === "Tetramestral" ? "todos" : "Tetramestral"); setFiltroCrit("todos"); }} style={{ "--a": filtroFrec === "Tetramestral" ? "#d97706" : "var(--bg-card)" }}>
-            <span className="as-val">{stats.tetramestral}</span><span className="as-lbl" style={{ fontSize: "0.75rem" }}>Tetramestral</span>
-          </div>
-          <div className="activo-stat" onClick={() => { setFiltroFrec(filtroFrec === "Semestral" ? "todos" : "Semestral"); setFiltroCrit("todos"); }} style={{ "--a": filtroFrec === "Semestral" ? "#d97706" : "var(--bg-card)" }}>
-            <span className="as-val">{stats.semestral}</span><span className="as-lbl" style={{ fontSize: "0.75rem" }}>Semestral</span>
-          </div>
-          <div className="activo-stat" onClick={() => { setFiltroFrec(filtroFrec === "Anual" ? "todos" : "Anual"); setFiltroCrit("todos"); }} style={{ "--a": filtroFrec === "Anual" ? "#d97706" : "var(--bg-card)" }}>
-            <span className="as-val">{stats.anual}</span><span className="as-lbl" style={{ fontSize: "0.75rem" }}>Anual</span>
-          </div>
         </div>
 
         {/* FILTER */}
@@ -366,10 +354,18 @@ export default function GestionEquipos() {
             {filtroText && <button className="search-clear" onClick={() => setFiltroText("")}>✖</button>}
           </div>
           
-          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
             <button className={`nav-pill ${filtroTipo === "Instalación" ? "active" : ""}`} onClick={() => setFiltroTipo(filtroTipo === "Instalación" ? "todos" : "Instalación")}>Instalaciones ({stats.instalaciones})</button>
             <button className={`nav-pill ${filtroTipo === "Equipo" ? "active" : ""}`} onClick={() => setFiltroTipo(filtroTipo === "Equipo" ? "todos" : "Equipo")}>Equipos ({stats.equipos})</button>
             <button className={`nav-pill ${filtroTipo === "Computador" ? "active" : ""}`} onClick={() => setFiltroTipo(filtroTipo === "Computador" ? "todos" : "Computador")}>Cómputo ({stats.computo})</button>
+
+            <select className="v2-select" style={{ width: "auto", padding: "6px 30px 6px 12px", height: "34px", borderRadius: "100px", fontSize: "0.85rem", border: "1px solid #e2e8f0" }} value={filtroFrec} onChange={e => setFiltroFrec(e.target.value)}>
+              <option value="todos">Todas las Frecuencias</option>
+              <option value="Bimestral">Bimestral</option>
+              <option value="Tetramestral">Tetramestral</option>
+              <option value="Semestral">Semestral</option>
+              <option value="Anual">Anual</option>
+            </select>
           </div>
 
           {filtroCrit !== "todos" && (
