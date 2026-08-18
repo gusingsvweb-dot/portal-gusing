@@ -565,8 +565,8 @@ export default function GestionEquipos() {
                               value={manualIntForm.tipo_solicitud_id} 
                               onChange={e => setManualIntForm({...manualIntForm, tipo_solicitud_id: e.target.value})}
                             >
-                              {tiposSolicitud.filter(t => [2, 5, 6].includes(t.id) || t.nombre.toLowerCase().includes("mejora")).map(t => (
-                                <option key={t.id} value={t.id}>{t.nombre}</option>
+                              {tiposSolicitud.filter(t => [2, 5, 6].includes(t.id)).map(t => (
+                                <option key={t.id} value={t.id}>{t.nombre.replace("_antiguo", "").trim()}</option>
                               ))}
                             </select>
                           </div>
@@ -609,7 +609,7 @@ export default function GestionEquipos() {
                             <div className={`v2-tl-card ${enProceso ? "tl-card-proceso" : ""}`}>
                               <div className="v2-tl-header">
                                 <span className="v2-tl-consec">M-{item.consecutivo}</span>
-                                <span className="v2-tl-type">{item.tipos_solicitud?.nombre || "Manual"}</span>
+                                <span className="v2-tl-type">{item.tipos_solicitud?.nombre?.replace("_antiguo", "").trim() || "Manual"}</span>
                                 {enProceso && <span className="tl-badge-proceso">⚙️ En Proceso</span>}
                               </div>
                               <div className="v2-tl-body">

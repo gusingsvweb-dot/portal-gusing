@@ -564,7 +564,7 @@ export default function Mantenimiento() {
               {activeTab === "info" && (
                 <>
                   <div className="modal-info-grid">
-                    <InfoBox label="Tipo" value={selected.tipos_solicitud?.nombre} />
+                    <InfoBox label="Tipo" value={selected.tipos_solicitud?.nombre?.replace("_antiguo", "").trim()} />
                     
                     {/* Prioridad Editable */}
                     <div className="info-item-box">
@@ -973,7 +973,7 @@ function KanbanCard({ data, onClick }) {
         <span className={`card-prio-badge prio-${data.prioridad_id}`}>{data.prioridades?.nombre || PRIORITY_LABEL[data.prioridad_id]}</span>
       </div>
 
-      <h4 className="card-type">{data.tipos_solicitud?.nombre}</h4>
+      <h4 className="card-type">{data.tipos_solicitud?.nombre?.replace("_antiguo", "").trim()}</h4>
       <p className="card-desc">{displayDesc}</p>
 
       <div className="card-meta">
