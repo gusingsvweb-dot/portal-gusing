@@ -438,9 +438,13 @@ export default function GestionEquipos() {
                   </div>
                   <div className="v2-form-group">
                     <label>Frecuencia de Mant.</label>
-                    <input className="v2-input" type="text" value={form.criticidad || ""}
-                      onChange={e => setForm({ ...form, criticidad: e.target.value })}
-                      placeholder="Ej: Semestral, 3 meses..." />
+                    <select className="v2-select" value={form.criticidad || ""} onChange={e => setForm({ ...form, criticidad: e.target.value })}>
+                      <option value="">Seleccione...</option>
+                      <option value="Bimestral">Bimestral</option>
+                      <option value="Tetramestral">Tetramestral</option>
+                      <option value="Semestral">Semestral</option>
+                      <option value="Anual">Anual</option>
+                    </select>
                   </div>
                 </div>
                 <div className="v2-form-group">
