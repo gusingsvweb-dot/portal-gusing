@@ -31,7 +31,7 @@ export default function GestionEquipos() {
   const [form, setForm] = useState({
     nombre: "", tipo: "Equipo", area_id: "", codigo: "", descripcion: "", criticidad: "Baja", manual_url: ""
   });
-  const [file, setFile] = useState(null);
+  const [files, setFiles] = useState([]);
   const [showManualInt, setShowManualInt] = useState(false);
   const [manualIntForm, setManualIntForm] = useState({ 
     fecha: new Date().toISOString().split("T")[0], 
@@ -107,27 +107,36 @@ export default function GestionEquipos() {
     if (!form.nombre || !form.area_id) return alert("Nombre y Área son obligatorios");
     setSaving(true);
     
-    let currentUrl = form.manual_url;
-    if (file) {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random()}.${fileExt}`;
-      const filePath = `manuales/${fileName}`;
-      
-      const { error: uploadError } = await supabase.storage
-        .from('manuales_equipos')
-        .upload(filePath, file);
+    let currentUrls = [];
+    try {
+      if (form.manual_url) {
+        currentUrls = form.manual_url.startsWith('[') ? JSON.parse(form.manual_url) : [form.manual_url];
+      }
+    } catch(e) {}
 
-      if (uploadError) {
-        alert("Error subiendo manual: " + uploadError.message);
-      } else {
-        const { data: urlData } = supabase.storage
+    if (files && files.length > 0) {
+      for (const f of files) {
+        const fileExt = f.name.split('.').pop();
+        const fileName = `${Math.random()}.${fileExt}`;
+        const filePath = `manuales/${fileName}`;
+        
+        const { error: uploadError } = await supabase.storage
           .from('manuales_equipos')
-          .getPublicUrl(filePath);
-        currentUrl = urlData.publicUrl;
+          .upload(filePath, f);
+
+        if (uploadError) {
+          alert("Error subiendo manual: " + uploadError.message);
+        } else {
+          const { data: urlData } = supabase.storage
+            .from('manuales_equipos')
+            .getPublicUrl(filePath);
+          currentUrls.push(urlData.publicUrl);
+        }
       }
     }
 
-    const { error } = await supabase.from(st("activos")).upsert([{ ...form, manual_url: currentUrl }]);
+    const finalUrl = currentUrls.length > 0 ? JSON.stringify(currentUrls) : "";
+    const { error } = await supabase.from(st("activos")).upsert([{ ...form, manual_url: finalUrl }]);
     if (error) alert("Error: " + error.message);
     else {
       setShowForm(false);
@@ -311,7 +320,7 @@ export default function GestionEquipos() {
 
   function resetForm() {
     setForm({ nombre: "", tipo: "Equipo", area_id: "", codigo: "", descripcion: "", criticidad: "Baja", manual_url: "" });
-    setFile(null);
+    setFiles([]);
     setShowAreaForm(false);
     setNewAreaName("");
   }
@@ -493,14 +502,20 @@ export default function GestionEquipos() {
                   </div>
                 </div>
                   <div className="v2-form-group">
-                    <label>Manual / Hoja de Vida (PDF)</label>
-                    <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                      <input className="v2-input" type="file" accept=".pdf" onChange={e => setFile(e.target.files[0])} />
-                      {form.manual_url && (
-                        <a href={form.manual_url} target="_blank" rel="noreferrer" className="v2-btn-secondary" style={{ textDecoration: "none", fontSize: "0.75rem", padding: "8px" }}>
-                          📄 Ver Actual
-                        </a>
-                      )}
+                    <label>Manual / Hoja de Vida</label>
+                    <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+                      <input className="v2-input" type="file" multiple onChange={e => setFiles(Array.from(e.target.files))} />
+                      {(() => {
+                        let urls = [];
+                        try {
+                           urls = form.manual_url ? (form.manual_url.startsWith('[') ? JSON.parse(form.manual_url) : [form.manual_url]) : [];
+                        } catch(e) {}
+                        return urls.map((u, i) => (
+                           <a key={i} href={u} target="_blank" rel="noreferrer" className="v2-btn-secondary" style={{ textDecoration: "none", fontSize: "0.75rem", padding: "8px" }}>
+                              📄 Ver Archivo {i + 1}
+                           </a>
+                        ));
+                      })()}
                     </div>
                   </div>
                   <div className="v2-form-group">
@@ -546,11 +561,15 @@ export default function GestionEquipos() {
                   </div>
                 </div>
                  <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                   {selectedEquipo.manual_url && (
-                     <a href={selectedEquipo.manual_url} target="_blank" rel="noreferrer" className="v2-btn-secondary" style={{ textDecoration: "none", fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "5px" }}>
-                       📄 Ver Manual
-                     </a>
-                   )}
+                   {(() => {
+                     let urls = [];
+                     try { urls = selectedEquipo.manual_url ? (selectedEquipo.manual_url.startsWith('[') ? JSON.parse(selectedEquipo.manual_url) : [selectedEquipo.manual_url]) : []; } catch(e) {}
+                     return urls.map((u, i) => (
+                       <a key={i} href={u} target="_blank" rel="noreferrer" className="v2-btn-secondary" style={{ textDecoration: "none", fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "5px" }}>
+                         📄 Ver Documento {i + 1}
+                       </a>
+                     ));
+                   })()}
                    <button className="v2-btn-primary" style={{ padding: "8px 16px", fontSize: "0.85rem" }} onClick={printHojaRutina}>
                      🖨️ Generar PDF / Imprimir
                    </button>
