@@ -44,7 +44,7 @@ export default function GestionProveedoresMant() {
 
   async function saveProveedor() {
     if (!form.nombre) return alert("El nombre es obligatorio");
-    if (form.tipo === "Interno" && !form.contrasena && !form.id) return alert("Asigna una contraseña para el perfil del técnico");
+    if (form.tipo === "Interno" && !form.contrasena && !form.id) return alert("Asigna una contraseña para el perfil del personal");
     
     setSaving(true);
     
@@ -75,7 +75,7 @@ export default function GestionProveedoresMant() {
       if (userError) {
         alert("Proveedor guardado, pero error creando usuario: " + userError.message);
       } else {
-        alert(`Técnico creado con éxito. Usuario: ${newUser.usuario}`);
+        alert(`Personal creado con éxito. Usuario: ${newUser.usuario}`);
       }
     }
 
@@ -224,7 +224,7 @@ export default function GestionProveedoresMant() {
                  </div>
 
                  <div className="v2-form-group">
-                   <label>{form.tipo === "Interno" ? "Nombre Completo del Técnico" : "Nombre de la Empresa / Proveedor"} <span className="req">*</span></label>
+                   <label>{form.tipo === "Interno" ? "Nombre Completo" : "Nombre de la Empresa / Proveedor"} <span className="req">*</span></label>
                    <input className="v2-input" type="text" value={form.nombre}
                      onChange={e => setForm({ ...form, nombre: e.target.value })}
                      placeholder={form.tipo === "Interno" ? "Ej: Juan Pérez" : "Ej: Técnicos Unidos S.A.S"} />
@@ -281,7 +281,7 @@ export default function GestionProveedoresMant() {
                        placeholder="+57 300 000 0000" />
                    </div>
                    <div className="v2-form-group">
-                     <label>{form.tipo === "Interno" ? "Correo Corporativo" : "Email"} <span className="req">*</span></label>
+                     <label>{form.tipo === "Interno" ? "Correo Corporativo" : "Email"} {form.tipo !== "Interno" && <span className="req">*</span>}</label>
                      <input className="v2-input" type="email" value={form.email}
                        onChange={e => setForm({ ...form, email: e.target.value })}
                        placeholder="ejemplo@gusing.com" />
@@ -293,7 +293,7 @@ export default function GestionProveedoresMant() {
                      <label style={{ color: "#166534", fontWeight: "bold" }}>🔑 Contraseña de Acceso</label>
                      <input className="v2-input" type="password" value={form.contrasena}
                        onChange={e => setForm({ ...form, contrasena: e.target.value })}
-                       placeholder="Asigna una clave para el técnico" />
+                       placeholder="Asigna una clave de acceso" />
                      <p style={{ fontSize: "0.75rem", color: "#166534", marginTop: "5px" }}>
                        Se creará un perfil de usuario automático con rol <strong>tecnicomantenimiento</strong>.
                      </p>
