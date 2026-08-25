@@ -218,6 +218,9 @@ export default function TecnicoMantenimiento() {
         updates.justificacion = justificacion || "N/A";
         updates.fecha_cierre = new Date().toISOString();
         notifMsg = `El técnico ha finalizado el trabajo.`;
+      } else {
+        if (accion.trim()) updates.accion_realizada = accion;
+        if (justificacion.trim()) updates.justificacion = justificacion;
       }
 
       const { error: updError } = await supabase
@@ -485,7 +488,7 @@ export default function TecnicoMantenimiento() {
             {/* Modal Footer */}
             <div className="modal-box-footer">
               <button className="mant-btn-action secondary" onClick={closeModal}>Cerrar</button>
-              {selected.estado_id === 13 && (
+              {selected.estado_id < 14 && (
                 <button 
                   className="mant-btn-action" 
                   style={{ background: "#f8fafc", color: "#475569", border: "1px solid #cbd5e1" }} 
