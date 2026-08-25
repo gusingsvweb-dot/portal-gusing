@@ -153,7 +153,7 @@ export function detectDocumentType(workbook) {
   // FR-MN-24: tiene columnas PISO, INSTALACIÓN, TIPO DE ÁREA
   const hasInst = workbook.SheetNames.find(s => {
     const sheet = workbook.Sheets[s];
-    const rows  = require("xlsx").utils.sheet_to_json(sheet, { header: 1, defval: "" });
+    const rows  = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
     const hdr   = findHeaderRow(rows, ["PISO", "INSTALACIÓN", "TIPO DE ÁREA"]);
     return !!hdr;
   });
@@ -459,7 +459,7 @@ export function parseFRMN24(workbook) {
   
   const sheetName = workbook.SheetNames.find(s => {
     const sheet = workbook.Sheets[s];
-    const rows  = require("xlsx").utils.sheet_to_json(sheet, { header: 1, defval: "" });
+    const rows  = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
     return !!findHeaderRow(rows, ["PISO", "INSTALACIÓN", "TIPO DE ÁREA"]);
   });
 
@@ -469,7 +469,7 @@ export function parseFRMN24(workbook) {
   }
 
   const sheet = workbook.Sheets[sheetName];
-  const rows  = require("xlsx").utils.sheet_to_json(sheet, { header: 1, defval: "", raw: false });
+  const rows  = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "", raw: false });
 
   // En FR-MN-24 la fila 9 (index 8) tiene encabezados principales, la fila 10 (index 9) tiene subencabezados.
   // findHeaderRow buscará en las primeras 30.
