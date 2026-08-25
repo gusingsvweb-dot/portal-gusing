@@ -141,7 +141,7 @@ export default function Mantenimiento() {
   }, [checkPillsScroll]);
 
   const stats = useMemo(() => {
-    const tickets = solicitudes.filter(s => s.tipo_solicitud_id !== 5);
+    const tickets = solicitudes;
     const calificados = tickets.filter(s => s.estado_id === 15 && s.calificacion && !isNaN(parseFloat(s.calificacion)));
     const sumCalificacion = calificados.reduce((sum, s) => sum + parseFloat(s.calificacion), 0);
     const promedio = calificados.length ? (sumCalificacion / calificados.length).toFixed(1) : "0.0";
@@ -160,7 +160,7 @@ export default function Mantenimiento() {
 
   const filtered = useMemo(() => {
     const q = filtro.toLowerCase();
-    let res = solicitudes.filter(s => s.tipo_solicitud_id !== 5);
+    let res = solicitudes;
     
     if (filtroTecnico !== "todos") {
       res = res.filter(s => s.tecnico_asignado === filtroTecnico);
