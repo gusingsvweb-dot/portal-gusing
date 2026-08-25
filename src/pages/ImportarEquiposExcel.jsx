@@ -19,6 +19,7 @@ const TYPE_META = {
   Computador:  { icon: "💻",  cls: "ia-type-computador"  },
   Impresora:   { icon: "🖨️",  cls: "ia-type-impresora"   },
   Celular:     { icon: "📱",  cls: "ia-type-celular"     },
+  Instalación: { icon: "🏢",  cls: "ia-type-otro"        },
 };
 
 function TypeBadge({ type }) {
@@ -186,7 +187,7 @@ export default function ImportarEquiposExcel() {
     return true;
   });
 
-  const VALID_SHEETS  = ["Listado maestro", "COMPUTADORES", "IMPRESORAS", "CELULARES"];
+  const VALID_SHEETS  = ["Listado maestro", "COMPUTADORES", "IMPRESORAS", "CELULARES", "LISTADO MAESTRO DE INSTALACIONES"];
   const detectedTypes = [...new Set(assets.map(a => a.asset_type))];
 
   // ── Render ────────────────────────────────────────────────────────────────────
@@ -201,7 +202,7 @@ export default function ImportarEquiposExcel() {
           <div>
             <h2 className="ic-title">🏭 Importar Listado Maestro de Equipos</h2>
             <p className="ic-subtitle">
-              Compatible con FR-MN-19 (equipos de planta) y FR-MN-05 (equipos de oficina)
+              Compatible con FR-MN-19 (equipos), FR-MN-05 (oficina) y FR-MN-24 (instalaciones)
             </p>
           </div>
           <button className="ic-secondary-btn" onClick={() => navigate("/mantenimiento/equipos")}>
@@ -246,7 +247,8 @@ export default function ImportarEquiposExcel() {
                 <p className="ic-drop-title">Arrastra tu archivo aquí</p>
                 <p className="ic-drop-sub">
                   FR-MN-19 Listado maestro de equipos<br />
-                  FR-MN-05 Listado maestro de equipos de oficina
+                  FR-MN-05 Listado maestro de equipos de oficina<br />
+                  FR-MN-24 Listado maestro de instalaciones
                 </p>
                 <button className="ic-browse-btn" onClick={e => { e.stopPropagation(); fileInputRef.current?.click(); }}>
                   📂 Seleccionar archivo
@@ -284,7 +286,8 @@ export default function ImportarEquiposExcel() {
             <div className={`ia-doc-detected ${parseResult.docType ? "" : "unknown"}`}>
               <span className="ia-doc-icon">
                 {parseResult.docType === "FR-MN-19" ? "🏭"
-                 : parseResult.docType === "FR-MN-05" ? "🖥️" : "❓"}
+                 : parseResult.docType === "FR-MN-05" ? "🖥️"
+                 : parseResult.docType === "FR-MN-24" ? "🏢" : "❓"}
               </span>
               <div>
                 <p className="ia-doc-name">
