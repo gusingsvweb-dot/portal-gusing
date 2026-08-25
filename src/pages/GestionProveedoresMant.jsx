@@ -218,7 +218,7 @@ export default function GestionProveedoresMant() {
                    <label style={{ fontWeight: "bold", color: "var(--mant-primary)" }}>¿Qué tipo de personal deseas registrar?</label>
                    <select className="v2-select" style={{ fontSize: "1rem", padding: "10px 12px", fontWeight: "600", lineHeight: "1.5" }} 
                      value={form.tipo} onChange={e => setForm({ ...form, tipo: e.target.value })}>
-                     <option value="Interno">👨‍🔧 Técnico Interno (Tendrá perfil de usuario)</option>
+                     <option value="Interno">👨‍🔧 Personal Interno (Tendrá perfil de usuario)</option>
                      <option value="Externo">🚚 Proveedor Externo</option>
                    </select>
                  </div>
@@ -308,7 +308,7 @@ export default function GestionProveedoresMant() {
                 )}
                 <button className="v2-btn-secondary" onClick={() => { setShowForm(false); resetForm(); }}>Cancelar</button>
                 <button className="v2-btn-primary" onClick={saveProveedor} disabled={saving}>
-                  {saving ? "Guardando..." : form.id ? "Actualizar" : "Guardar Proveedor"}
+                  {saving ? "Guardando..." : form.id ? "Actualizar" : "Guardar"}
                 </button>
               </div>
             </div>
