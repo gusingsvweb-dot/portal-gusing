@@ -5,6 +5,7 @@ import { supabase, st, ss } from "../api/supabaseClient";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
 import { useAuth } from "../context/AuthContext";
+import { getTicketCode } from "../utils/formatters";
 import "./Mantenimiento.css";
 import "./GestionEquipos.css";
 
@@ -303,7 +304,7 @@ export default function GestionEquipos() {
               ${rutina.map(r => `
                 <tr>
                   <td>${new Date(r.fecha_cierre).toLocaleDateString()}</td>
-                  <td>M-${r.consecutivo}</td>
+                  <td>${getTicketCode(r)}</td>
                   <td>${r.tipos_solicitud?.nombre}</td>
                   <td>${r.descripcion}</td>
                   <td>${r.accion_realizada}</td>
@@ -664,7 +665,7 @@ export default function GestionEquipos() {
                             </div>
                             <div className={`v2-tl-card ${enProceso ? "tl-card-proceso" : ""}`}>
                               <div className="v2-tl-header">
-                                <span className="v2-tl-consec">M-{item.consecutivo}</span>
+                                <span className="v2-tl-consec">{getTicketCode(item)}</span>
                                 <span className="v2-tl-type">{item.tipos_solicitud?.nombre?.replace("_antiguo", "").trim() || "Manual"}</span>
                                 {enProceso && <span className="tl-badge-proceso">⚙️ En Proceso</span>}
                               </div>
