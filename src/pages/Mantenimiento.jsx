@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo, useCallback, useRef } from "react"
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
 import { supabase, st, ss } from "../api/supabaseClient";
+import { getTicketCode } from "../utils/formatters";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { notifyUserByUsername, notifyRoles } from "../api/notifications";
@@ -604,7 +605,7 @@ export default function Mantenimiento() {
                     {selected.proveedor && <InfoBox label="Proveedor" value={selected.proveedor.nombre} />}
                     
                     <div className="info-item-box">
-                      <label>Técnico Interno Asignado</label>
+                      <label>Asignar Ticket</label>
                       <select 
                         className="v2-select" 
                         value={selected.tecnico_asignado || ""} 
@@ -950,15 +951,7 @@ function KanbanColumn({ title, type, icon, items, onCardClick }) {
   );
 }
 
-// Helper para obtener el código del ticket
-export function getTicketCode(ticket) {
-  const num = ticket.consecutivo || ticket.id;
-  const tipo = ticket.tipo_solicitud_id;
-  if (tipo === 2 || tipo === 8) return `MC-${num}`;
-  if (tipo === 6 || tipo === 9) return `MM-${num}`;
-  if (tipo === 5) return `MP-${num}`;
-  return `M-${num}`;
-}
+// El helper getTicketCode fue movido a src/utils/formatters.js
 
 function KanbanCard({ data, onClick }) {
   const priorityClass = PRIORITY_CLASS[data.prioridad_id] || "priority-low";
