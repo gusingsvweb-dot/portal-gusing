@@ -20,6 +20,7 @@ export default function CrearSolicitud() {
     tipo_solicitud_id: "",
     prioridad_id: "",
     descripcion: "",
+    nombre_solicitante: "", // Nuevo campo
     activo_id: "", 
     maint_category: "", // Nuevo para jerarquía
     maint_type: "",      // Nuevo para jerarquía
@@ -95,6 +96,10 @@ export default function CrearSolicitud() {
       return setMensaje("⚠️ Debes seleccionar el tipo de solicitud.");
     }
 
+    if (!form.nombre_solicitante || form.nombre_solicitante.trim().length === 0) {
+      return setMensaje("⚠️ Debes ingresar tu nombre.");
+    }
+
     if (!isComprasRender && !form.prioridad_id) {
       return setMensaje("⚠️ Debes seleccionar una prioridad.");
     }
@@ -142,6 +147,10 @@ export default function CrearSolicitud() {
       finalDesc = form.compras_items.length > 0 
         ? `Solicitud de Compras: ${form.compras_items[0].descripcion}` 
         : "Solicitud de Compras";
+    }
+    
+    if (form.nombre_solicitante && form.nombre_solicitante.trim().length > 0) {
+      finalDesc = `Solicitante: ${form.nombre_solicitante.trim()}\n\n${finalDesc}`;
     }
 
     // 3. Insertar solicitud
@@ -266,6 +275,7 @@ export default function CrearSolicitud() {
       tipo_solicitud_id: "",
       prioridad_id: "",
       descripcion: "",
+      nombre_solicitante: "",
       activo_id: "",
       instalacion_desc: "",
       compras_tipo_requisicion: "",
@@ -293,6 +303,18 @@ export default function CrearSolicitud() {
         </div>
 
         <div className="crear-card">
+
+          {/* Nombre Solicitante */}
+          <label>Nombre del solicitante *</label>
+          <input
+            type="text"
+            className="v2-input"
+            style={{ width: "100%", marginBottom: "20px", padding: "12px", border: "1px solid var(--border)", borderRadius: "10px" }}
+            placeholder="Ej. Juan Pérez"
+            value={form.nombre_solicitante || ""}
+            onChange={(e) => setForm({ ...form, nombre_solicitante: e.target.value })}
+            required
+          />
 
           {/* Área */}
           <label>Área a solicitar *</label>
