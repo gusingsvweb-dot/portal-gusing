@@ -4,12 +4,14 @@ import { useNavigate } from "react-router-dom";
 import { supabase, st, ss } from "../api/supabaseClient";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
+import { useAuth } from "../context/AuthContext";
 import "./Mantenimiento.css";
 import "./GestionEquipos.css";
 
 const TIPO_ICON = { Equipo: "⚙️", "Instalación": "🏗️", Computador: "💻" };
 
 export default function GestionEquipos() {
+  const { usuarioActual } = useAuth();
   const navigate = useNavigate();
   const [activos, setEquipos] = useState([]);
   const [areas, setAreas] = useState([]);
@@ -165,7 +167,8 @@ export default function GestionEquipos() {
       tipo_solicitud_id: parseInt(manualIntForm.tipo_solicitud_id) || 2,
       descripcion: `(MANUAL) ${manualIntForm.descripcion}`,
       accion_realizada: manualIntForm.accion,
-      usuario_id: manualIntForm.tecnico || "TÉCNICO EXTERNO",
+      usuario_id: usuarioActual?.usuario || "sistemas",
+      tecnico_asignado: manualIntForm.tecnico || "TÉCNICO EXTERNO",
       estado_id: 15, // Cerrado
       area_id: 1,
       consecutivo: nextConsecutivo,
