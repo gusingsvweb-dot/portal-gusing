@@ -246,7 +246,7 @@ export default function GestionEquipos() {
     setRutina([]);
     const { data } = await supabase
       .from(st("solicitudes"))
-      .select(ss(`id, consecutivo, created_at, descripcion, accion_realizada, fecha_cierre, usuario_id, prioridad_id, tipos_solicitud(nombre)`))
+      .select(ss(`id, consecutivo, created_at, descripcion, accion_realizada, fecha_cierre, usuario_id, prioridad_id, area_id, tipo_solicitud_id, tipos_solicitud(nombre)`))
       .eq("activo_id", activo.id)
       .in("estado_id", [13, 14, 15])
       .order("created_at", { ascending: false });
@@ -343,7 +343,7 @@ export default function GestionEquipos() {
           <div className="mant-actions-group">
 
             <button className="mant-btn-action secondary" onClick={() => navigate("/mantenimiento/importar-equipos")}>📥 Importar Excel</button>
-            <button className="mant-btn-action primary" onClick={() => { resetForm(); setShowForm(true); }}>+ Nuevo Equipo</button>
+            <button className="mant-btn-action primary" onClick={() => { resetForm(); setShowForm(true); }}>+ Nuevo Ítem</button>
           </div>
         </header>
 
@@ -442,7 +442,7 @@ export default function GestionEquipos() {
           <div className="mant-modal-overlay-v2" onClick={() => { setShowForm(false); resetForm(); }}>
             <div className="mant-modal-content-centered" onClick={e => e.stopPropagation()}>
               <div className="modal-v2-header">
-                <h3>{form.id ? "✏️ Editar Equipo" : "✨ Nuevo Equipo"}</h3>
+                <h3>{form.id ? "✏️ Editar Equipo" : "✨ Nuevo Ítem"}</h3>
                 <button className="close-btn-v2" onClick={() => { setShowForm(false); resetForm(); }}>✖</button>
               </div>
               <div className="modal-v2-body">
