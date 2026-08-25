@@ -207,7 +207,6 @@ export default function GestionCalidad() {
             estado_compra: 'REVISION_COMPRAS',
             consecutivo_numero: Number(manualConsec),
             consecutivo_anio: v_anio,
-            consecutivo_oficial: v_consecutivo_oficial,
             consecutivo_oficial: manualConsecFormateado,
             consecutivo_asignado_por: realUserId,
             tipo_requisicion: 'MATERIAL'
