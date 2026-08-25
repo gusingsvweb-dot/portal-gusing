@@ -5,6 +5,7 @@ import Footer from "../components/Footer";
 import "./CrearSolicitud.css";
 import { useAuth } from "../context/AuthContext";
 import CamposDinamicos from "../components/solicitudes/CamposDinamicos";
+import { getTicketCode } from "../utils/formatters";
 import { notifyRoles } from "../api/notifications";
 
 export default function CrearSolicitud() {
@@ -258,10 +259,12 @@ export default function CrearSolicitud() {
       const prioridadNombre = prioridades.find(p => String(p.id) === String(form.prioridad_id))?.nombre || "";
       const resumen = finalDesc.length > 80 ? finalDesc.substring(0, 80) + "…" : finalDesc;
       const prefix = areaNombre.charAt(0).toUpperCase();
+      const code = getTicketCode({ consecutivo: nextConsecutivo, area_id: form.area_id, tipo_solicitud_id: finalTipoId });
+      
       await notifyRoles(
         [areaNombre, "gerencia"],
         `🔔 Nueva Solicitud${prioridadNombre ? ` — Prioridad ${prioridadNombre}` : ""}`,
-        `${usuarioActual?.usuario || "Sistema"} (${usuarioActual?.areadetrabajo || "—"}) creó la solicitud ${prefix}-${nextConsecutivo}: "${resumen}"`,
+        `${usuarioActual?.usuario || "Sistema"} (${usuarioActual?.areadetrabajo || "—"}) creó la solicitud ${code}: "${resumen}"`,
         null,
         "info"
       );

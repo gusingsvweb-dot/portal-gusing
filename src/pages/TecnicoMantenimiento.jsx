@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo, useCallback } from "react";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
 import { supabase, st } from "../api/supabaseClient";
+import { getTicketCode } from "../utils/formatters";
 import { useAuth } from "../context/AuthContext";
 import { useSearchParams } from "react-router-dom";
 import { notifyUserByUsername, notifyRoles } from "../api/notifications";
@@ -171,7 +172,7 @@ export default function TecnicoMantenimiento() {
         await notifyUserByUsername(
           selected.usuario_id,
           "📝 Novedad en tu solicitud",
-          `Se ha registrado un avance o novedad en tu solicitud M-${selected.consecutivo || selected.id}. Revisa los detalles.`,
+          `Se ha registrado un avance o novedad en tu solicitud ${getTicketCode(selected)}. Revisa los detalles.`,
           selected.id
         );
       }
@@ -252,7 +253,7 @@ export default function TecnicoMantenimiento() {
 
       // Notificar al usuario solicitante
       if (selected.usuario_id) {
-        const orderId = selected.consecutivo ? `M-${selected.consecutivo}` : `#${selected.id}`;
+        const orderId = getTicketCode(selected);
         const equipoNombre = selected.activos?.nombre || "equipo";
         if (isEnProceso) {
           await notifyUserByUsername(
@@ -353,7 +354,7 @@ export default function TecnicoMantenimiento() {
                 <span className={`modal-state-badge state-${selected.estado_id}`}>
                   {selected.estados?.nombre?.toUpperCase()}
                 </span>
-                <h3>{selected.consecutivo ? `M-${selected.consecutivo}` : `Ticket #${selected.id}`}</h3>
+                <h3>{getTicketCode(selected)}</h3>
               </div>
               <button className="close-btn-v2" onClick={closeModal}>✖</button>
             </div>
@@ -528,7 +529,7 @@ export default function TecnicoMantenimiento() {
                     {filtered.map(h => (
                       <tr key={h.id}>
                         <td>{new Date(h.fecha_cierre || h.created_at).toLocaleDateString()}</td>
-                        <td>M-{h.consecutivo}</td>
+                        <td>{getTicketCode(h)}</td>
                         <td>
                           <span className={`v2-status-mini ${h.estados?.nombre?.toLowerCase()}`}>
                             {h.estados?.nombre}
@@ -595,7 +596,7 @@ function KanbanCard({ data, onClick }) {
   return (
     <div className={`mant-card ${priorityClass} ${isUrgent ? "card-urgent" : ""}`} onClick={onClick}>
       <div className="card-top">
-        <span className="card-id-tag">{data.consecutivo ? `M-${data.consecutivo}` : `#${data.id}`}</span>
+        <span className="card-id-tag">{getTicketCode(data)}</span>
         <span className={`card-prio-badge prio-${data.prioridad_id}`}>{data.prioridades?.nombre || PRIORITY_LABEL[data.prioridad_id]}</span>
       </div>
 

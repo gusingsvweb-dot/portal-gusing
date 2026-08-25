@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
 import { supabase, st, ss } from "../api/supabaseClient";
+import { getTicketCode } from "../utils/formatters";
 import { useNavigate } from "react-router-dom";
 import "./Mantenimiento.css";
 
@@ -120,7 +121,7 @@ export default function GerenciaMantenimiento() {
                                 }}>
                                     {selected.estados?.nombre}
                                 </span>
-                                <h3>{selected.consecutivo ? `M-${selected.consecutivo}` : `#${selected.id}`}</h3>
+                                <h3>{getTicketCode(selected)}</h3>
                             </div>
                             <button className="close-btn" onClick={closeModal}>✖</button>
                         </div>
@@ -192,7 +193,7 @@ function ProfessionalCard({ data, onClick }) {
     return (
         <div className="mant-card" onClick={onClick}>
             <div className="card-top">
-                <span className="card-tag tag-id">{data.consecutivo ? `M-${data.consecutivo}` : `#${data.id}`}</span>
+                <span className="card-tag tag-id">{getTicketCode(data)}</span>
             </div>
             <h4>{data.tipos_solicitud?.nombre}</h4>
             <div className="card-info-item">👤 {data.area_solicitante}</div>

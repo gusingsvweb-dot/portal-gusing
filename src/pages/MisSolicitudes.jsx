@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo, useRef } from "react";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
 import { supabase, st, ss } from "../api/supabaseClient";
+import { getTicketCode } from "../utils/formatters";
 import { useAuth } from "../context/AuthContext";
 import { useSearchParams } from "react-router-dom";
 import "./MisSolicitudes.css";
@@ -133,10 +134,8 @@ export default function MisSolicitudes() {
 
   function formatConsecutivo(s) {
     if (!s.consecutivo) return `#${s.id}`;
-    // Lógica personalizada por área si se desea, o genérica
-    if (s.area_id === 1) return `M-${s.consecutivo}`; // Mantenimiento
+    if (s.area_id === 1) return getTicketCode(s); // Mantenimiento
     if (s.area_id === 4) return `C-${s.consecutivo}`; // Compras
-    // Calidad, Micro, etc si tienen prefijos definidos
     if (s.area_id === 15) return `MB-${s.consecutivo}`; // Ejemplo Micro
     return `${s.consecutivo}`;
   }
