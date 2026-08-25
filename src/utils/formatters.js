@@ -3,8 +3,8 @@ export function getTicketCode(ticket) {
   const num = ticket.consecutivo || ticket.id;
   
   // Mantenimiento (area_id = 1)
-  if (ticket.area_id === 1) {
-    const tipo = ticket.tipo_solicitud_id;
+  if (Number(ticket.area_id) === 1) {
+    const tipo = Number(ticket.tipo_solicitud_id);
     if (tipo === 2 || tipo === 8) return `MC-${num}`;
     if (tipo === 6 || tipo === 9) return `MM-${num}`;
     if (tipo === 5) return `MP-${num}`;
@@ -20,7 +20,7 @@ export function getTicketCode(ticket) {
   }
   
   // Por si el ticket no tiene area_id pero sabemos que es de mantenimiento (fallback viejo)
-  const tipo = ticket.tipo_solicitud_id;
+  const tipo = Number(ticket.tipo_solicitud_id);
   if (tipo === 2 || tipo === 8) return `MC-${num}`;
   if (tipo === 6 || tipo === 9) return `MM-${num}`;
   if (tipo === 5) return `MP-${num}`;
