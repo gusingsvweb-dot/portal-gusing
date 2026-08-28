@@ -4,12 +4,15 @@ import { supabase, st } from "../api/supabaseClient";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
 import { notifyRoles } from "../api/notifications";
+import { useAuth } from "../context/AuthContext";
 import GestionHerramientas from "./GestionHerramientas";
 import "./Mantenimiento.css";
 import "./GestionRepuestos.css";
 
 export default function GestionRepuestos() {
+  const { usuarioActual } = useAuth();
   const navigate = useNavigate();
+  const isReadOnly = usuarioActual?.rol === "tecnicomantenimiento";
   const [repuestos, setRepuestos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [subView, setSubView] = useState("repuestos");
@@ -116,7 +119,7 @@ export default function GestionRepuestos() {
           </div>
           <div className="mant-actions-group">
 
-            {subView === "repuestos" && (
+            {!isReadOnly && subView === "repuestos" && (
               <button className="mant-btn-action primary" onClick={() => { resetForm(); setShowModal(true); }}>+ Nuevo Repuesto</button>
             )}
           </div>
@@ -222,10 +225,14 @@ export default function GestionRepuestos() {
                   </div>
 
                   <div className="rep-card-footer">
-                    <button className="mini-btn" style={{ color: "var(--mant-primary)", borderColor: "#bfdbfe" }}
-                      onClick={e => { e.stopPropagation(); openEdit(r); }}>✏️ Editar</button>
-                    <button className="mini-btn" style={{ color: "#ef4444", borderColor: "#fecaca" }}
-                      onClick={e => deleteRepuesto(r.id, e)}>🗑️</button>
+                    {!isReadOnly && (
+                      <>
+                        <button className="mini-btn" style={{ color: "var(--mant-primary)", borderColor: "#bfdbfe" }}
+                          onClick={e => { e.stopPropagation(); openEdit(r); }}>✏️ Editar</button>
+                        <button className="mini-btn" style={{ color: "#ef4444", borderColor: "#fecaca" }}
+                          onClick={e => deleteRepuesto(r.id, e)}>🗑️</button>
+                      </>
+                    )}
                   </div>
                 </div>
               );

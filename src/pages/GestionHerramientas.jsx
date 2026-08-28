@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase, st, ss } from "../api/supabaseClient";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
+import { useAuth } from "../context/AuthContext";
 import "./Mantenimiento.css";
 import "./GestionEquipos.css";
 
@@ -22,7 +23,9 @@ const ESTADO_COLORS = {
 };
 
 export default function GestionHerramientas({ embedded = false }) {
+  const { usuarioActual } = useAuth();
   const navigate = useNavigate();
+  const isReadOnly = usuarioActual?.rol === "tecnicomantenimiento";
   const [activos, setEquipos] = useState([]);
   const [areas, setAreas] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -470,12 +473,13 @@ export default function GestionHerramientas({ embedded = false }) {
               <p className="mant-subtitle">Control de calibración, vigencia y estado operativo para herramientas del taller — {activos.length} herramientas registradas</p>
             </div>
             <div className="mant-actions-group">
-
-              <button className="mant-btn-action primary" onClick={() => { resetForm(); setShowForm(true); }}>+ Nueva Herramienta</button>
+              {!isReadOnly && (
+                <button className="mant-btn-action primary" onClick={() => { resetForm(); setShowForm(true); }}>+ Nueva Herramienta</button>
+              )}
             </div>
           </header>
         )}
-        {embedded && (
+        {embedded && !isReadOnly && (
           <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "16px" }}>
             <button className="mant-btn-action primary" onClick={() => { resetForm(); setShowForm(true); }}>+ Nueva Herramienta</button>
           </div>
@@ -587,10 +591,12 @@ export default function GestionHerramientas({ embedded = false }) {
                   
                   <div className="card-v2-footer" style={{ marginTop: "12px", borderTop: "1px dashed #e2e8f0", paddingTop: "12px" }}>
                     <button className="mini-btn" onClick={e => { e.stopPropagation(); loadRutina(a); }}>📋 Historial</button>
-                    <div style={{ display: "flex", gap: "6px" }}>
-                      <button className="mini-btn" style={{ color: "var(--mant-primary)", borderColor: "#bfdbfe" }} onClick={e => openEdit(a, e)}>✏️ Editar</button>
-                      <button className="mini-btn" style={{ color: "#ef4444", borderColor: "#fecaca" }} onClick={e => deleteEquipo(a.id, e)}>🗑️</button>
-                    </div>
+                    {!isReadOnly && (
+                      <div style={{ display: "flex", gap: "6px" }}>
+                        <button className="mini-btn" style={{ color: "var(--mant-primary)", borderColor: "#bfdbfe" }} onClick={e => openEdit(a, e)}>✏️ Editar</button>
+                        <button className="mini-btn" style={{ color: "#ef4444", borderColor: "#fecaca" }} onClick={e => deleteEquipo(a.id, e)}>🗑️</button>
+                      </div>
+                    )}
                   </div>
                 </div>
               );

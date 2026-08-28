@@ -306,7 +306,7 @@ export default function AppRouter() {
       <Route
         path="/tecnico-mantenimiento"
         element={
-          ["tecnicomantenimiento", "gerencia"].includes(usuarioActual?.rol)
+          ["tecnicomantenimiento", "analistamantenimiento", "gerencia"].includes(usuarioActual?.rol)
             ? <TecnicoMantenimiento />
             : <Navigate to="/" />
         }
@@ -315,7 +315,7 @@ export default function AppRouter() {
       <Route
         path="/mantenimiento/equipos"
         element={
-          ["mantenimiento", "gerencia"].includes(usuarioActual?.rol)
+          ["mantenimiento", "analistamantenimiento", "tecnicomantenimiento", "gerencia"].includes(usuarioActual?.rol)
             ? <GestionEquipos />
             : <Navigate to="/" />
         }
@@ -347,7 +347,7 @@ export default function AppRouter() {
       <Route
         path="/mantenimiento/plan-maestro"
         element={
-          ["mantenimiento", "gerencia"].includes(usuarioActual?.rol)
+          ["mantenimiento", "analistamantenimiento", "tecnicomantenimiento", "gerencia"].includes(usuarioActual?.rol)
             ? <PlanMaestro />
             : <Navigate to="/" />
         }
@@ -356,7 +356,7 @@ export default function AppRouter() {
       <Route
         path="/mantenimiento/repuestos"
         element={
-          ["mantenimiento", "gerencia"].includes(usuarioActual?.rol)
+          ["mantenimiento", "analistamantenimiento", "tecnicomantenimiento", "gerencia"].includes(usuarioActual?.rol)
             ? <GestionRepuestos />
             : <Navigate to="/" />
         }

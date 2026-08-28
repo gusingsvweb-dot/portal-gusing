@@ -192,6 +192,26 @@ export default function Navbar() {
         ],
       },
 
+      analistamantenimiento: {
+        title: "Analista Mtto",
+        items: [
+          { to: "/tecnico-mantenimiento", label: "Tickets", icon: "🛠️" },
+          { to: "/mantenimiento/equipos", label: "L. Maestro", icon: "🏢" },
+          { to: "/mantenimiento/plan-maestro", label: "Cronograma", icon: "📅" },
+          { to: "/mantenimiento/repuestos", label: "Inventario", icon: "📦" },
+        ],
+      },
+
+      tecnicomantenimiento: {
+        title: "Técnico Mtto",
+        items: [
+          { to: "/tecnico-mantenimiento", label: "Tickets", icon: "🛠️" },
+          { to: "/mantenimiento/equipos", label: "L. Maestro", icon: "🏢" },
+          { to: "/mantenimiento/plan-maestro", label: "Cronograma", icon: "📅" },
+          { to: "/mantenimiento/repuestos", label: "Inventario", icon: "📦" },
+        ],
+      },
+
       acondicionamiento: {
         title: "Acondicionamiento",
         items: [
@@ -279,12 +299,13 @@ export default function Navbar() {
       garantiacalidad: "/garantiacalidad",
       usuario: "/usuario/mis-solicitudes",
       atencion: "/pedidos-curso",
-      tecnicomantenimiento: "/tecnico-mantenimiento"
+      tecnicomantenimiento: "/tecnico-mantenimiento",
+      analistamantenimiento: "/tecnico-mantenimiento"
     };
 
     const base = routes[rol] || "/dashboard";
 
-    if (rol === "tecnicomantenimiento") {
+    if (rol === "tecnicomantenimiento" || rol === "analistamantenimiento") {
       return `/tecnico-mantenimiento${n.pedido_id ? `?id=${n.pedido_id}` : ''}`;
     }
 
@@ -343,7 +364,9 @@ export default function Navbar() {
               direcciontecnica: "/direccion-tecnica",
               garantiacalidad: "/garantiacalidad",
               usuario: "/usuario/mis-solicitudes",
-              atencion: "/pedidos-curso"
+              atencion: "/pedidos-curso",
+              tecnicomantenimiento: "/tecnico-mantenimiento",
+              analistamantenimiento: "/tecnico-mantenimiento"
             };
             const base = routes[rol] || "/dashboard";
             navigate(base);

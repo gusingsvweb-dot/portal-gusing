@@ -99,12 +99,15 @@ export default function TecnicoMantenimiento() {
     const formatName = (name) => name ? name.trim().toLowerCase().replace(/\s+/g, '.') : "";
     const currentUsername = usuarioActual?.usuario || "";
 
-    // Filtrar solo las del técnico logueado
-    let res = solicitudes.filter(s => formatName(s.tecnico_asignado) === formatName(currentUsername));
+    // Filtrar solo las del técnico logueado O las no asignadas
+    let res = solicitudes.filter(s => {
+      const assigned = formatName(s.tecnico_asignado);
+      return assigned === formatName(currentUsername) || assigned === "";
+    });
 
     if (q) {
       res = res.filter(s =>
-        s.descripcion?.toLowerCase().includes(q) ||
+        (s.id && s.id.toString().includes(q)) ||
         s.tipos_solicitud?.nombre?.toLowerCase().includes(q) ||
         s.activos?.nombre?.toLowerCase().includes(q) ||
         s.area_solicitante?.toLowerCase().includes(q) ||
@@ -292,6 +295,46 @@ export default function TecnicoMantenimiento() {
     }
   };
 
+  const autoasignarYEmpezar = async () => {
+    if (!selected) return;
+    setSaving(true);
+    setError("");
+    try {
+      const updates = { 
+        estado_id: 13, 
+        tecnico_asignado: usuarioActual?.usuario || "TÉCNICO INTERNO" 
+      };
+      
+      const { error: updError } = await supabase
+        .from(st("solicitudes"))
+        .update(updates)
+        .eq("id", selected.id);
+
+      if (updError) throw updError;
+
+      // Notificar al usuario solicitante si aplica
+      if (selected.usuario_id) {
+        const orderId = getTicketCode(selected);
+        await notifyUserByUsername(
+          selected.usuario_id,
+          "⚙️ Ticket en Proceso",
+          `El ticket ${orderId} ha sido asignado y el técnico está trabajando en ello.`,
+          selected.id
+        );
+      }
+
+      await loadData();
+      closeModal();
+    } catch (err) {
+      console.error(err);
+      setError("Error al autoasignar ticket: " + err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const isUnassigned = !selected?.tecnico_asignado || selected.tecnico_asignado.trim() === "";
+
   return (
     <>
       <Navbar rol="tecnicomantenimiento" />
@@ -337,8 +380,10 @@ export default function TecnicoMantenimiento() {
 
             {/* KANBAN BOARD */}
             <div className="mant-board">
-              <KanbanColumn title="Asignadas" type="pending" icon="⏳"
-                items={filtered.filter(s => s.estado_id === 1 || s.estado_id === 25)} onCardClick={openModal} />
+              <KanbanColumn title="Tickets Generales" type="pending" icon="📬"
+                items={filtered.filter(s => (s.estado_id === 1 || s.estado_id === 25) && (!s.tecnico_asignado || s.tecnico_asignado.trim() === ""))} onCardClick={openModal} />
+              <KanbanColumn title="Mis Asignadas" type="pending" icon="⏳"
+                items={filtered.filter(s => (s.estado_id === 1 || s.estado_id === 25) && (s.tecnico_asignado && s.tecnico_asignado.trim() !== ""))} onCardClick={openModal} />
               <KanbanColumn title="En Proceso" type="process" icon="⚙️"
                 items={filtered.filter(s => s.estado_id === 13)} onCardClick={openModal} />
               <KanbanColumn title="Terminadas" type="done" icon="✅"
@@ -478,20 +523,29 @@ export default function TecnicoMantenimiento() {
             {/* Modal Footer */}
             <div className="modal-box-footer">
               <button className="mant-btn-action secondary" onClick={closeModal}>Cerrar</button>
-              <button 
-                className="mant-btn-action" 
-                style={{ background: "#f8fafc", color: "#475569", border: "1px solid #cbd5e1" }} 
-                onClick={guardarNovedad} 
-                disabled={saving}
-              >
-                {saving ? "..." : "💾 Guardar Novedad/Avance"}
-              </button>
-              <button className="mant-btn-action primary" onClick={avanzarEstado} disabled={saving}>
-                {saving ? "Guardando..." : 
-                  (selected.estado_id === 1 || selected.estado_id === 25) ? "Iniciar Trabajo →" : 
-                  (selected.estado_id === 13) ? "Finalizar Trabajo ✓" : 
-                  "Cerrar Orden 🔒"}
-              </button>
+              
+              {isUnassigned ? (
+                <button className="mant-btn-action primary" onClick={autoasignarYEmpezar} disabled={saving}>
+                  {saving ? "Asignando..." : "🙋‍♂️ Asignarme e Iniciar Trabajo"}
+                </button>
+              ) : (
+                <>
+                  <button 
+                    className="mant-btn-action" 
+                    style={{ background: "#f8fafc", color: "#475569", border: "1px solid #cbd5e1" }} 
+                    onClick={guardarNovedad} 
+                    disabled={saving}
+                  >
+                    {saving ? "..." : "💾 Guardar Novedad/Avance"}
+                  </button>
+                  <button className="mant-btn-action primary" onClick={avanzarEstado} disabled={saving}>
+                    {saving ? "Guardando..." : 
+                      (selected.estado_id === 1 || selected.estado_id === 25) ? "Iniciar Trabajo →" : 
+                      (selected.estado_id === 13) ? "Finalizar Trabajo ✓" : 
+                      "Cerrar Orden 🔒"}
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>

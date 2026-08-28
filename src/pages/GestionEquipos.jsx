@@ -30,6 +30,9 @@ export default function GestionEquipos() {
   const [saving, setSaving] = useState(false);
   const [proveedores, setProveedores] = useState([]);
   const [tiposSolicitud, setTiposSolicitud] = useState([]);
+  const [allRepuestos, setAllRepuestos] = useState([]);
+
+  const isReadOnly = usuarioActual?.rol === "tecnicomantenimiento";
 
   const [form, setForm] = useState({
     nombre: "", tipo: "Equipo", area_id: "", codigo: "", descripcion: "", criticidad: "Baja", manual_url: ""
@@ -41,18 +44,20 @@ export default function GestionEquipos() {
     descripcion: "", 
     accion: "", 
     tecnico: "",
-    tipo_solicitud_id: 5 // Preventivo por defecto
+    tipo_solicitud_id: 5, // Preventivo por defecto
+    consumos: []
   });
 
   useEffect(() => { loadData(); }, []);
 
   async function loadData() {
     setLoading(true);
-    const [{ data: act }, { data: ars }, { data: provs }, { data: types }] = await Promise.all([
+    const [{ data: act }, { data: ars }, { data: provs }, { data: types }, { data: reps }] = await Promise.all([
       supabase.from(st("activos")).select("*").order("nombre"),
       supabase.from(st("areas")).select("*").order("nombre"),
       supabase.from(st("proveedores_mant")).select("*").order("nombre"),
-      supabase.from(st("tipos_solicitud")).select("*")
+      supabase.from(st("tipos_solicitud")).select("*"),
+      supabase.from(st("inventario_repuestos")).select("*").order("nombre")
     ]);
     
     // Filter out tools from standard equipment list
@@ -69,6 +74,7 @@ export default function GestionEquipos() {
     setAreas(ars || []);
     setProveedores(provs || []);
     setTiposSolicitud(types || []);
+    setAllRepuestos(reps || []);
     setLoading(false);
   }
 
@@ -163,7 +169,7 @@ export default function GestionEquipos() {
     
     const nextConsecutivo = (maxData?.[0]?.consecutivo || 0) + 1;
 
-    const { error } = await supabase.from(st("solicitudes")).insert([{
+    const { data: solData, error } = await supabase.from(st("solicitudes")).insert([{
       activo_id: selectedEquipo.id,
       tipo_solicitud_id: parseInt(manualIntForm.tipo_solicitud_id) || 2,
       descripcion: `(MANUAL) ${manualIntForm.descripcion}`,
@@ -176,16 +182,61 @@ export default function GestionEquipos() {
       fecha_cierre: new Date(manualIntForm.fecha).toISOString(),
       created_at: new Date(manualIntForm.fecha).toISOString(),
       area_solicitante: "MANTENIMIENTO"
-    }]);
+    }]).select();
 
     if (error) alert("Error: " + error.message);
     else {
+      // Guardar Consumos (Repuestos)
+      if (manualIntForm.consumos?.length > 0) {
+        const validConsumos = manualIntForm.consumos.filter(c => c.repuesto_id && c.cantidad > 0);
+        if (validConsumos.length > 0) {
+          const consumosData = validConsumos.map(c => {
+            const repInfo = allRepuestos.find(r => String(r.id) === String(c.repuesto_id));
+            return {
+              solicitud_id: solData[0].id,
+              repuesto_id: c.repuesto_id,
+              cantidad: c.cantidad,
+              costo_en_momento: repInfo ? repInfo.precio_unitario : 0
+            };
+          });
+          
+          const { error: consError } = await supabase.from(st("consumos")).insert(consumosData);
+          if (!consError) {
+            for (let c of validConsumos) {
+              await supabase.rpc('decrementar_stock_repuesto', { rep_id: c.repuesto_id, cant: c.cantidad });
+            }
+          } else {
+            console.error("Error al registrar consumos", consError);
+          }
+        }
+      }
+
       setShowManualInt(false);
-      setManualIntForm({ fecha: new Date().toISOString().split("T")[0], descripcion: "", accion: "", tecnico: "" });
+      setManualIntForm({ fecha: new Date().toISOString().split("T")[0], descripcion: "", accion: "", tecnico: "", tipo_solicitud_id: 5, consumos: [] });
       loadRutina(selectedEquipo);
+      loadData(); // reload repuestos stock
     }
     setSaving(false);
   }
+
+  const updateManualConsumo = (index, field, value) => {
+    const updated = [...(manualIntForm.consumos || [])];
+    updated[index][field] = value;
+    setManualIntForm(prev => ({ ...prev, consumos: updated }));
+  };
+
+  const removeManualConsumo = (index) => {
+    const updated = [...(manualIntForm.consumos || [])];
+    updated.splice(index, 1);
+    setManualIntForm(prev => ({ ...prev, consumos: updated }));
+  };
+
+  const addManualConsumo = () => {
+    setManualIntForm(prev => ({
+      ...prev,
+      consumos: [...(prev.consumos || []), { repuesto_id: "", cantidad: "" }]
+    }));
+  };
 
   async function deleteEquipo(id, e) {
     e.stopPropagation();
@@ -342,8 +393,12 @@ export default function GestionEquipos() {
           </div>
           <div className="mant-actions-group">
 
-            <button className="mant-btn-action secondary" onClick={() => navigate("/mantenimiento/importar-equipos")}>📥 Importar Excel</button>
-            <button className="mant-btn-action primary" onClick={() => { resetForm(); setShowForm(true); }}>+ Nuevo Ítem</button>
+            {!isReadOnly && (
+              <>
+                <button className="mant-btn-action secondary" onClick={() => navigate("/mantenimiento/importar-equipos")}>📥 Importar Excel</button>
+                <button className="mant-btn-action primary" onClick={() => { resetForm(); setShowForm(true); }}>+ Nuevo Ítem</button>
+              </>
+            )}
           </div>
         </header>
 
@@ -426,10 +481,12 @@ export default function GestionEquipos() {
                   <div className="v2-location-info">📍 {area?.nombre || "Sin área"}</div>
                   <div className="card-v2-footer">
                     <button className="mini-btn" onClick={e => { e.stopPropagation(); loadRutina(a); }}>📋 Historial</button>
-                    <div style={{ display: "flex", gap: "6px" }}>
-                      <button className="mini-btn" style={{ color: "var(--mant-primary)", borderColor: "#bfdbfe" }} onClick={e => openEdit(a, e)}>✏️ Editar</button>
-                      <button className="mini-btn" style={{ color: "#ef4444", borderColor: "#fecaca" }} onClick={e => deleteEquipo(a.id, e)}>🗑️</button>
-                    </div>
+                    {!isReadOnly && (
+                      <div style={{ display: "flex", gap: "6px" }}>
+                        <button className="mini-btn" style={{ color: "var(--mant-primary)", borderColor: "#bfdbfe" }} onClick={e => openEdit(a, e)}>✏️ Editar</button>
+                        <button className="mini-btn" style={{ color: "#ef4444", borderColor: "#fecaca" }} onClick={e => deleteEquipo(a.id, e)}>🗑️</button>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -638,7 +695,48 @@ export default function GestionEquipos() {
                             <textarea className="v2-input" rows={2} value={manualIntForm.accion} onChange={e => setManualIntForm({...manualIntForm, accion: e.target.value})} />
                           </div>
                         </div>
-                        <div style={{ textAlign: "right" }}>
+
+                        {/* SECCIÓN REPUESTOS */}
+                        <div className="v2-form-group" style={{ marginTop: "15px", background: "#fff", padding: "12px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                          <label style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <span>Repuestos Utilizados</span>
+                            <button className="mini-btn" onClick={addManualConsumo} style={{ color: "var(--mant-primary)", borderColor: "var(--mant-primary)" }}>+ Añadir Repuesto</button>
+                          </label>
+                          
+                          {(manualIntForm.consumos || []).length === 0 ? (
+                            <p style={{ fontSize: "0.85rem", color: "#64748b", margin: "10px 0 0" }}>No se han agregado repuestos.</p>
+                          ) : (
+                            <div style={{ marginTop: "10px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                              {manualIntForm.consumos.map((c, idx) => (
+                                <div key={idx} style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                                  <select 
+                                    className="v2-select" 
+                                    style={{ flex: 1 }}
+                                    value={c.repuesto_id} 
+                                    onChange={e => updateManualConsumo(idx, "repuesto_id", e.target.value)}
+                                  >
+                                    <option value="">Seleccione repuesto...</option>
+                                    {allRepuestos.map(r => (
+                                      <option key={r.id} value={r.id}>{r.nombre} (Stock: {r.stock})</option>
+                                    ))}
+                                  </select>
+                                  <input 
+                                    type="number" 
+                                    min="0.01" step="0.01" 
+                                    className="v2-input" 
+                                    style={{ width: "80px" }}
+                                    placeholder="Cant."
+                                    value={c.cantidad}
+                                    onChange={e => updateManualConsumo(idx, "cantidad", parseFloat(e.target.value) || 0)}
+                                  />
+                                  <button className="v2-btn-danger" style={{ padding: "8px 12px" }} onClick={() => removeManualConsumo(idx)}>✖</button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        <div style={{ textAlign: "right", marginTop: "15px" }}>
                           <button className="v2-btn-primary" onClick={saveManualIntervention} disabled={saving}>
                             {saving ? "Guardando..." : "Guardar Ticket"}
                           </button>

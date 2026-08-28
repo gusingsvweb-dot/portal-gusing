@@ -114,6 +114,7 @@ export default function Login() {
       case "planeacion": navigate("/Dashboard"); break;
       case "mantenimiento": navigate("/mantenimiento"); break;
       case "tecnicomantenimiento": navigate("/tecnico-mantenimiento"); break;
+      case "analistamantenimiento": navigate("/tecnico-mantenimiento"); break;
       case "compras": navigate("/compras"); break;
       case "gestioncalidad": navigate("/gestioncalidad"); break;
       case "direcciontecnica": navigate("/direccion-tecnica"); break;

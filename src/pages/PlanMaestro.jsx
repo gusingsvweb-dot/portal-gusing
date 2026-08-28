@@ -6,11 +6,15 @@ import Footer from "../components/Footer";
 import "./Mantenimiento.css";
 import "./PlanMaestro.css";
 
+import { useAuth } from "../context/AuthContext";
+
 const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 const MESES_CORTO = ["ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SEP","OCT","NOV","DIC"];
 
 export default function PlanMaestro() {
+  const { usuarioActual } = useAuth();
   const navigate = useNavigate();
+  const isReadOnly = usuarioActual?.rol === "tecnicomantenimiento";
   const [planes, setPlanes] = useState([]);
   const [activos, setActivos] = useState([]);
   const [cronogramaAnual, setCronogramaAnual] = useState([]);
@@ -290,6 +294,7 @@ export default function PlanMaestro() {
   }
 
   async function toggleMonthStatus(monthEntry) {
+    if (isReadOnly) return;
     const isEj = monthEntry.status?.toLowerCase() === "ejecutado" || monthEntry.status?.toLowerCase() === "completado";
     const newStatus = isEj ? "Pendiente" : "Ejecutado";
     await supabase.from(st("maintenance_schedule_months")).update({ status: newStatus }).eq("id", monthEntry.id);
@@ -417,12 +422,15 @@ export default function PlanMaestro() {
             <p className="mant-subtitle">Cronograma de mantenimiento preventivo</p>
           </div>
           <div className="mant-actions-group">
-
-            <button className="mant-btn-action secondary" onClick={() => navigate("/mantenimiento/importar-cronograma")}>📥 Importar Excel</button>
-            <button className="mant-btn-action success" onClick={generateOrders} disabled={generating || stats.vencidos === 0}>
-              {generating ? "Generando..." : `🚀 Procesar ${stats.vencidos} Pendiente${stats.vencidos !== 1 ? "s" : ""}`}
-            </button>
-            <button className="mant-btn-action primary" onClick={() => { resetForm(); setShowModal(true); }}>+ Programar</button>
+            {!isReadOnly && (
+              <>
+                <button className="mant-btn-action secondary" onClick={() => navigate("/mantenimiento/importar-cronograma")}>📥 Importar Excel</button>
+                <button className="mant-btn-action success" onClick={generateOrders} disabled={generating || stats.vencidos === 0}>
+                  {generating ? "Generando..." : `🚀 Procesar ${stats.vencidos} Pendiente${stats.vencidos !== 1 ? "s" : ""}`}
+                </button>
+                <button className="mant-btn-action primary" onClick={() => { resetForm(); setShowModal(true); }}>+ Programar</button>
+              </>
+            )}
           </div>
         </header>
 
@@ -551,16 +559,20 @@ export default function PlanMaestro() {
                           `⏳ En ${dias} día${dias !== 1 ? "s" : ""}`}
                       </div>
                       <div className="pm-card-footer">
-                        <button
-                          className="mini-btn mini-btn-complete"
-                          onClick={() => completarPlan(p)}
-                          disabled={isCompletandoEste}
-                          title="Marcar como completado y avanzar fecha"
-                        >
-                          {isCompletandoEste ? "..." : "✓ Completar"}
-                        </button>
-                        <button className="mini-btn" onClick={() => openEdit(p)}>✏️ Editar</button>
-                        <button className="mini-btn" style={{ color: "#ef4444", borderColor: "#fecaca" }} onClick={() => deletePlan(p.id)}>🗑️</button>
+                        {!isReadOnly && (
+                          <>
+                            <button
+                              className="mini-btn mini-btn-complete"
+                              onClick={() => completarPlan(p)}
+                              disabled={isCompletandoEste}
+                              title="Marcar como completado y avanzar fecha"
+                            >
+                              {isCompletandoEste ? "..." : "✓ Completar"}
+                            </button>
+                            <button className="mini-btn" onClick={() => openEdit(p)}>✏️ Editar</button>
+                            <button className="mini-btn" style={{ color: "#ef4444", borderColor: "#fecaca" }} onClick={() => deletePlan(p.id)}>🗑️</button>
+                          </>
+                        )}
                       </div>
                     </div>
                   );
@@ -692,7 +704,7 @@ export default function PlanMaestro() {
                 <option value="pendiente">Pendientes</option>
                 <option value="vencido">Vencidos !</option>
               </select>
-              {cronogramaAnual.length > 0 && (
+              {cronogramaAnual.length > 0 && !isReadOnly && (
                 <button className="mant-btn-action success" style={{ fontSize: "0.8rem", padding: "8px 16px" }} onClick={syncWithMotor} disabled={syncing}>
                   {syncing ? "Sincronizando..." : "🔄 Sincronizar con Motor"}
                 </button>
@@ -711,9 +723,11 @@ export default function PlanMaestro() {
               <div className="empty-state">
                 <div className="empty-state-icon">📊</div>
                 <p>No hay cronograma importado para el año {selectedYear}</p>
-                <button className="mant-btn-action secondary" onClick={() => navigate("/mantenimiento/importar-cronograma")}>
-                  📥 Importar Cronograma Excel
-                </button>
+                {!isReadOnly && (
+                  <button className="mant-btn-action secondary" onClick={() => navigate("/mantenimiento/importar-cronograma")}>
+                    📥 Importar Cronograma Excel
+                  </button>
+                )}
               </div>
             ) : filtroMesAnual !== "todos" ? (
               /* Vista mes detallado: tarjetas */
