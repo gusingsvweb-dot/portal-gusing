@@ -398,7 +398,7 @@ export default function TecnicoMantenimiento() {
                     <p style={{ fontSize: "0.85rem", color: "#64748b", margin: "0 0 8px 0" }}>
                       Úsalo para justificar retrasos, cambio de prioridad, si requiere romper zona, pasar a contratista externo, etc.
                     </p>
-                    {selected.estado_id < 14 ? (
+                    {selected.estado_id < 15 ? (
                       <textarea 
                         className="v2-input" 
                         rows={3} 
@@ -416,7 +416,7 @@ export default function TecnicoMantenimiento() {
                   
                   <div className="modal-section">
                     <span className="modal-section-label">Trabajo Realizado (Resolución)</span>
-                    {selected.estado_id < 14 ? (
+                    {selected.estado_id < 15 ? (
                       <textarea 
                         className="v2-input" 
                         rows={5} 
@@ -488,7 +488,7 @@ export default function TecnicoMantenimiento() {
             {/* Modal Footer */}
             <div className="modal-box-footer">
               <button className="mant-btn-action secondary" onClick={closeModal}>Cerrar</button>
-              {selected.estado_id < 14 && (
+              {selected.estado_id < 15 && (
                 <button 
                   className="mant-btn-action" 
                   style={{ background: "#f8fafc", color: "#475569", border: "1px solid #cbd5e1" }} 
@@ -498,9 +498,12 @@ export default function TecnicoMantenimiento() {
                   {saving ? "..." : "💾 Guardar Novedad/Avance"}
                 </button>
               )}
-              {selected.estado_id < 14 && (
+              {selected.estado_id < 15 && (
                 <button className="mant-btn-action primary" onClick={avanzarEstado} disabled={saving}>
-                  {saving ? "Guardando..." : (selected.estado_id === 1 || selected.estado_id === 25) ? "Iniciar Trabajo →" : "Finalizar y Cerrar Ticket ✓"}
+                  {saving ? "Guardando..." : 
+                    (selected.estado_id === 1 || selected.estado_id === 25) ? "Iniciar Trabajo →" : 
+                    (selected.estado_id === 13) ? "Finalizar Trabajo ✓" : 
+                    "Cerrar Orden 🔒"}
                 </button>
               )}
             </div>
