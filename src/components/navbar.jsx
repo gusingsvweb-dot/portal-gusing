@@ -284,7 +284,11 @@ export default function Navbar() {
 
     const base = routes[rol] || "/dashboard";
 
-    if (rol === "mantenimiento" || rol === "tecnicomantenimiento") {
+    if (rol === "tecnicomantenimiento") {
+      return `/tecnico-mantenimiento${n.pedido_id ? `?id=${n.pedido_id}` : ''}`;
+    }
+
+    if (rol === "mantenimiento") {
       const t = (n.titulo || "").toLowerCase();
       if (t.includes("stock") || t.includes("repuesto") || t.includes("inventario")) return "/mantenimiento/repuestos";
       if (t.includes("plan") || t.includes("cronograma")) return "/mantenimiento/plan-maestro";
