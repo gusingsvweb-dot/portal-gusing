@@ -112,19 +112,6 @@ export default function Mantenimiento() {
       setAllRepuestos(repsRaw || []);
       setAllActivos(actRaw || []);
 
-      if (targetId) {
-        const req = hydrated.find(r => String(r.id) === String(targetId));
-        if (req) {
-          setSelected(req);
-          setAccion("");
-          setPrioridadId(req.prioridad_id || "");
-          setProveedorId(req.proveedor_id || "");
-          setConsumos([]);
-          setRepuesto("");
-          setCantidad(1);
-        }
-      }
-
     } catch (err) {
       console.error("Error en loadData:", err);
       setError(`Error al cargar datos: ${err.message}`);
@@ -134,6 +121,15 @@ export default function Mantenimiento() {
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  useEffect(() => {
+    if (targetId && solicitudes.length > 0) {
+      const req = solicitudes.find(r => String(r.id) === String(targetId));
+      if (req) {
+        openModal(req);
+      }
+    }
+  }, [targetId, solicitudes]);
 
   useEffect(() => {
     checkPillsScroll();

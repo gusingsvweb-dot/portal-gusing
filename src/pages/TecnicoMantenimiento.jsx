@@ -73,15 +73,6 @@ export default function TecnicoMantenimiento() {
       setSolicitudes(hydrated);
       setAllRepuestos(repsRaw || []);
 
-      if (targetId) {
-        const req = hydrated.find(r => String(r.id) === String(targetId));
-        if (req) {
-          setSelected(req);
-          setAccion("");
-          setConsumos([]);
-        }
-      }
-
     } catch (err) {
       console.error("Error en loadData:", err);
       setError(`Error al cargar datos: ${err.message}`);
@@ -91,6 +82,15 @@ export default function TecnicoMantenimiento() {
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  useEffect(() => {
+    if (targetId && solicitudes.length > 0) {
+      const req = solicitudes.find(r => String(r.id) === String(targetId));
+      if (req) {
+        openModal(req);
+      }
+    }
+  }, [targetId, solicitudes]);
 
   const filtered = useMemo(() => {
     const q = filtro.toLowerCase();
