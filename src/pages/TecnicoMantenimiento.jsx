@@ -137,7 +137,7 @@ export default function TecnicoMantenimiento() {
 
     if (s.estado_id >= 14) {
       try {
-        const { data, error } = await supabase.from(st("consumos_repuestos"))
+        const { data, error } = await supabase.from(st("consumos"))
           .select("*, repuesto:repuesto_id(*)")
           .eq("solicitud_id", s.id);
         if (!error && data) setConsumosGuardados(data);
@@ -244,7 +244,7 @@ export default function TecnicoMantenimiento() {
             };
           });
 
-          const { error: consError } = await supabase.from(st("consumos_repuestos")).insert(consumosData);
+          const { error: consError } = await supabase.from(st("consumos")).insert(consumosData);
           if (consError) throw consError;
 
           // Descontar inventario
