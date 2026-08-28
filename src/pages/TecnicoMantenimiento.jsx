@@ -398,35 +398,25 @@ export default function TecnicoMantenimiento() {
                     <p style={{ fontSize: "0.85rem", color: "#64748b", margin: "0 0 8px 0" }}>
                       Úsalo para justificar retrasos, cambio de prioridad, si requiere romper zona, pasar a contratista externo, etc.
                     </p>
-                    {selected.estado_id < 15 ? (
-                      <textarea 
-                        className="v2-input" 
-                        rows={3} 
-                        placeholder="Ej: Se detectó humedad interna, toca romper la pared para reparar la fuga de modo que esto pasaría a un contratista civil..."
-                        value={justificacion}
-                        onChange={e => setJustificacion(e.target.value)}
-                        style={{ borderLeft: "3px solid #f59e0b" }}
-                      />
-                    ) : (
-                      <div className="modal-text-box" style={{ borderLeft: "3px solid #f59e0b", backgroundColor: "#fffbeb" }}>
-                        {selected.justificacion && selected.justificacion !== "N/A" ? selected.justificacion : "Sin observaciones adicionales."}
-                      </div>
-                    )}
+                    <textarea 
+                      className="v2-input" 
+                      rows={3} 
+                      placeholder="Ej: Se detectó humedad interna, toca romper la pared para reparar la fuga de modo que esto pasaría a un contratista civil..."
+                      value={justificacion}
+                      onChange={e => setJustificacion(e.target.value)}
+                      style={{ borderLeft: "3px solid #f59e0b" }}
+                    />
                   </div>
                   
                   <div className="modal-section">
                     <span className="modal-section-label">Trabajo Realizado (Resolución)</span>
-                    {selected.estado_id < 15 ? (
-                      <textarea 
-                        className="v2-input" 
-                        rows={5} 
-                        placeholder="Describe qué se le hizo al equipo, repuestos cambiados o acciones tomadas..."
-                        value={accion}
-                        onChange={e => setAccion(e.target.value)}
-                      />
-                    ) : (
-                      <div className="modal-text-box success-tint">{selected.accion_realizada || "No se registró descripción."}</div>
-                    )}
+                    <textarea 
+                      className="v2-input" 
+                      rows={5} 
+                      placeholder="Describe qué se le hizo al equipo, repuestos cambiados o acciones tomadas..."
+                      value={accion}
+                      onChange={e => setAccion(e.target.value)}
+                    />
                   </div>
                 </>
               )}
@@ -488,24 +478,20 @@ export default function TecnicoMantenimiento() {
             {/* Modal Footer */}
             <div className="modal-box-footer">
               <button className="mant-btn-action secondary" onClick={closeModal}>Cerrar</button>
-              {selected.estado_id < 15 && (
-                <button 
-                  className="mant-btn-action" 
-                  style={{ background: "#f8fafc", color: "#475569", border: "1px solid #cbd5e1" }} 
-                  onClick={guardarNovedad} 
-                  disabled={saving}
-                >
-                  {saving ? "..." : "💾 Guardar Novedad/Avance"}
-                </button>
-              )}
-              {selected.estado_id < 15 && (
-                <button className="mant-btn-action primary" onClick={avanzarEstado} disabled={saving}>
-                  {saving ? "Guardando..." : 
-                    (selected.estado_id === 1 || selected.estado_id === 25) ? "Iniciar Trabajo →" : 
-                    (selected.estado_id === 13) ? "Finalizar Trabajo ✓" : 
-                    "Cerrar Orden 🔒"}
-                </button>
-              )}
+              <button 
+                className="mant-btn-action" 
+                style={{ background: "#f8fafc", color: "#475569", border: "1px solid #cbd5e1" }} 
+                onClick={guardarNovedad} 
+                disabled={saving}
+              >
+                {saving ? "..." : "💾 Guardar Novedad/Avance"}
+              </button>
+              <button className="mant-btn-action primary" onClick={avanzarEstado} disabled={saving}>
+                {saving ? "Guardando..." : 
+                  (selected.estado_id === 1 || selected.estado_id === 25) ? "Iniciar Trabajo →" : 
+                  (selected.estado_id === 13) ? "Finalizar Trabajo ✓" : 
+                  "Cerrar Orden 🔒"}
+              </button>
             </div>
           </div>
         </div>
