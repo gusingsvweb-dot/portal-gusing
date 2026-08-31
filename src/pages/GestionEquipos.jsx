@@ -113,7 +113,9 @@ export default function GestionEquipos() {
   }
 
   async function saveEquipo() {
-    if (!form.nombre || !form.area_id || !form.codigo) return alert("Nombre, Área y Código son obligatorios");
+    if (!form.nombre || !form.area_id || !form.codigo || !form.criticidad || form.criticidad === "Baja") {
+      return alert("Nombre, Área, Código y Frecuencia son obligatorios");
+    }
     setSaving(true);
     
     let currentUrls = [];
