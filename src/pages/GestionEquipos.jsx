@@ -35,7 +35,7 @@ export default function GestionEquipos() {
   const isReadOnly = usuarioActual?.rol === "tecnicomantenimiento";
 
   const [form, setForm] = useState({
-    nombre: "", tipo: "Equipo", area_id: "", codigo: "", descripcion: "", criticidad: "Baja", manual_url: ""
+    nombre: "", tipo: "Equipo", area_id: "", codigo: "", descripcion: "", criticidad: "Baja", manual_url: "", estado: "Activo"
   });
   const [files, setFiles] = useState([]);
   const [showManualInt, setShowManualInt] = useState(false);
@@ -376,7 +376,7 @@ export default function GestionEquipos() {
   }
 
   function resetForm() {
-    setForm({ nombre: "", tipo: "Equipo", area_id: "", codigo: "", descripcion: "", criticidad: "Baja", manual_url: "" });
+    setForm({ nombre: "", tipo: "Equipo", area_id: "", codigo: "", descripcion: "", criticidad: "Baja", manual_url: "", estado: "Activo" });
     setFiles([]);
     setShowAreaForm(false);
     setNewAreaName("");
@@ -562,6 +562,13 @@ export default function GestionEquipos() {
                       <label>Código Interno <span className="req">*</span></label>
                       <input className="v2-input" type="text" value={form.codigo}
                         onChange={e => setForm({ ...form, codigo: e.target.value })} placeholder="Ej: EQ-001" />
+                    </div>
+                    <div className="v2-form-group">
+                      <label>Estado</label>
+                      <select className="v2-select" value={form.estado || "Activo"} onChange={e => setForm({ ...form, estado: e.target.value })}>
+                        <option value="Activo">Equipo Activo</option>
+                        <option value="Fuera de uso">Equipo Fuera de Uso</option>
+                      </select>
                     </div>
                   </div>
                   <div className="v2-form-group">
