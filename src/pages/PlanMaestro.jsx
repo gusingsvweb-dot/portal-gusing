@@ -496,15 +496,15 @@ export default function PlanMaestro() {
           /* ══ TAB: MOTOR AUTOMÁTICO ══ */
           <>
             <div className="pm-stats-row">
-              <div className="pm-stat-card pm-proximos" style={{ cursor: "pointer" }} onClick={() => setFiltroEstadoAuto("todos")}>
+              <div className="pm-stat-card pm-proximos" style={{ cursor: "pointer", border: filtroEstadoAuto === "pendientes_mes" ? "2px solid var(--mant-primary)" : "" }} onClick={() => setFiltroEstadoAuto(filtroEstadoAuto === "pendientes_mes" ? "todos" : "pendientes_mes")}>
                 <span className="pm-stat-num">{stats.pendientesDelMes}</span>
                 <span className="pm-stat-lbl">PENDIENTES DEL MES</span>
               </div>
-              <div className="pm-stat-card pm-total" style={{ cursor: "pointer" }} onClick={() => { setFiltroEstadoAuto("todos"); setFiltroMes("todos"); setFiltroFrecAuto("todos"); }}>
+              <div className="pm-stat-card pm-total" style={{ cursor: "pointer", border: filtroEstadoAuto === "todos" && filtroMes === "todos" ? "2px solid var(--mant-primary)" : "" }} onClick={() => { setFiltroEstadoAuto("todos"); setFiltroMes("todos"); setFiltroFrecAuto("todos"); }}>
                 <span className="pm-stat-num">{stats.totalProgramas}</span>
                 <span className="pm-stat-lbl">TOTAL PROGRAMADOS</span>
               </div>
-              <div className="pm-stat-card pm-activos" style={{ cursor: "pointer" }} onClick={() => setFiltroEstadoAuto(filtroEstadoAuto === "completado" ? "todos" : "completado")}>
+              <div className="pm-stat-card pm-activos" style={{ cursor: "pointer", border: filtroEstadoAuto === "completados_mes" ? "2px solid var(--mant-primary)" : "" }} onClick={() => setFiltroEstadoAuto(filtroEstadoAuto === "completados_mes" ? "todos" : "completados_mes")}>
                 <span className="pm-stat-num">{stats.ejecutadosDelMes}</span>
                 <span className="pm-stat-lbl">EJECUTADOS DEL MES</span>
               </div>
@@ -523,15 +523,6 @@ export default function PlanMaestro() {
                 <select className="v2-select" value={filtroMes} onChange={e => setFiltroMes(e.target.value)}>
                   <option value="todos">Todos los meses</option>
                   {MESES.map((m, i) => <option key={i} value={i}>{m}</option>)}
-                </select>
-              </div>
-              <div className="pm-filter-group">
-                <label>Estado:</label>
-                <select className="v2-select" value={filtroEstadoAuto} onChange={e => setFiltroEstadoAuto(e.target.value)}>
-                  <option value="todos">Todos</option>
-                  <option value="vencido">⚠️ Vencidos</option>
-                  <option value="proximo">⏳ Próximos 7 días</option>
-                  <option value="ok">✅ Al día</option>
                 </select>
               </div>
               <div className="pm-filter-group">
