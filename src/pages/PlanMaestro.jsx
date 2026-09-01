@@ -98,7 +98,8 @@ export default function PlanMaestro() {
   const stats = useMemo(() => {
     let pendientesDelMes = 0;
     let ejecutadosDelMes = 0;
-    const currentMonthNum = new Date().getMonth() + 1; // 1-12
+    
+    const currentMonthNum = filtroMes === "todos" ? (new Date().getMonth() + 1) : (parseInt(filtroMes) + 1);
     
     cronogramaDeCategoria.forEach(item => {
       if (item.maintenance_schedule_months) {
@@ -114,12 +115,15 @@ export default function PlanMaestro() {
       }
     });
 
+    const vencidos = planesDeCategoria.filter(p => p.proxima_fecha <= hoy && p.activo !== false);
+
     return { 
       pendientesDelMes,
       ejecutadosDelMes,
-      totalProgramas: planesDeCategoria.length 
+      totalProgramas: planesDeCategoria.length,
+      vencidos: vencidos.length
     };
-  }, [planesDeCategoria, cronogramaDeCategoria, hoy]);
+  }, [planesDeCategoria, cronogramaDeCategoria, hoy, filtroMes]);
 
   const diasRestantes = (fecha) => Math.ceil((new Date(fecha) - new Date()) / (1000 * 60 * 60 * 24));
 
@@ -131,17 +135,20 @@ export default function PlanMaestro() {
         if (mes !== parseInt(filtroMes)) return false;
       }
       if (filtroEstadoAuto !== "todos") {
-        const dias = diasRestantes(p.proxima_fecha);
-        if (filtroEstadoAuto === "vencido" && dias > 0) return false;
-        if (filtroEstadoAuto === "proximo" && (dias <= 0 || dias > 7)) return false;
-        if (filtroEstadoAuto === "ok" && (dias <= 7)) return false;
-        if (filtroEstadoAuto === "completado") {
-          const itemAnual = cronogramaDeCategoria.find(item => item.equipment_code === p.activos?.codigo);
-          if (!itemAnual) return false;
-          const hasCompletado = itemAnual.maintenance_schedule_months?.some(m => 
-            m.status?.toLowerCase() === "ejecutado" || m.status?.toLowerCase() === "completado"
-          );
-          if (!hasCompletado) return false;
+        const targetMonth = filtroMes === "todos" ? (new Date().getMonth() + 1) : (parseInt(filtroMes) + 1);
+        const itemAnual = cronogramaDeCategoria.find(item => item.equipment_code === p.activos?.codigo);
+        
+        if (!itemAnual) return false;
+
+        const currentMonthData = itemAnual.maintenance_schedule_months?.find(m => m.month_number === targetMonth);
+        if (!currentMonthData) return false;
+
+        const st = currentMonthData.status?.toLowerCase();
+
+        if (filtroEstadoAuto === "pendientes_mes") {
+          if (st !== "programado") return false;
+        } else if (filtroEstadoAuto === "completados_mes") {
+          if (st !== "ejecutado" && st !== "completado") return false;
         }
       }
       if (filtroFrecAuto !== "todos") {
