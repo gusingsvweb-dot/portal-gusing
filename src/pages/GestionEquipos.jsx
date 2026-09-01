@@ -466,6 +466,9 @@ export default function GestionEquipos() {
                   <div className="card-v2-header">
                     <span className="v2-id-tag">{a.codigo || `ID-${a.id}`}</span>
                     <div style={{ display: "flex", gap: "5px" }}>
+                      {a.estado === "Fuera de uso" && (
+                        <span className="v2-crit-badge" style={{ background: '#f3f4f6', color: '#6b7280', border: '1px solid #d1d5db' }}>Fuera de uso</span>
+                      )}
                       {(a.sac === true || a.sac === "Sí" || a.sac === "TRUE" || a.sac === "true") && (
                         <span className="v2-crit-badge" style={{ background: '#fee2e2', color: '#b91c1c' }}>SAC</span>
                       )}
