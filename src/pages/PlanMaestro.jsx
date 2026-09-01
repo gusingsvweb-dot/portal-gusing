@@ -118,6 +118,8 @@ export default function PlanMaestro() {
     };
   }, [planesDeCategoria, cronogramaDeCategoria, hoy]);
 
+  const diasRestantes = (fecha) => Math.ceil((new Date(fecha) - new Date()) / (1000 * 60 * 60 * 24));
+
   // ── Planes filtrados para Motor Automático ──
   const planesFiltrados = useMemo(() => {
     return planesDeCategoria.filter(p => {
@@ -130,13 +132,19 @@ export default function PlanMaestro() {
         if (filtroEstadoAuto === "vencido" && dias > 0) return false;
         if (filtroEstadoAuto === "proximo" && (dias <= 0 || dias > 7)) return false;
         if (filtroEstadoAuto === "ok" && (dias <= 7)) return false;
+        if (filtroEstadoAuto === "completado") {
+          // Si el filtro es "completado", mostramos aquellos cuya ultima_fecha es de este año
+          if (!p.ultima_fecha) return false;
+          const yearUltima = new Date(p.ultima_fecha).getFullYear();
+          if (yearUltima !== selectedYear) return false;
+        }
       }
       if (filtroFrecAuto !== "todos") {
         if (p.activos?.criticidad !== filtroFrecAuto) return false;
       }
       return true;
     });
-  }, [planesDeCategoria, filtroMes, filtroEstadoAuto, filtroFrecAuto]);
+  }, [planesDeCategoria, filtroMes, filtroEstadoAuto, filtroFrecAuto, selectedYear]);
 
   // ── Planes por semana (Vista Semanal) ──
   const semanasPorMes = useMemo(() => {
@@ -403,7 +411,6 @@ export default function PlanMaestro() {
     setForm({ activo_id: "", frecuencia_dias: 30, proxima_fecha: new Date().toISOString().split("T")[0], descripcion_tarea: "", activo: true });
   }
 
-  const diasRestantes = (fecha) => Math.ceil((new Date(fecha) - new Date()) / (1000 * 60 * 60 * 24));
 
   // ── Cronograma Anual filtrado ──
   const cronogramaFiltrado = useMemo(() => {
@@ -486,7 +493,7 @@ export default function PlanMaestro() {
                 <span className="pm-stat-num">{stats.pendientes}</span>
                 <span className="pm-stat-lbl">PENDIENTES</span>
               </div>
-              <div className="pm-stat-card pm-activos" style={{ cursor: "pointer" }} onClick={() => setActiveTab("anual")}>
+              <div className="pm-stat-card pm-activos" style={{ cursor: "pointer" }} onClick={() => setFiltroEstadoAuto(filtroEstadoAuto === "completado" ? "todos" : "completado")}>
                 <span className="pm-stat-num">{stats.completados}</span>
                 <span className="pm-stat-lbl">PLANES COMPLETADOS</span>
               </div>
