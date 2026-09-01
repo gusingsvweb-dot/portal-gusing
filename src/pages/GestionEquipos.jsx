@@ -472,7 +472,7 @@ export default function GestionEquipos() {
                       <span className="v2-type-badge">{a.tipo}</span>
                     </div>
                   </div>
-                  <div className="card-v2-icon">{TIPO_ICON[a.tipo] || "🔩"}</div>
+                  <div className="card-v2-icon">{a.nombre?.toLowerCase().includes("impresora") ? "🖨️" : (TIPO_ICON[a.tipo] || "🔩")}</div>
                   <h4>{a.nombre}</h4>
                   {(a.sac === true || a.sac === "Sí" || a.sac === "TRUE" || a.sac === "true") && (
                     <div style={{ fontSize: "0.8rem", color: "#b91c1c", marginBottom: "8px", fontWeight: "700" }}>
