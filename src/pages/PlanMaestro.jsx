@@ -535,10 +535,10 @@ export default function PlanMaestro() {
                     <div key={p.id} className={`pm-card ${isVencido ? "pm-card-vencido" : isProximo ? "pm-card-proximo" : ""}`}>
                       {isVencido && <div className="pm-vencido-stripe"></div>}
                       <div className="pm-card-header">
-                        <span className="pm-freq-badge">{p.activos?.criticidad?.toUpperCase() || "SIN FRECUENCIA"}</span>
-                        <span className={`v2-crit-badge crit-${p.activos?.criticidad?.toLowerCase() || "baja"}`}>
-                          {p.activos?.criticidad || "Baja"}
-                        </span>
+                        <span style={{ flex: 1 }}></span>
+                        {(p.activos?.sac === true || p.activos?.sac === "Sí" || p.activos?.sac === "TRUE" || p.activos?.sac === "true") && (
+                          <span className="v2-crit-badge" style={{ background: '#fee2e2', color: '#b91c1c' }}>SAC</span>
+                        )}
                       </div>
                       <h4 className="pm-card-title">{p.activos?.nombre || "Equipo eliminado"}</h4>
                       <p className="pm-card-desc">{p.descripcion_tarea || "Sin descripción"}</p>
