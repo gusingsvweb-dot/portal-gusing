@@ -622,80 +622,80 @@ export default function PlanMaestro() {
               <span className="pm-semanal-titulo">{MESES[semanalMes]} {semanalAnio}</span>
             </div>
 
-            {semanasPorMes.every(s => s.tareas.length === 0) ? (
-              <div className="empty-state" style={{ marginTop: "40px" }}>
-                <div className="empty-state-icon">📆</div>
-                <p>No hay preventivos programados para {MESES[semanalMes]} {semanalAnio}</p>
-              </div>
-            ) : (
-              <div className="pm-semanas-grid">
-                {semanasPorMes.map(semana => (
-                  <div key={semana.num} 
-                       className={`pm-semana-col ${dragOverWeek === semana.inicio ? "drag-over" : ""}`}
-                       onDragOver={(e) => handleDragOver(e, semana.inicio)}
-                       onDragLeave={(e) => handleDragLeave(e, semana.inicio)}
-                       onDrop={(e) => handleDropTarea(e, semana.inicio)}>
-                    <div className="pm-semana-header">
-                      <span className="pm-semana-num">Semana {semana.num}</span>
-                      <span className="pm-semana-rango">
-                        {new Date(semana.inicio + "T00:00:00").toLocaleDateString("es-CO", { day: "numeric", month: "short" })} —{" "}
-                        {new Date(semana.fin + "T00:00:00").toLocaleDateString("es-CO", { day: "numeric", month: "short" })}
-                      </span>
-                      <span className="pm-semana-badge">{semana.tareas.length} tarea{semana.tareas.length !== 1 ? "s" : ""}</span>
-                    </div>
-                    <div className="pm-semana-tareas">
-                      {semana.tareas.length === 0 ? (
-                        <div className="pm-semana-empty">Sin preventivos esta semana</div>
-                      ) : semana.tareas.map(p => {
-                        const dias = diasRestantes(p.proxima_fecha);
-                        const isCompletada = p.ultima_fecha >= semana.inicio && p.ultima_fecha <= semana.fin;
-                        const isVencida = !isCompletada && dias <= 0;
-                        const isProxima = !isCompletada && dias > 0 && dias <= 7;
-                        
-                        return (
-                          <div key={`${p.id}-${isCompletada ? 'c' : 'p'}`} 
-                               className={`pm-semana-tarea ${isCompletada ? "tarea-completada" : isVencida ? "tarea-vencida" : isProxima ? "tarea-proxima" : ""}`}
-                               draggable={!isCompletada}
-                               onDragStart={(e) => handleDragStart(e, p.id)}>
-                            <div className="pm-semana-tarea-top">
-                              <span style={{ flex: 1 }}></span>
-                              {(p.activos?.sac === true || p.activos?.sac === "Sí" || p.activos?.sac === "TRUE" || p.activos?.sac === "true") && (
-                                <span className="v2-crit-badge" style={{ background: '#fee2e2', color: '#b91c1c', fontSize: "0.65rem", padding: "2px 7px" }}>SAC</span>
-                              )}
-                              <span className="pm-semana-fecha">{isCompletada ? `Completado: ${p.ultima_fecha}` : p.proxima_fecha}</span>
-                            </div>
-                            <p className="pm-semana-equipo">{p.activos?.nombre || "Equipo"}</p>
-                            <p className="pm-semana-desc">
-                              {p.isProjection && <span style={{ color: "var(--mant-primary)", fontWeight: "bold" }}>[PROYECCIÓN] </span>}
-                              {p.descripcion_tarea || "Sin descripción"}
-                            </p>
-                            <div className="pm-semana-actions">
+            {(() => {
+              const tareasDelMes = semanasPorMes.flatMap(s => s.tareas);
+              
+              if (tareasDelMes.length === 0) {
+                return (
+                  <div className="empty-state" style={{ marginTop: "40px" }}>
+                    <div className="empty-state-icon">📆</div>
+                    <p>No hay preventivos programados para {MESES[semanalMes]} {semanalAnio}</p>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="pm-grid" style={{ marginTop: "20px" }}>
+                  {tareasDelMes.map((p, idx) => {
+                    const dias = diasRestantes(p.proxima_fecha);
+                    const isCompletada = p.isCompletada;
+                    const isVencida = !isCompletada && dias <= 0;
+                    const isProxima = !isCompletada && dias > 0 && dias <= 7;
+                    const isCompletandoEste = completando === p.id;
+                    
+                    return (
+                      <div key={`${p.id}-${isCompletada ? 'c' : 'p'}-${idx}`} 
+                           className={`pm-card ${isCompletada ? "card-ok" : isVencida ? "card-danger" : isProxima ? "card-warning" : ""}`}>
+                        <div className="pm-card-header">
+                          <h3 className="pm-equipo-nombre">{p.activos?.nombre || "Equipo"}</h3>
+                          {(p.activos?.sac === true || p.activos?.sac === "Sí" || p.activos?.sac === "TRUE" || p.activos?.sac === "true") && (
+                            <span className="v2-crit-badge" style={{ background: '#fee2e2', color: '#b91c1c' }}>SAC</span>
+                          )}
+                        </div>
+                        <div className="pm-card-body">
+                          <p className="pm-tarea-desc">
+                            {p.isProjection && <span style={{ color: "var(--mant-primary)", fontWeight: "bold" }}>[PROYECCIÓN] </span>}
+                            {p.descripcion_tarea || "Sin descripción"}
+                          </p>
+                          <div className="pm-fechas">
+                            <span>Última ejecución</span>
+                            <strong>{isCompletada ? p.ultima_fecha : p.ultima_fecha || "N/A"}</strong>
+                          </div>
+                          <div className="pm-fechas">
+                            <span>Próxima fecha</span>
+                            <strong style={{ color: isCompletada ? "var(--mant-success)" : isVencida ? "var(--mant-danger)" : isProxima ? "#f59e0b" : "inherit" }}>
+                              {isCompletada ? `Completado: ${p.ultima_fecha}` : p.proxima_fecha}
+                            </strong>
+                          </div>
+                        </div>
+                        <div className="pm-card-footer">
+                          {!isReadOnly && (
+                            <>
                               {!isCompletada && !p.isProjection && (
                                 <button
                                   className="mini-btn mini-btn-complete"
-                                  style={{ fontSize: "0.72rem", padding: "4px 10px" }}
                                   onClick={() => completarPlan(p)}
-                                  disabled={completando === p.id}
+                                  disabled={isCompletandoEste}
+                                  title="Marcar como completado y avanzar fecha"
                                 >
-                                  {completando === p.id ? "..." : "✓ Completar"}
+                                  {isCompletandoEste ? "..." : "✓ Completar"}
                                 </button>
                               )}
-                              <button
-                                className="mini-btn"
-                                style={{ fontSize: "0.72rem", padding: "4px 10px" }}
-                                onClick={() => openEdit(p)}
-                              >
-                                ✏️
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                              {!isCompletada && !p.isProjection && (
+                                <button className="mini-btn" onClick={() => openEdit(p)}>✏️ Editar</button>
+                              )}
+                              {!isCompletada && !p.isProjection && (
+                                <button className="mini-btn" style={{ color: "#ef4444", borderColor: "#fecaca" }} onClick={() => deletePlan(p.id)}>🗑️</button>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </div>
 
         ) : (
