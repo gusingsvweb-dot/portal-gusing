@@ -96,25 +96,28 @@ export default function PlanMaestro() {
   }, [cronogramaAnual, activos, mainCategory]);
 
   const stats = useMemo(() => {
-    const vencidos = planesDeCategoria.filter(p => p.proxima_fecha <= hoy && p.activo !== false);
-    const pendientes = planesDeCategoria.filter(p => p.activo !== false);
+    let pendientesDelMes = 0;
+    let ejecutadosDelMes = 0;
+    const currentMonthNum = new Date().getMonth() + 1; // 1-12
     
-    let completadosCount = 0;
     cronogramaDeCategoria.forEach(item => {
       if (item.maintenance_schedule_months) {
-        item.maintenance_schedule_months.forEach(m => {
-          if (m.status?.toLowerCase() === "ejecutado" || m.status?.toLowerCase() === "completado") {
-            completadosCount++;
+        const currentMonthData = item.maintenance_schedule_months.find(m => m.month_number === currentMonthNum);
+        if (currentMonthData) {
+          const st = currentMonthData.status?.toLowerCase();
+          if (st === "programado") {
+            pendientesDelMes++;
+          } else if (st === "ejecutado" || st === "completado") {
+            ejecutadosDelMes++;
           }
-        });
+        }
       }
     });
 
     return { 
-      vencidos: vencidos.length, 
-      pendientes: pendientes.length, 
-      completados: completadosCount, 
-      total: planesDeCategoria.length 
+      pendientesDelMes,
+      ejecutadosDelMes,
+      totalProgramas: planesDeCategoria.length 
     };
   }, [planesDeCategoria, cronogramaDeCategoria, hoy]);
 
@@ -487,16 +490,16 @@ export default function PlanMaestro() {
           <>
             <div className="pm-stats-row">
               <div className="pm-stat-card pm-proximos" style={{ cursor: "pointer" }} onClick={() => setFiltroEstadoAuto("todos")}>
-                <span className="pm-stat-num">{stats.pendientes}</span>
-                <span className="pm-stat-lbl">PENDIENTES</span>
-              </div>
-              <div className="pm-stat-card pm-activos" style={{ cursor: "pointer" }} onClick={() => setFiltroEstadoAuto(filtroEstadoAuto === "completado" ? "todos" : "completado")}>
-                <span className="pm-stat-num">{stats.completados}</span>
-                <span className="pm-stat-lbl">PLANES COMPLETADOS</span>
+                <span className="pm-stat-num">{stats.pendientesDelMes}</span>
+                <span className="pm-stat-lbl">PENDIENTES DEL MES</span>
               </div>
               <div className="pm-stat-card pm-total" style={{ cursor: "pointer" }} onClick={() => { setFiltroEstadoAuto("todos"); setFiltroMes("todos"); setFiltroFrecAuto("todos"); }}>
-                <span className="pm-stat-num">{stats.total}</span>
-                <span className="pm-stat-lbl">Total Programas</span>
+                <span className="pm-stat-num">{stats.totalProgramas}</span>
+                <span className="pm-stat-lbl">TOTAL PROGRAMADOS</span>
+              </div>
+              <div className="pm-stat-card pm-activos" style={{ cursor: "pointer" }} onClick={() => setFiltroEstadoAuto(filtroEstadoAuto === "completado" ? "todos" : "completado")}>
+                <span className="pm-stat-num">{stats.ejecutadosDelMes}</span>
+                <span className="pm-stat-lbl">EJECUTADOS DEL MES</span>
               </div>
             </div>
 
