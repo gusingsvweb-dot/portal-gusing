@@ -265,7 +265,7 @@ export default function CrearSolicitud() {
         [areaNombre, "gerencia"],
         `🔔 Nueva Solicitud${prioridadNombre ? ` — Prioridad ${prioridadNombre}` : ""}`,
         `${usuarioActual?.usuario || "Sistema"} (${usuarioActual?.areadetrabajo || "—"}) creó la solicitud ${code}: "${resumen}"`,
-        null,
+        newSolicitudId,
         "info"
       );
     } catch (notifErr) {

@@ -226,6 +226,7 @@ export default function Mantenimiento() {
     setConsumosGuardados([]);
     setError("");
     setSaving(false);
+    setSearchParams({}); // Limpiar URL
   };
 
   const guardarNovedad = async () => {
@@ -402,22 +403,23 @@ export default function Mantenimiento() {
       .limit(1);
     if (maxData?.length > 0) nextConsecutivo = (maxData[0].consecutivo || 0) + 1;
 
-    const { error: err } = await supabase.from(st("solicitudes")).insert([{
+    const { data: newTicket, error: err } = await supabase.from(st("solicitudes")).insert([{
       ...manualForm,
       area_id: 1, // Mantenimiento
       estado_id: 1, // Pendiente
       consecutivo: nextConsecutivo,
       usuario_id: "ADMIN_MANT",
       area_solicitante: "MANTENIMIENTO"
-    }]);
+    }]).select().single();
 
     if (err) { alert("Error: " + err.message); }
     else {
+      const ticketCode = getTicketCode(newTicket);
       await notifyRoles(
         ["mantenimiento", "gerencia"],
         "🔔 Nueva Solicitud Manual",
-        `Se ha registrado una nuevo ticket manual (M-${nextConsecutivo}) para intervención técnica.`,
-        null,
+        `Se ha registrado un nuevo ticket manual (${ticketCode}) para intervención técnica.`,
+        newTicket.id,
         "info"
       );
       setShowManualForm(false);

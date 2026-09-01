@@ -157,6 +157,7 @@ export default function TecnicoMantenimiento() {
     setConsumos([]);
     setConsumosGuardados([]);
     setActiveTab("info");
+    setSearchParams({}); // Limpiar URL para que vuelva a funcionar el click de la notificación
   };
 
   const guardarNovedad = async () => {
