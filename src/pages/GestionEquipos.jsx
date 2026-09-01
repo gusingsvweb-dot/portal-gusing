@@ -466,16 +466,18 @@ export default function GestionEquipos() {
                   <div className="card-v2-header">
                     <span className="v2-id-tag">{a.codigo || `ID-${a.id}`}</span>
                     <div style={{ display: "flex", gap: "5px" }}>
-                      {a.estado === "Fuera de uso" && (
-                        <span className="v2-crit-badge" style={{ background: '#f3f4f6', color: '#6b7280', border: '1px solid #d1d5db' }}>Fuera de uso</span>
-                      )}
                       {(a.sac === true || a.sac === "Sí" || a.sac === "TRUE" || a.sac === "true") && (
                         <span className="v2-crit-badge" style={{ background: '#fee2e2', color: '#b91c1c' }}>SAC</span>
                       )}
                       <span className="v2-type-badge">{a.tipo}</span>
                     </div>
                   </div>
-                  <div className="card-v2-icon">{a.nombre?.toLowerCase().includes("impresora") ? "🖨️" : (TIPO_ICON[a.tipo] || "🔩")}</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px" }}>
+                    <div className="card-v2-icon" style={{ marginBottom: 0 }}>{a.nombre?.toLowerCase().includes("impresora") ? "🖨️" : (TIPO_ICON[a.tipo] || "🔩")}</div>
+                    {a.estado === "Fuera de uso" && (
+                      <span style={{ color: "#ef4444", fontWeight: "700", fontSize: "0.75rem", border: "1px solid #fecaca", padding: "4px 8px", borderRadius: "12px", background: "#fef2f2" }}>FUERA DE USO</span>
+                    )}
+                  </div>
                   <h4>{a.nombre}</h4>
                   {(a.sac === true || a.sac === "Sí" || a.sac === "TRUE" || a.sac === "true") && (
                     <div style={{ fontSize: "0.8rem", color: "#b91c1c", marginBottom: "8px", fontWeight: "700" }}>
