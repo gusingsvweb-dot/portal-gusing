@@ -158,9 +158,28 @@ export default function GestionEquipos() {
     }
 
     const finalUrl = currentUrls.length > 0 ? JSON.stringify(currentUrls) : "";
-    const { error } = await supabase.from(st("activos")).upsert([{ ...form, manual_url: finalUrl }]);
+    const isNew = !form.id;
+    const { data: insertedData, error } = await supabase.from(st("activos")).upsert([{ ...form, manual_url: finalUrl }]).select();
+    
     if (error) alert("Error: " + error.message);
     else {
+      if (isNew && insertedData && insertedData.length > 0) {
+        const newActivoId = insertedData[0].id;
+        const freqMap = { "Bimestral": 60, "Tetramestral": 120, "Semestral": 180, "Anual": 365 };
+        const diasFreq = freqMap[form.criticidad] || 30;
+        
+        const proxDate = new Date();
+        proxDate.setDate(proxDate.getDate() + diasFreq);
+        
+        await supabase.from(st("planes_preventivos")).insert([{
+          activo_id: newActivoId,
+          frecuencia_dias: diasFreq,
+          proxima_fecha: proxDate.toISOString().split("T")[0],
+          descripcion_tarea: "Mantenimiento preventivo inicial programado automáticamente.",
+          activo: true
+        }]);
+      }
+      
       setShowForm(false);
       resetForm();
       loadData();
