@@ -31,6 +31,7 @@ export default function GestionEquipos() {
   const [proveedores, setProveedores] = useState([]);
   const [tiposSolicitud, setTiposSolicitud] = useState([]);
   const [allRepuestos, setAllRepuestos] = useState([]);
+  const [prioridades, setPrioridades] = useState([]);
 
   const isReadOnly = usuarioActual?.rol === "tecnicomantenimiento";
 
@@ -48,16 +49,25 @@ export default function GestionEquipos() {
     consumos: []
   });
 
+  const [showTicketForm, setShowTicketForm] = useState(false);
+  const [ticketForm, setTicketForm] = useState({
+    tipo_solicitud_id: "",
+    prioridad_id: "",
+    tecnico_asignado: "",
+    descripcion: ""
+  });
+
   useEffect(() => { loadData(); }, []);
 
   async function loadData() {
     setLoading(true);
-    const [{ data: act }, { data: ars }, { data: provs }, { data: types }, { data: reps }] = await Promise.all([
+    const [{ data: act }, { data: ars }, { data: provs }, { data: types }, { data: reps }, { data: prios }] = await Promise.all([
       supabase.from(st("activos")).select("*").order("nombre"),
       supabase.from(st("areas")).select("*").order("nombre"),
       supabase.from(st("proveedores_mant")).select("*").order("nombre"),
       supabase.from(st("tipos_solicitud")).select("*"),
-      supabase.from(st("inventario_repuestos")).select("*").order("nombre")
+      supabase.from(st("inventario_repuestos")).select("*").order("nombre"),
+      supabase.from(st("prioridades")).select("*").order("id")
     ]);
     
     // Filter out tools from standard equipment list
@@ -75,6 +85,7 @@ export default function GestionEquipos() {
     setProveedores(provs || []);
     setTiposSolicitud(types || []);
     setAllRepuestos(reps || []);
+    setPrioridades(prios || []);
     setLoading(false);
   }
 
@@ -238,6 +249,43 @@ export default function GestionEquipos() {
       ...prev,
       consumos: [...(prev.consumos || []), { repuesto_id: "", cantidad: "" }]
     }));
+  };
+
+  const saveTicket = async () => {
+    if (!ticketForm.tipo_solicitud_id || !ticketForm.prioridad_id || !ticketForm.descripcion) {
+      alert("Completa todos los campos obligatorios.");
+      return;
+    }
+    setSaving(true);
+    let nextConsecutivo = 1;
+    const { data: maxData } = await supabase
+      .from(st("solicitudes"))
+      .select("consecutivo")
+      .eq("area_id", 1)
+      .order("consecutivo", { ascending: false })
+      .limit(1);
+    if (maxData?.length > 0) nextConsecutivo = (maxData[0].consecutivo || 0) + 1;
+
+    const { error: err } = await supabase.from(st("solicitudes")).insert([{
+      activo_id: selectedEquipo.id,
+      tipo_solicitud_id: ticketForm.tipo_solicitud_id,
+      prioridad_id: ticketForm.prioridad_id,
+      tecnico_asignado: ticketForm.tecnico_asignado,
+      descripcion: ticketForm.descripcion,
+      area_id: 1, // Mantenimiento
+      estado_id: 1, // Pendiente
+      consecutivo: nextConsecutivo,
+      usuario_id: usuarioActual?.nombre || "SISTEMA",
+      area_solicitante: "MANTENIMIENTO"
+    }]);
+
+    if (err) { alert("Error: " + err.message); }
+    else {
+      setShowTicketForm(false);
+      setTicketForm({ tipo_solicitud_id: "", prioridad_id: "", tecnico_asignado: "", descripcion: "" });
+      alert("Ticket generado correctamente.");
+    }
+    setSaving(false);
   };
 
   async function deleteEquipo(id, e) {
@@ -673,7 +721,7 @@ export default function GestionEquipos() {
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px" }}>
                       <h4 className="v2-subtitle" style={{ margin: 0 }}>Historial de Intervenciones</h4>
                       <div style={{ display: "flex", gap: "8px" }}>
-                        <button className="v2-btn-secondary" style={{ fontSize: "0.75rem", padding: "6px 12px" }} onClick={() => navigate("/usuario/crear-solicitud")}>
+                        <button className="v2-btn-secondary" style={{ fontSize: "0.75rem", padding: "6px 12px" }} onClick={() => setShowTicketForm(true)}>
                           + Generar Ticket
                         </button>
                         <button className="v2-btn-primary" style={{ fontSize: "0.75rem", padding: "6px 12px" }} onClick={() => setShowManualInt(true)}>
@@ -818,6 +866,60 @@ export default function GestionEquipos() {
                     )}
                    </>
                  )}
+               </div>
+            </div>
+          </div>
+        )}
+
+        {/* TICKET MODAL */}
+        {showTicketForm && (
+          <div className="mant-modal-overlay-v2" onClick={() => setShowTicketForm(false)}>
+            <div className="mant-modal-content-centered" onClick={e => e.stopPropagation()}>
+              <div className="modal-v2-header">
+                <h3>🛠️ Añadir Ticket</h3>
+                <button className="close-btn-v2" onClick={() => setShowTicketForm(false)}>✖</button>
+              </div>
+              <div className="modal-v2-body">
+                <div className="v2-form-group">
+                  <label>Equipo Relacionado</label>
+                  <input className="v2-input" type="text" value={selectedEquipo?.nombre} disabled style={{ background: "#f1f5f9" }} />
+                </div>
+                <div className="v2-form-row">
+                  <div className="v2-form-group">
+                    <label>Tipo de Solicitud *</label>
+                    <select className="v2-select" value={ticketForm.tipo_solicitud_id} onChange={e => setTicketForm({ ...ticketForm, tipo_solicitud_id: e.target.value })}>
+                      <option value="">Seleccione tipo...</option>
+                      <option value="2">Mantenimiento Correctivo</option>
+                      <option value="5">Mantenimiento Preventivo</option>
+                      <option value="6">Mantenimiento de Mejora</option>
+                    </select>
+                  </div>
+                  <div className="v2-form-group">
+                    <label>Prioridad *</label>
+                    <select className="v2-select" value={ticketForm.prioridad_id} onChange={e => setTicketForm({ ...ticketForm, prioridad_id: e.target.value })}>
+                      <option value="">Seleccione...</option>
+                      {prioridades.filter(p => p.nombre !== "Muy Alto").map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="v2-form-group">
+                  <label>Asignar a Técnico</label>
+                    <select className="v2-select" value={ticketForm.tecnico_asignado} 
+                      onChange={e => setTicketForm({...ticketForm, tecnico_asignado: e.target.value})}>
+                      <option value="">Seleccione técnico...</option>
+                      {proveedores.filter(p => p.tipo === "Interno").map(t => (
+                        <option key={t.id} value={t.nombre}>{t.nombre}</option>
+                      ))}
+                    </select>
+                </div>
+                <div className="v2-form-group">
+                  <label>Descripción del Trabajo *</label>
+                  <textarea className="v2-input" rows={3} value={ticketForm.descripcion} onChange={e => setTicketForm({ ...ticketForm, descripcion: e.target.value })} />
+                </div>
+              </div>
+              <div className="modal-v2-footer">
+                <button className="v2-btn-secondary" onClick={() => setShowTicketForm(false)}>Cancelar</button>
+                <button className="v2-btn-primary" onClick={saveTicket} disabled={saving}>Registrar Ticket</button>
               </div>
             </div>
           </div>
