@@ -31,30 +31,6 @@ export default function GestionRepuestos() {
     const items = data || [];
     setRepuestos(items);
     setLoading(false);
-    checkLowStockAndNotify(items);
-  }
-
-  // Envía notificación de bajo stock máximo una vez por día
-  async function checkLowStockAndNotify(items) {
-    const hoy = new Date().toISOString().split("T")[0];
-    const lastKey = "lastLowStockNotif";
-    if (localStorage.getItem(lastKey) === hoy) return; // ya notificó hoy
-
-    const bajos = items.filter(r => r.stock <= (r.stock_minimo ?? 5));
-    if (bajos.length === 0) return;
-
-    const lista = bajos
-      .map(r => `• ${r.nombre}: ${r.stock} ${r.unidad} (mín. ${r.stock_minimo ?? 5})`)
-      .join("\n");
-
-    await notifyRoles(
-      ["mantenimiento", "gerencia"],
-      `⚠️ Alerta de Bajo Stock — ${bajos.length} ítem${bajos.length !== 1 ? "s" : ""}`,
-      `Los siguientes repuestos están por debajo del stock mínimo:\n${lista}`,
-      null,
-      "info"
-    );
-    localStorage.setItem(lastKey, hoy);
   }
 
   const isBajoStock = (r) => r.stock <= (r.stock_minimo ?? 5);

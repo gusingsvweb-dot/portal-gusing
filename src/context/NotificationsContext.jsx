@@ -77,12 +77,62 @@ export function NotificationsProvider({ children }) {
         }
 
         cargarNotifs(); // inicial
+        checkGlobalLowStock(); // Revisión global de inventario al cargar contexto
 
         // Polling cada 60s como fallback
         const t = setInterval(() => cargarNotifs(), 60000);
 
         return () => clearInterval(t);
     }, [userIdInterno]);
+
+    // Revisión global de stock bajo (se ejecuta una vez por sesión para evitar duplicados si no hay notif de hoy)
+    async function checkGlobalLowStock() {
+        try {
+            const hoy = new Date().toISOString().split("T")[0];
+            const lastKey = "lastGlobalLowStockNotif";
+            if (localStorage.getItem(lastKey) === hoy) return; // Ya se revisó localmente hoy
+
+            // Verificamos si ya existe una alerta de bajo stock en la base de datos creada hoy
+            const { data: todayNotifs } = await supabase
+                .from(st("notificaciones"))
+                .select("id")
+                .like("titulo", "⚠️ Alerta de Bajo Stock%")
+                .gte("created_at", hoy)
+                .limit(1);
+
+            if (todayNotifs && todayNotifs.length > 0) {
+                localStorage.setItem(lastKey, hoy); // Sincronizar estado local
+                return; 
+            }
+
+            // Proceder a revisar inventario
+            const { data: repuestos } = await supabase.from(st("repuestos")).select("nombre, stock, stock_minimo, unidad");
+            if (!repuestos) return;
+
+            const bajos = repuestos.filter(r => (r.stock || 0) <= (r.stock_minimo ?? 5));
+            if (bajos.length === 0) {
+                localStorage.setItem(lastKey, hoy);
+                return;
+            }
+
+            const lista = bajos
+                .map(r => `• ${r.nombre}: ${r.stock} ${r.unidad || 'Unidad'} (mín. ${r.stock_minimo ?? 5})`)
+                .join("\n");
+
+            const { notifyRoles } = await import("../api/notifications");
+            await notifyRoles(
+                ["mantenimiento", "gerencia", "compras"],
+                `⚠️ Alerta de Bajo Stock — ${bajos.length} ítem${bajos.length !== 1 ? "s" : ""}`,
+                `Los siguientes repuestos están por debajo del stock mínimo:\n${lista}`,
+                null,
+                "info"
+            );
+            
+            localStorage.setItem(lastKey, hoy);
+        } catch (err) {
+            console.error("Error revisando stock global:", err);
+        }
+    }
 
     // Helper para sonido sintético (infalible)
     const playSound = () => {
