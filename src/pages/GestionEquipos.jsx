@@ -672,9 +672,14 @@ export default function GestionEquipos() {
                    <>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px" }}>
                       <h4 className="v2-subtitle" style={{ margin: 0 }}>Historial de Intervenciones</h4>
-                      <button className="v2-btn-primary" style={{ fontSize: "0.75rem", padding: "6px 12px" }} onClick={() => setShowManualInt(true)}>
-                        + Generar Ticket
-                      </button>
+                      <div style={{ display: "flex", gap: "8px" }}>
+                        <button className="v2-btn-secondary" style={{ fontSize: "0.75rem", padding: "6px 12px" }} onClick={() => navigate("/usuario/crear-solicitud")}>
+                          + Generar Ticket
+                        </button>
+                        <button className="v2-btn-primary" style={{ fontSize: "0.75rem", padding: "6px 12px" }} onClick={() => setShowManualInt(true)}>
+                          + Añadir Intervención
+                        </button>
+                      </div>
                     </div>
 
                     {showManualInt && (
