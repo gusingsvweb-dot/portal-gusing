@@ -474,9 +474,9 @@ export default function GestionEquipos() {
                   </div>
                   <div className="card-v2-icon">{TIPO_ICON[a.tipo] || "🔩"}</div>
                   <h4>{a.nombre}</h4>
-                  {a.criticidad && (
-                    <div style={{ fontSize: "0.8rem", color: "#d97706", marginBottom: "8px", fontWeight: "600" }}>
-                      ⏱️ Frecuencia: {a.criticidad}
+                  {(a.sac === true || a.sac === "Sí" || a.sac === "TRUE" || a.sac === "true") && (
+                    <div style={{ fontSize: "0.8rem", color: "#b91c1c", marginBottom: "8px", fontWeight: "700" }}>
+                      ⚠️ Sistema de Apoyo Crítico (SAC)
                     </div>
                   )}
                   {a.descripcion && <p style={{ fontSize: "0.8rem", color: "#64748b", margin: "0 0 10px", lineHeight: "1.5" }}>{a.descripcion}</p>}
