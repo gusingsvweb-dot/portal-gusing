@@ -97,13 +97,26 @@ export default function PlanMaestro() {
 
   const stats = useMemo(() => {
     const vencidos = planesDeCategoria.filter(p => p.proxima_fecha <= hoy && p.activo !== false);
-    const proximos7 = planesDeCategoria.filter(p => {
-      const diff = (new Date(p.proxima_fecha) - new Date()) / (1000 * 60 * 60 * 24);
-      return diff > 0 && diff <= 7 && p.activo !== false;
+    const pendientes = planesDeCategoria.filter(p => p.activo !== false);
+    
+    let completadosCount = 0;
+    cronogramaDeCategoria.forEach(item => {
+      if (item.maintenance_schedule_months) {
+        item.maintenance_schedule_months.forEach(m => {
+          if (m.status?.toLowerCase() === "ejecutado" || m.status?.toLowerCase() === "completado") {
+            completadosCount++;
+          }
+        });
+      }
     });
-    const activosPlanes = planesDeCategoria.filter(p => p.activo !== false);
-    return { vencidos: vencidos.length, proximos7: proximos7.length, total: planesDeCategoria.length, activos: activosPlanes.length };
-  }, [planesDeCategoria, hoy]);
+
+    return { 
+      vencidos: vencidos.length, 
+      pendientes: pendientes.length, 
+      completados: completadosCount, 
+      total: planesDeCategoria.length 
+    };
+  }, [planesDeCategoria, cronogramaDeCategoria, hoy]);
 
   // ── Planes filtrados para Motor Automático ──
   const planesFiltrados = useMemo(() => {
@@ -470,12 +483,12 @@ export default function PlanMaestro() {
                 {stats.vencidos > 0 && <span className="pm-stat-sub">Requieren acción inmediata</span>}
               </div>
               <div className="pm-stat-card pm-proximos">
-                <span className="pm-stat-num">{stats.proximos7}</span>
-                <span className="pm-stat-lbl">Próximos 7 días</span>
+                <span className="pm-stat-num">{stats.pendientes}</span>
+                <span className="pm-stat-lbl">PENDIENTES</span>
               </div>
               <div className="pm-stat-card pm-activos">
-                <span className="pm-stat-num">{stats.activos}</span>
-                <span className="pm-stat-lbl">Planes Activos</span>
+                <span className="pm-stat-num">{stats.completados}</span>
+                <span className="pm-stat-lbl">PLANES COMPLETADOS</span>
               </div>
               <div className="pm-stat-card pm-total">
                 <span className="pm-stat-num">{stats.total}</span>
