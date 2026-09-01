@@ -18,7 +18,7 @@ export default function PlanMaestro() {
   const [planes, setPlanes] = useState([]);
   const [activos, setActivos] = useState([]);
   const [cronogramaAnual, setCronogramaAnual] = useState([]);
-  const [mainCategory, setMainCategory] = useState("Equipo"); // "Instalación" | "Equipo" | "Computador"
+  const [mainCategory, setMainCategory] = useState("General"); // "General" | "Instalación" | "Equipo" | "Computador"
   const [activeTab, setActiveTab] = useState("auto"); // "auto" | "semanal" | "anual"
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [loading, setLoading] = useState(true);
@@ -83,10 +83,12 @@ export default function PlanMaestro() {
   const hoy = new Date().toISOString().split("T")[0];
 
   const planesDeCategoria = useMemo(() => {
+    if (mainCategory === "General") return planes;
     return planes.filter(p => p.activos?.tipo === mainCategory);
   }, [planes, mainCategory]);
 
   const cronogramaDeCategoria = useMemo(() => {
+    if (mainCategory === "General") return cronogramaAnual;
     return cronogramaAnual.filter(item => {
       const a = activos.find(act => act.codigo === item.equipment_code);
       return a?.tipo === mainCategory;
@@ -436,6 +438,7 @@ export default function PlanMaestro() {
 
         {/* MAIN CATEGORIES */}
         <div className="ge-sub-tabs" style={{ marginBottom: '24px' }}>
+          <button className={`ge-sub-tab${mainCategory === "General" ? " active" : ""}`} onClick={() => setMainCategory("General")}>🌐 General</button>
           <button className={`ge-sub-tab${mainCategory === "Instalación" ? " active" : ""}`} onClick={() => setMainCategory("Instalación")}>🏢 Instalaciones</button>
           <button className={`ge-sub-tab${mainCategory === "Equipo" ? " active" : ""}`} onClick={() => setMainCategory("Equipo")}>⚙️ Equipos</button>
           <button className={`ge-sub-tab${mainCategory === "Computador" ? " active" : ""}`} onClick={() => setMainCategory("Computador")}>💻 Cómputo</button>
