@@ -574,9 +574,23 @@ export default function GestionEquipos() {
                            urls = form.manual_url ? (form.manual_url.startsWith('[') ? JSON.parse(form.manual_url) : [form.manual_url]) : [];
                         } catch(e) {}
                         return urls.map((u, i) => (
-                           <a key={i} href={u} target="_blank" rel="noreferrer" className="v2-btn-secondary" style={{ textDecoration: "none", fontSize: "0.75rem", padding: "8px" }}>
-                              📄 Ver Archivo {i + 1}
-                           </a>
+                           <div key={i} style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                             <a href={u} target="_blank" rel="noreferrer" className="v2-btn-secondary" style={{ textDecoration: "none", fontSize: "0.75rem", padding: "8px" }}>
+                                📄 Ver Archivo {i + 1}
+                             </a>
+                             <button 
+                               className="v2-btn-secondary" 
+                               style={{ padding: "4px 8px", color: "#ef4444", borderColor: "#fecaca" }}
+                               onClick={(e) => {
+                                 e.preventDefault();
+                                 const newUrls = urls.filter((_, idx) => idx !== i);
+                                 setForm({ ...form, manual_url: newUrls.length ? JSON.stringify(newUrls) : "" });
+                               }}
+                               title="Quitar archivo"
+                             >
+                               ✖
+                             </button>
+                           </div>
                         ));
                       })()}
                     </div>
