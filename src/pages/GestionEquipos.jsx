@@ -528,7 +528,7 @@ export default function GestionEquipos() {
                     </select>
                   </div>
                   <div className="v2-form-group">
-                    <label>Frecuencia de Mant.</label>
+                    <label>Frecuencia de Mant. <span className="req">*</span></label>
                     <select className="v2-select" value={form.criticidad || ""} onChange={e => setForm({ ...form, criticidad: e.target.value })}>
                       <option value="">Seleccione...</option>
                       <option value="Bimestral">Bimestral</option>
