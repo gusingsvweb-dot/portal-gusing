@@ -57,7 +57,7 @@ export default function PlanMaestro() {
       // Cargamos planes y activos por separado para evitar errores de relación en tablas "NO OFICIALES"
       const [{ data: pls }, { data: acts }, { data: crono }] = await Promise.all([
         supabase.from(st("planes_preventivos")).select("*").order("proxima_fecha"),
-        supabase.from(st("activos")).select("id, nombre, codigo, criticidad, area_id, tipo").order("nombre"),
+        supabase.from(st("activos")).select("id, nombre, codigo, criticidad, area_id, tipo, sac").order("nombre"),
         supabase.from(st("maintenance_schedules")).select(`*, maintenance_schedule_months:${st("maintenance_schedule_months")}(*)`).eq("year", selectedYear).order("equipment_code")
       ]);
 
@@ -637,9 +637,10 @@ export default function PlanMaestro() {
                                draggable={!isCompletada}
                                onDragStart={(e) => handleDragStart(e, p.id)}>
                             <div className="pm-semana-tarea-top">
-                              <span className={`v2-crit-badge crit-${p.activos?.criticidad?.toLowerCase() || "baja"}`} style={{ fontSize: "0.65rem", padding: "2px 7px" }}>
-                                {p.activos?.criticidad || "Baja"}
-                              </span>
+                              <span style={{ flex: 1 }}></span>
+                              {(p.activos?.sac === true || p.activos?.sac === "Sí" || p.activos?.sac === "TRUE" || p.activos?.sac === "true") && (
+                                <span className="v2-crit-badge" style={{ background: '#fee2e2', color: '#b91c1c', fontSize: "0.65rem", padding: "2px 7px" }}>SAC</span>
+                              )}
                               <span className="pm-semana-fecha">{isCompletada ? `Completado: ${p.ultima_fecha}` : p.proxima_fecha}</span>
                             </div>
                             <p className="pm-semana-equipo">{p.activos?.nombre || "Equipo"}</p>
