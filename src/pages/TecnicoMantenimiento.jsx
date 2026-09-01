@@ -268,13 +268,6 @@ export default function TecnicoMantenimiento() {
             `La solicitud ${orderId} para ${equipoNombre} ha sido completada por el técnico. Por favor, califica el servicio.`,
             selected.id
           );
-          await notifyRoles(
-            ["mantenimiento"],
-            "✅ Ticket Completado por Técnico",
-            `El técnico ha finalizado el ticket ${orderId} (${equipoNombre}). Acción: ${accion.substring(0, 100)}${accion.length > 100 ? "..." : ""}`,
-            selected.id,
-            "info"
-          );
         } else {
           await notifyUserByUsername(
             selected.usuario_id,

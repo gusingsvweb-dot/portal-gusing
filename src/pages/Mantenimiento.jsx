@@ -313,7 +313,7 @@ export default function Mantenimiento() {
         );
       }
       await notifyRoles(
-        ["gerencia", "mantenimiento"],
+        ["gerencia"],
         "⚙️ Ticket en Proceso",
         `El ticket M-${selected.consecutivo} de ${selected.activos?.nombre || "equipo"} ha pasado a estado "En Proceso".`,
         selected.id,
@@ -329,7 +329,7 @@ export default function Mantenimiento() {
         );
       }
       await notifyRoles(
-        ["gerencia", "mantenimiento"],
+        ["gerencia"],
         "✅ Ticket Finalizado",
         `Se ha completado el ticket M-${selected.consecutivo} correspondiente al equipo ${selected.activos?.nombre || ""}.`,
         selected.id,
