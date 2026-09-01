@@ -486,11 +486,6 @@ export default function PlanMaestro() {
           /* ══ TAB: MOTOR AUTOMÁTICO ══ */
           <>
             <div className="pm-stats-row">
-              <div className="pm-stat-card pm-vencidos" style={{ cursor: "pointer" }} onClick={() => setFiltroEstadoAuto(filtroEstadoAuto === "vencido" ? "todos" : "vencido")}>
-                <span className="pm-stat-num">{stats.vencidos}</span>
-                <span className="pm-stat-lbl">Vencidos</span>
-                {stats.vencidos > 0 && <span className="pm-stat-sub">Requieren acción inmediata</span>}
-              </div>
               <div className="pm-stat-card pm-proximos" style={{ cursor: "pointer" }} onClick={() => setFiltroEstadoAuto("todos")}>
                 <span className="pm-stat-num">{stats.pendientes}</span>
                 <span className="pm-stat-lbl">PENDIENTES</span>
