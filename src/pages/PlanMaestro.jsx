@@ -133,10 +133,12 @@ export default function PlanMaestro() {
         if (filtroEstadoAuto === "proximo" && (dias <= 0 || dias > 7)) return false;
         if (filtroEstadoAuto === "ok" && (dias <= 7)) return false;
         if (filtroEstadoAuto === "completado") {
-          // Si el filtro es "completado", mostramos aquellos cuya ultima_fecha es de este año
-          if (!p.ultima_fecha) return false;
-          const yearUltima = new Date(p.ultima_fecha).getFullYear();
-          if (yearUltima !== selectedYear) return false;
+          const itemAnual = cronogramaDeCategoria.find(item => item.equipment_code === p.activos?.codigo);
+          if (!itemAnual) return false;
+          const hasCompletado = itemAnual.maintenance_schedule_months?.some(m => 
+            m.status?.toLowerCase() === "ejecutado" || m.status?.toLowerCase() === "completado"
+          );
+          if (!hasCompletado) return false;
         }
       }
       if (filtroFrecAuto !== "todos") {
