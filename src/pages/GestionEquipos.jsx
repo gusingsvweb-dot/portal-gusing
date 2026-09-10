@@ -27,6 +27,7 @@ export default function GestionEquipos() {
   const [filtroCrit, setFiltroCrit] = useState("todos");
   const [filtroFrec, setFiltroFrec] = useState("todos");
   const [filtroTipo, setFiltroTipo] = useState("todos");
+  const [filtroEstado, setFiltroEstado] = useState("todos");
   const [saving, setSaving] = useState(false);
   const [proveedores, setProveedores] = useState([]);
   const [tiposSolicitud, setTiposSolicitud] = useState([]);
@@ -89,23 +90,31 @@ export default function GestionEquipos() {
     setLoading(false);
   }
 
-  const stats = useMemo(() => ({
-    total: activos.length,
-    sac: activos.filter(a => a.sac === true || a.sac === "Sí" || a.sac === "TRUE" || a.sac === "true").length,
-    instalaciones: activos.filter(a => a.tipo === "Instalación").length,
-    equipos: activos.filter(a => a.tipo === "Equipo").length,
-    computo: activos.filter(a => a.tipo === "Computador").length,
-    bimestral: activos.filter(a => a.criticidad === "Bimestral").length,
-    tetramestral: activos.filter(a => a.criticidad === "Tetramestral").length,
-    semestral: activos.filter(a => a.criticidad === "Semestral").length,
-    anual: activos.filter(a => a.criticidad === "Anual").length,
-  }), [activos]);
+  const stats = useMemo(() => {
+    const isFuera = (a) => a.estado === "Fuera de uso" || a.estado === "Fuera de servicio" || a.estado === "Inactivo";
+    return {
+      total: activos.length,
+      activosCount: activos.filter(a => !isFuera(a)).length,
+      fueraDeUsoCount: activos.filter(a => isFuera(a)).length,
+      sac: activos.filter(a => a.sac === true || a.sac === "Sí" || a.sac === "TRUE" || a.sac === "true").length,
+      instalaciones: activos.filter(a => a.tipo === "Instalación").length,
+      equipos: activos.filter(a => a.tipo === "Equipo").length,
+      computo: activos.filter(a => a.tipo === "Computador").length,
+      bimestral: activos.filter(a => a.criticidad === "Bimestral").length,
+      tetramestral: activos.filter(a => a.criticidad === "Tetramestral").length,
+      semestral: activos.filter(a => a.criticidad === "Semestral").length,
+      anual: activos.filter(a => a.criticidad === "Anual").length,
+    };
+  }, [activos]);
 
   const filtered = useMemo(() => {
     let res = activos;
+    const isFuera = (a) => a.estado === "Fuera de uso" || a.estado === "Fuera de servicio" || a.estado === "Inactivo";
     if (filtroCrit === "SAC") res = res.filter(a => a.sac === true || a.sac === "Sí" || a.sac === "TRUE" || a.sac === "true");
     if (filtroFrec !== "todos") res = res.filter(a => a.criticidad === filtroFrec);
     if (filtroTipo !== "todos") res = res.filter(a => a.tipo === filtroTipo);
+    if (filtroEstado === "Activo") res = res.filter(a => !isFuera(a));
+    if (filtroEstado === "Fuera de uso") res = res.filter(a => isFuera(a));
     if (filtroText.trim()) {
       const q = filtroText.toLowerCase();
       res = res.filter(a =>
@@ -115,7 +124,7 @@ export default function GestionEquipos() {
       );
     }
     return res;
-  }, [activos, filtroCrit, filtroFrec, filtroTipo, filtroText, areas]);
+  }, [activos, filtroCrit, filtroFrec, filtroTipo, filtroEstado, filtroText, areas]);
 
   async function openEdit(a, e) {
     e.stopPropagation();
@@ -474,10 +483,16 @@ export default function GestionEquipos() {
 
         {/* STATS ROW */}
         <div className="activos-stats-row">
-          <div className="activo-stat" onClick={() => { setFiltroCrit("todos"); setFiltroFrec("todos"); }} style={{ "--a": filtroCrit === "todos" && filtroFrec === "todos" ? "var(--mant-primary)" : "#94a3b8" }}>
+          <div className="activo-stat" onClick={() => { setFiltroCrit("todos"); setFiltroFrec("todos"); setFiltroTipo("todos"); setFiltroEstado("todos"); }} style={{ "--a": filtroCrit === "todos" && filtroFrec === "todos" && filtroTipo === "todos" && filtroEstado === "todos" ? "var(--mant-primary)" : "#94a3b8" }}>
             <span className="as-val">{stats.total}</span><span className="as-lbl">Total Equipos</span>
           </div>
-          <div className="activo-stat crit-alta" onClick={() => { setFiltroCrit(filtroCrit === "SAC" ? "todos" : "SAC"); setFiltroFrec("todos"); }} style={{ "--a": "#ef4444" }}>
+          <div className="activo-stat" onClick={() => { setFiltroEstado(filtroEstado === "Activo" ? "todos" : "Activo"); }} style={{ "--a": filtroEstado === "Activo" ? "#16a34a" : "#22c55e" }}>
+            <span className="as-val" style={{ color: "#16a34a" }}>{stats.activosCount}</span><span className="as-lbl">Equipos Activos</span>
+          </div>
+          <div className="activo-stat" onClick={() => { setFiltroEstado(filtroEstado === "Fuera de uso" ? "todos" : "Fuera de uso"); }} style={{ "--a": filtroEstado === "Fuera de uso" ? "#ef4444" : "#f87171" }}>
+            <span className="as-val" style={{ color: "#ef4444" }}>{stats.fueraDeUsoCount}</span><span className="as-lbl">Fuera de Uso</span>
+          </div>
+          <div className="activo-stat crit-alta" onClick={() => { setFiltroCrit(filtroCrit === "SAC" ? "todos" : "SAC"); setFiltroFrec("todos"); }} style={{ "--a": filtroCrit === "SAC" ? "#ef4444" : "#ef4444" }}>
             <span className="as-val">{stats.sac}</span><span className="as-lbl">Equipos SAC</span>
           </div>
         </div>
@@ -496,6 +511,12 @@ export default function GestionEquipos() {
             <button className={`nav-pill ${filtroTipo === "Equipo" ? "active" : ""}`} onClick={() => setFiltroTipo(filtroTipo === "Equipo" ? "todos" : "Equipo")}>Equipos ({stats.equipos})</button>
             <button className={`nav-pill ${filtroTipo === "Computador" ? "active" : ""}`} onClick={() => setFiltroTipo(filtroTipo === "Computador" ? "todos" : "Computador")}>Cómputo ({stats.computo})</button>
 
+            <select className="v2-select" style={{ width: "auto", padding: "6px 30px 6px 12px", height: "34px", borderRadius: "100px", fontSize: "0.85rem", border: filtroEstado !== "todos" ? "1.5px solid var(--mant-primary)" : "1px solid #e2e8f0", background: filtroEstado !== "todos" ? "#eff6ff" : "#ffffff", color: filtroEstado !== "todos" ? "var(--mant-primary)" : "inherit" }} value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)}>
+              <option value="todos">Todos los Estados</option>
+              <option value="Activo">Activos ({stats.activosCount})</option>
+              <option value="Fuera de uso">Fuera de Uso ({stats.fueraDeUsoCount})</option>
+            </select>
+
             <select className="v2-select" style={{ width: "auto", padding: "6px 30px 6px 12px", height: "34px", borderRadius: "100px", fontSize: "0.85rem", border: "1px solid #e2e8f0" }} value={filtroFrec} onChange={e => setFiltroFrec(e.target.value)}>
               <option value="todos">Todas las Frecuencias</option>
               <option value="Bimestral">Bimestral</option>
@@ -505,6 +526,11 @@ export default function GestionEquipos() {
             </select>
           </div>
 
+          {filtroEstado !== "todos" && (
+            <span className={`v2-crit-badge`} style={{ cursor: "pointer", background: filtroEstado === "Fuera de uso" ? "#fee2e2" : "#dcfce7", color: filtroEstado === "Fuera de uso" ? "#dc2626" : "#15803d", border: filtroEstado === "Fuera de uso" ? "1px solid #fecaca" : "1px solid #bbf7d0" }} onClick={() => setFiltroEstado("todos")}>
+              {filtroEstado} ✖
+            </span>
+          )}
           {filtroCrit !== "todos" && (
             <span className={`v2-crit-badge crit-alta`} style={{ cursor: "pointer" }} onClick={() => setFiltroCrit("todos")}>
               {filtroCrit} ✖
@@ -528,6 +554,7 @@ export default function GestionEquipos() {
           <div className="assets-grid-premium">
             {filtered.map(a => {
               const area = areas.find(ar => ar.id === a.area_id);
+              const isFuera = a.estado === "Fuera de uso" || a.estado === "Fuera de servicio" || a.estado === "Inactivo";
               return (
                 <div key={a.id} className="asset-card-v2" onClick={() => loadRutina(a)}>
                   <div className="card-v2-header">
@@ -541,8 +568,10 @@ export default function GestionEquipos() {
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px" }}>
                     <div className="card-v2-icon" style={{ marginBottom: 0 }}>{a.nombre?.toLowerCase().includes("impresora") ? "🖨️" : (TIPO_ICON[a.tipo] || "🔩")}</div>
-                    {a.estado === "Fuera de uso" && (
+                    {isFuera ? (
                       <span style={{ color: "#ef4444", fontWeight: "700", fontSize: "0.75rem", border: "1px solid #fecaca", padding: "4px 8px", borderRadius: "12px", background: "#fef2f2" }}>FUERA DE USO</span>
+                    ) : (
+                      <span style={{ color: "#16a34a", fontWeight: "700", fontSize: "0.75rem", border: "1px solid #bbf7d0", padding: "4px 8px", borderRadius: "12px", background: "#f0fdf4" }}>ACTIVO</span>
                     )}
                   </div>
                   <h4>{a.nombre}</h4>
