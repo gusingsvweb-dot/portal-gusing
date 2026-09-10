@@ -1,5 +1,5 @@
-// src/pages/Compras.jsx
 import React, { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
 import { supabase, st, ss } from "../api/supabaseClient";
@@ -10,6 +10,8 @@ import OrdenCompraPDF from "../components/compras/OrdenCompraPDF";
 
 export default function Compras() {
   const { usuarioActual } = useAuth();
+  const [searchParams] = useSearchParams();
+  const targetId = searchParams.get("id");
 
   const [solicitudes, setSolicitudes] = useState([]);
   const [selected, setSelected] = useState(null);
@@ -85,6 +87,22 @@ export default function Compras() {
   }
 
   useEffect(() => { loadSolicitudes(); }, []);
+
+  useEffect(() => {
+    if (targetId && solicitudes.length > 0) {
+      const cleanId = String(targetId).replace(/[^0-9]/g, '');
+      const numId = Number(cleanId || targetId);
+      const req = solicitudes.find(r => 
+        String(r.id) === String(targetId) || 
+        String(r.id) === String(numId) || 
+        String(r.consecutivo) === String(targetId) || 
+        String(r.consecutivo) === String(numId)
+      );
+      if (req) {
+        setSelected(req);
+      }
+    }
+  }, [targetId, solicitudes]);
 
   // ===================================
   // CLASIFICAR KANBAN

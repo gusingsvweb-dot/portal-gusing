@@ -285,6 +285,51 @@ export default function Navbar() {
   );
 
   const getNotificationRoute = (n) => {
+    const title = (n.titulo || "").toLowerCase();
+    const msg = (n.mensaje || "").toLowerCase();
+    const comboText = title + " " + msg;
+
+    let targetId = n.pedido_id;
+    const codeMatch = comboText.match(/\b(mc|m|prod|oc|sol)[-\s]*(\d+)\b/i);
+    if (codeMatch) {
+      if (!targetId) targetId = codeMatch[2];
+    } else if (!targetId) {
+      const numMatch = comboText.match(/#(\d+)/);
+      if (numMatch) targetId = numMatch[1];
+    }
+
+    const idQuery = targetId ? `?id=${targetId}` : "";
+
+    // 1. Microbiología
+    if (comboText.includes("microbiologia") || comboText.includes("microbiología") || comboText.includes("mc-")) {
+      return `/microbiologia${idQuery}`;
+    }
+
+    // 2. Compras
+    if (comboText.includes("compra") || comboText.includes("orden de compra") || comboText.includes("oc-")) {
+      if (rol === "gerencia") return `/gerenciacompras${idQuery}`;
+      return `/compras${idQuery}`;
+    }
+
+    // 3. Mantenimiento / Tickets / Solicitudes
+    if (
+      comboText.includes("ticket") ||
+      comboText.includes("preventivo") ||
+      comboText.includes("correctivo") ||
+      comboText.includes("solicitud m") ||
+      comboText.includes("mantenimiento") ||
+      comboText.includes("m-")
+    ) {
+      if (rol === "tecnicomantenimiento" || rol === "analistamantenimiento") {
+        return `/tecnico-mantenimiento${idQuery}`;
+      }
+      if (rol === "usuario") {
+        return `/usuario/mis-solicitudes${idQuery}`;
+      }
+      return `/mantenimiento${idQuery}`;
+    }
+
+    // 4. Fallbacks según el rol
     const routes = {
       produccion: "/produccion",
       bodega: "/bodega",
@@ -306,33 +351,25 @@ export default function Navbar() {
     const base = routes[rol] || "/dashboard";
 
     if (rol === "tecnicomantenimiento" || rol === "analistamantenimiento") {
-      const t = (n.titulo || "").toLowerCase();
-      if (t.includes("stock") || t.includes("repuesto") || t.includes("inventario")) return "/mantenimiento/repuestos";
-      if (t.includes("plan") || t.includes("cronograma")) return "/mantenimiento/plan-maestro";
-      return `/tecnico-mantenimiento${n.pedido_id ? `?id=${n.pedido_id}` : ''}`;
+      if (comboText.includes("stock") || comboText.includes("repuesto") || comboText.includes("inventario")) return "/mantenimiento/repuestos";
+      if (comboText.includes("plan") || comboText.includes("cronograma")) return "/mantenimiento/plan-maestro";
+      return `/tecnico-mantenimiento${idQuery}`;
     }
 
     if (rol === "mantenimiento") {
-      const t = (n.titulo || "").toLowerCase();
-      if (t.includes("stock") || t.includes("repuesto") || t.includes("inventario")) return "/mantenimiento/repuestos";
-      if (t.includes("plan") || t.includes("cronograma")) return "/mantenimiento/plan-maestro";
-      if (t.includes("ticket") || t.includes("solicitud manual") || t.includes("equipo")) return `/mantenimiento${n.pedido_id ? `?id=${n.pedido_id}` : ''}`;
-      return base;
-    }
-
-    if (!n.pedido_id) {
-      return base;
+      if (comboText.includes("stock") || comboText.includes("repuesto") || comboText.includes("inventario")) return "/mantenimiento/repuestos";
+      if (comboText.includes("plan") || comboText.includes("cronograma")) return "/mantenimiento/plan-maestro";
+      return `/mantenimiento${idQuery}`;
     }
 
     if (rol === "atencion") {
-      const t = (n.titulo || "").toLowerCase();
-      if (t.includes("autoriza")) {
-        return `/autorizar-despachos?id=${n.pedido_id}`;
+      if (comboText.includes("autoriza")) {
+        return `/autorizar-despachos${idQuery}`;
       }
-      return `/pedidos-curso?id=${n.pedido_id}`;
+      return `/pedidos-curso${idQuery}`;
     }
 
-    return `${base}?id=${n.pedido_id}`;
+    return `${base}${idQuery}`;
   };
 
   const handleNotifClick = (n) => {

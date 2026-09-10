@@ -221,26 +221,49 @@ export default function Microbiologia() {
 
   // Seleccionar automáticamente si viene un ?id= en la URL
   useEffect(() => {
-    if (solicitudesIniciales.length === 0 && etapas.length === 0) return;
     const idParam = searchParams.get("id");
     if (!idParam) return;
-    const targetId = Number(idParam);
+    const cleanId = String(idParam).replace(/[^0-9]/g, '');
+    const numId = Number(cleanId || idParam);
 
     // 1. Buscar en Etapas
-    const e = etapas.find(it => it.pedido_id === targetId);
+    const e = etapas.find(it => 
+      it.pedido_id === numId || 
+      it.id === numId || 
+      String(it.pedido_id) === String(idParam)
+    );
     if (e) {
+      setExpanded(prev => ({ ...prev, intermedias: true, enAnalisis: true }));
       seleccionarItem(e, 'etapa');
-      window.history.replaceState({}, '', window.location.pathname);
       return;
     }
 
     // 2. Buscar en Solicitudes Iniciales (por consecutivo/pedido o id directo)
-    const s = solicitudesIniciales.find(it => it.consecutivo === targetId || it.id === targetId);
+    const s = solicitudesIniciales.find(it => 
+      it.consecutivo === numId || 
+      it.id === numId || 
+      String(it.consecutivo) === String(cleanId) || 
+      String(it.id) === String(cleanId) ||
+      String(it.id) === String(idParam)
+    );
+
     if (s) {
+      setExpanded(prev => ({ ...prev, iniciales: true, liberacionArea: true }));
       seleccionarItem(s, 'solicitud');
-      window.history.replaceState({}, '', window.location.pathname);
+      return;
     }
-  }, [solicitudesIniciales, etapas, searchParams]);
+
+    // 3. Buscar en Historial Global si está disponible
+    const h = (historialGlobal || []).find(it => 
+      it.consecutivo === numId || 
+      it.id === numId || 
+      String(it.consecutivo) === String(cleanId) || 
+      String(it.id) === String(cleanId)
+    );
+    if (h) {
+      seleccionarItem(h, 'solicitud');
+    }
+  }, [solicitudesIniciales, etapas, historialGlobal, searchParams]);
 
   /* ===========================================================
      FILTROS (Memo)

@@ -124,7 +124,14 @@ export default function Mantenimiento() {
 
   useEffect(() => {
     if (targetId && solicitudes.length > 0) {
-      const req = solicitudes.find(r => String(r.id) === String(targetId));
+      const cleanId = String(targetId).replace(/[^0-9]/g, '');
+      const numId = Number(cleanId || targetId);
+      const req = solicitudes.find(r => 
+        String(r.id) === String(targetId) || 
+        String(r.id) === String(numId) || 
+        String(r.consecutivo) === String(targetId) || 
+        String(r.consecutivo) === String(numId)
+      );
       if (req) {
         openModal(req);
       }
