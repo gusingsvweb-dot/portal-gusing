@@ -43,7 +43,7 @@ export default function PlanMaestro() {
     if (st === "reprogramado") {
       return { label: "Reprogramado", icon: "R", class: "reprogramado", color: "#b45309", bg: "#fef3c7" };
     }
-    if (st === "anulado") {
+    if (st === "anulado" || st === "cancelado") {
       return { label: "Anulado", icon: "A", class: "anulado", color: "#475569", bg: "#f1f5f9" };
     }
     return { label: "Programado", icon: "P", class: "programado", color: "#1d4ed8", bg: "#eff6ff" };
@@ -354,8 +354,19 @@ export default function PlanMaestro() {
     setSaving(true);
 
     try {
+      // Map UI status to DB constraint values:
+      // PostgreSQL check constraint allows: 'Pendiente', 'Ejecutado', 'Reprogramado', 'Cancelado'
+      let dbStatus = newStatus;
+      if (newStatus === "Anulado") dbStatus = "Cancelado";
+      if (newStatus === "Programado" || newStatus === "Nuevo") dbStatus = "Pendiente";
+
       // 1. Actualizar el estado del mes en la base de datos
-      await supabase.from(st("maintenance_schedule_months")).update({ status: newStatus }).eq("id", monthEntry.id);
+      const { error: updateErr } = await supabase
+        .from(st("maintenance_schedule_months"))
+        .update({ status: dbStatus })
+        .eq("id", monthEntry.id);
+
+      if (updateErr) throw updateErr;
 
       const scheduleItem = cronogramaAnual.find(i => i.id === monthEntry.schedule_id);
       const act = activos.find(a => a.codigo === scheduleItem?.equipment_code);
@@ -398,16 +409,16 @@ export default function PlanMaestro() {
         if (existingNextMonth) {
           await supabase
             .from(st("maintenance_schedule_months"))
-            .update({ status: "Programado", is_scheduled: true })
+            .update({ status: "Pendiente", is_scheduled: true })
             .eq("id", existingNextMonth.id);
         } else if (scheduleItem) {
           // Insertar en la BD para el mes siguiente
           await supabase.from(st("maintenance_schedule_months")).insert([{
             schedule_id: scheduleItem.id,
             month_number: nextMonthNum,
-            month_name: MESES[nextMonthNum - 1],
+            month_name: MESES_CORTO[nextMonthNum - 1],
             is_scheduled: true,
-            status: "Programado"
+            status: "Pendiente"
           }]);
         }
 
@@ -530,7 +541,10 @@ export default function PlanMaestro() {
       }
 
       if (filtroEstado !== "todos") {
-        return item.maintenance_schedule_months?.some(m => m.status.toLowerCase() === filtroEstado.toLowerCase());
+        return item.maintenance_schedule_months?.some(m => {
+          const stInfo = getStatusInfo(m.status);
+          return stInfo.class === filtroEstado || m.status?.toLowerCase() === filtroEstado.toLowerCase();
+        });
       }
       return true;
     });
