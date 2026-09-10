@@ -254,7 +254,7 @@ export default function PlanMaestro() {
         tipo_solicitud_id: 5, // Preventivo
         descripcion: `[PLAN PREVENTIVO] ${plan.activos?.nombre || "Equipo"} — ${plan.descripcion_tarea || "Revisión programada"}`,
         accion_realizada: `Preventivo completado manualmente desde Plan Maestro. Próxima intervención: ${proxima.toISOString().split("T")[0]}`,
-        usuario_id: "SISTEMA",
+        usuario_id: usuarioActual?.usuario || "SISTEMA",
         estado_id: 14,
         area_id: 1,
         consecutivo: nextConsecutivo,
@@ -333,6 +333,41 @@ export default function PlanMaestro() {
     const isEj = monthEntry.status?.toLowerCase() === "ejecutado" || monthEntry.status?.toLowerCase() === "completado";
     const newStatus = isEj ? "Pendiente" : "Ejecutado";
     await supabase.from(st("maintenance_schedule_months")).update({ status: newStatus }).eq("id", monthEntry.id);
+    
+    // Al marcar como Ejecutado desde el Cronograma Anual, registrar en el historial de solicitudes/intervenciones del equipo
+    if (newStatus === "Ejecutado") {
+      try {
+        const scheduleItem = cronogramaAnual.find(i => i.id === monthEntry.schedule_id);
+        const act = activos.find(a => a.codigo === scheduleItem?.equipment_code);
+        if (act) {
+          const { data: maxData } = await supabase
+            .from(st("solicitudes"))
+            .select("consecutivo")
+            .eq("area_id", 1)
+            .order("consecutivo", { ascending: false })
+            .limit(1);
+          const nextConsecutivo = (maxData?.[0]?.consecutivo || 0) + 1;
+          const hoyISO = new Date().toISOString();
+
+          await supabase.from(st("solicitudes")).insert([{
+            activo_id: act.id,
+            tipo_solicitud_id: 5, // Preventivo
+            descripcion: `[CRONOGRAMA ANUAL] ${act.nombre} — ${scheduleItem?.task_description || "Mantenimiento Preventivo Programado"}`,
+            accion_realizada: `Mantenimiento preventivo ejecutado para ${MESES[(monthEntry.month_number || 1) - 1]} ${selectedYear} desde Cronograma Anual.`,
+            usuario_id: usuarioActual?.usuario || "SISTEMA",
+            estado_id: 14, // Finalizado / Cerrado
+            area_id: 1, // Mantenimiento
+            consecutivo: nextConsecutivo,
+            fecha_cierre: hoyISO,
+            created_at: hoyISO,
+            area_solicitante: "MANTENIMIENTO",
+          }]);
+        }
+      } catch (errHist) {
+        console.error("Error al registrar intervención en historial desde cronograma:", errHist);
+      }
+    }
+
     setCronogramaAnual(prev => prev.map(item => ({
       ...item,
       maintenance_schedule_months: item.maintenance_schedule_months?.map(m =>

@@ -377,7 +377,7 @@ export default function GestionEquipos() {
       .from(st("solicitudes"))
       .select(ss(`id, consecutivo, created_at, descripcion, accion_realizada, fecha_cierre, usuario_id, prioridad_id, area_id, tipo_solicitud_id, tipos_solicitud(nombre)`))
       .eq("activo_id", activo.id)
-      .in("estado_id", [13, 14, 15])
+      .in("estado_id", [1, 13, 14, 15, 25])
       .order("created_at", { ascending: false });
     setRutina(data || []);
     setRutinaLoading(false);
