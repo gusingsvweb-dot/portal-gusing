@@ -303,14 +303,26 @@ export default function Navbar() {
     // Determinar la ruta garantizando que el usuario tenga permiso según su rol
     switch (rol) {
       case "mantenimiento":
+        if (
+          comboText.includes("solicitud") ||
+          comboText.includes("ticket") ||
+          comboText.includes("mc-") ||
+          comboText.includes("m-") ||
+          comboText.includes("mm-") ||
+          comboText.includes("mp-") ||
+          comboText.includes("novedad") ||
+          comboText.includes("correctivo") ||
+          comboText.includes("preventivo") ||
+          comboText.includes("asignad") ||
+          comboText.includes("finalizad")
+        ) {
+          return `/mantenimiento${idQuery}`;
+        }
         if (comboText.includes("stock") || comboText.includes("repuesto") || comboText.includes("inventario")) {
           return `/mantenimiento/repuestos${idQuery}`;
         }
         if (comboText.includes("plan") || comboText.includes("cronograma")) {
           return `/mantenimiento/plan-maestro${idQuery}`;
-        }
-        if (comboText.includes("equipo")) {
-          return `/mantenimiento/equipos${idQuery}`;
         }
         if (comboText.includes("proveedor")) {
           return `/mantenimiento/proveedores${idQuery}`;
@@ -318,18 +330,33 @@ export default function Navbar() {
         if (comboText.includes("proyecto")) {
           return `/mantenimiento/proyectos${idQuery}`;
         }
+        if (comboText.includes("nuevo equipo") || comboText.includes("hoja de vida")) {
+          return `/mantenimiento/equipos${idQuery}`;
+        }
         return `/mantenimiento${idQuery}`;
 
       case "tecnicomantenimiento":
       case "analistamantenimiento":
+        if (
+          comboText.includes("solicitud") ||
+          comboText.includes("ticket") ||
+          comboText.includes("mc-") ||
+          comboText.includes("m-") ||
+          comboText.includes("mm-") ||
+          comboText.includes("mp-") ||
+          comboText.includes("novedad") ||
+          comboText.includes("correctivo") ||
+          comboText.includes("preventivo") ||
+          comboText.includes("asignad") ||
+          comboText.includes("finalizad")
+        ) {
+          return `/tecnico-mantenimiento${idQuery}`;
+        }
         if (comboText.includes("stock") || comboText.includes("repuesto") || comboText.includes("inventario")) {
           return `/mantenimiento/repuestos${idQuery}`;
         }
         if (comboText.includes("plan") || comboText.includes("cronograma")) {
           return `/mantenimiento/plan-maestro${idQuery}`;
-        }
-        if (comboText.includes("equipo")) {
-          return `/mantenimiento/equipos${idQuery}`;
         }
         return `/tecnico-mantenimiento${idQuery}`;
 
@@ -339,17 +366,20 @@ export default function Navbar() {
         }
         if (
           comboText.includes("ticket") ||
+          comboText.includes("solicitud") ||
           comboText.includes("mantenimiento") ||
           comboText.includes("preventivo") ||
           comboText.includes("correctivo") ||
-          comboText.includes("solicitud m") ||
           comboText.includes("mc-") ||
-          comboText.includes("m-")
+          comboText.includes("m-") ||
+          comboText.includes("mm-") ||
+          comboText.includes("mp-") ||
+          comboText.includes("novedad")
         ) {
           return `/mantenimiento${idQuery}`;
         }
-        if (comboText.includes("equipo")) return `/mantenimiento/equipos${idQuery}`;
         if (comboText.includes("cronograma")) return `/mantenimiento/plan-maestro${idQuery}`;
+        if (comboText.includes("nuevo equipo")) return `/mantenimiento/equipos${idQuery}`;
         return `/gerencia${idQuery}`;
 
       case "compras":
