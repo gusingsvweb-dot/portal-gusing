@@ -42,9 +42,41 @@ import ProyectosMantenimiento from "./pages/ProyectosMantenimiento.jsx";
 
 
 
+export function getHomeRouteForRole(rol) {
+  switch (rol) {
+    case "gerencia": return "/gerencia";
+    case "atencion": return "/atencion";
+    case "produccion": return "/produccion";
+    case "usuario": return "/usuario/mis-solicitudes";
+    case "acondicionamiento": return "/acondicionamiento";
+    case "bodega": return "/bodega";
+    case "bodega_mp": return "/bodega-mp";
+    case "bodega_pt": return "/bodega-pt";
+    case "microbiologia": return "/microbiologia";
+    case "controlcalidad": return "/controlcalidad";
+    case "planeacion": return "/dashboard";
+    case "mantenimiento": return "/mantenimiento";
+    case "tecnicomantenimiento":
+    case "analistamantenimiento": return "/tecnico-mantenimiento";
+    case "compras": return "/compras";
+    case "gestioncalidad": return "/gestioncalidad";
+    case "direcciontecnica": return "/direccion-tecnica";
+    case "garantiacalidad": return "/garantiacalidad";
+    default: return "/usuario/mis-solicitudes";
+  }
+}
+
 export default function AppRouter() {
   const { usuarioActual, cargando } = useAuth();
   console.log("🔍 Router Render | Usuario:", usuarioActual, "Rol:", usuarioActual?.rol);
+
+  const authOrRedirect = (roles, component) => {
+    if (!usuarioActual) return <Navigate to="/" replace />;
+    if (roles && !roles.includes(usuarioActual.rol)) {
+      return <Navigate to={getHomeRouteForRole(usuarioActual.rol)} replace />;
+    }
+    return component;
+  };
 
   if (cargando) {
     return (
@@ -58,11 +90,7 @@ export default function AppRouter() {
     <Routes>
       <Route
         path="/kpis-compras"
-        element={
-          ["compras", "gerencia"].includes(usuarioActual?.rol)
-            ? <KpisCompras />
-            : <Navigate to="/" />
-        }
+        element={authOrRedirect(["compras", "gerencia"], <KpisCompras />)}
       />
 
       {/* LOGIN */}
@@ -71,254 +99,148 @@ export default function AppRouter() {
       {/* DIRECCIÓN TÉCNICA */}
       <Route
         path="/direccion-tecnica"
-        element={
-          usuarioActual?.rol === "direcciontecnica"
-            ? <DireccionTecnica />
-            : <Navigate to="/" />
-        }
+        element={authOrRedirect(["direcciontecnica"], <DireccionTecnica />)}
       />
 
       {/* GARANTÍA DE CALIDAD (Administrador) */}
       <Route
         path="/garantiacalidad"
-        element={
-          usuarioActual?.rol === "garantiacalidad"
-            ? <GarantiaCalidad />
-            : <Navigate to="/" />
-        }
+        element={authOrRedirect(["garantiacalidad"], <GarantiaCalidad />)}
       />
 
       {/* GERENCIA */}
       <Route
         path="/gerencia"
-        element={
-          usuarioActual?.rol === "gerencia"
-            ? <Gerencia />
-            : <Navigate to="/" />
-        }
+        element={authOrRedirect(["gerencia"], <Gerencia />)}
       />
 
       {/* GERENCIA - aprob compras */}
       <Route
         path="/gerenciacompras"
-        element={
-          usuarioActual?.rol === "gerencia"
-            ? <GerenciaCompras />
-            : <Navigate to="/" />
-        }
+        element={authOrRedirect(["gerencia"], <GerenciaCompras />)}
       />
 
       {/* GERENCIA - supervision mantenimiento */}
       <Route
         path="/gerenciamantenimiento"
-        element={
-          usuarioActual?.rol === "gerencia"
-            ? <GerenciaMantenimiento />
-            : <Navigate to="/" />
-        }
+        element={authOrRedirect(["gerencia"], <GerenciaMantenimiento />)}
       />
 
       {/* Compras */}
       <Route
         path="/compras"
-        element={
-          usuarioActual?.rol === "compras"
-            ? <Compras />
-            : <Navigate to="/" />
-        }
+        element={authOrRedirect(["compras"], <Compras />)}
       />
 
       {/* GestionCalidad */}
       <Route
         path="/GestionCalidad"
-        element={
-          usuarioActual?.rol === "gestioncalidad"
-            ? <GestionCalidad />
-            : <Navigate to="/" />
-        }
+        element={authOrRedirect(["gestioncalidad"], <GestionCalidad />)}
       />
 
       {/* MIS SOLICITUDES */}
       <Route
         path="/usuario/mis-solicitudes"
-        element={
-          usuarioActual
-            ? <MisSolicitudes />
-            : <Navigate to="/" />
-        }
+        element={usuarioActual ? <MisSolicitudes /> : <Navigate to="/" replace />}
       />
 
 
       {/* USUARIO */}
       <Route
         path="/usuario/crear-solicitud"
-        element={
-          usuarioActual
-            ? <CrearSolicitud />
-            : <Navigate to="/" />
-        }
+        element={usuarioActual ? <CrearSolicitud /> : <Navigate to="/" replace />}
       />
 
 
       {/* ATENCIÓN AL CLIENTE */}
       <Route
         path="/atencion"
-        element={
-          ["atencion", "bodega_pt"].includes(usuarioActual?.rol)
-            ? <Atencion />
-            : <Navigate to="/" />
-        }
+        element={authOrRedirect(["atencion", "bodega_pt"], <Atencion />)}
       />
 
       <Route
         path="/clientes"
-        element={
-          usuarioActual?.rol === "atencion" || usuarioActual?.rol === "gerencia"
-            ? <Clientes />
-            : <Navigate to="/" />
-        }
+        element={authOrRedirect(["atencion", "gerencia"], <Clientes />)}
       />
 
       <Route
         path="/autorizar-despachos"
-        element={
-          usuarioActual?.rol === "atencion"
-            ? <AutorizarDespachos />
-            : <Navigate to="/" />
-        }
+        element={authOrRedirect(["atencion"], <AutorizarDespachos />)}
       />
 
       {/* PEDIDOS EN CURSO */}
       <Route
         path="/pedidos-curso"
-        element={
-          ["atencion", "gerencia", "bodega", "bodega_mp", "bodega_pt", "microbiologia", "controlcalidad", "acondicionamiento"].includes(usuarioActual?.rol)
-            ? <PedidosEnCurso />
-            : <div style={{ padding: "50px", textAlign: "center" }}>
-              <h2>⚠️ Acceso Restringido (Modo Debug)</h2>
-              <p>Tu rol detectado es: <strong>"{usuarioActual?.rol}"</strong></p>
-              <p>Roles permitidos: atencion, gerencia, bodega, bodega_mp, bodega_pt, microbiologia, controlcalidad</p>
-              <p>Por favor, reporta esto al desarrollador si crees que es un error.</p>
-              <a href="/">Volver al Inicio</a>
-            </div>
-        }
+        element={authOrRedirect(["atencion", "gerencia", "bodega", "bodega_mp", "bodega_pt", "microbiologia", "controlcalidad", "acondicionamiento"], <PedidosEnCurso />)}
       />
 
       {/* PRODUCCIÓN */}
       <Route
         path="/produccion"
-        element={
-          usuarioActual?.rol === "produccion"
-            ? <Produccion />
-            : <Navigate to="/" />
-        }
+        element={authOrRedirect(["produccion"], <Produccion />)}
       />
 
       {/* ACONDICIONAMIENTO */}
       <Route
         path="/acondicionamiento"
-        element={
-          usuarioActual?.rol === "acondicionamiento"
-            ? <Acondicionamiento />
-            : <Navigate to="/" />
-        }
+        element={authOrRedirect(["acondicionamiento"], <Acondicionamiento />)}
       />
 
       {/* 🆕 BODEGA */}
       <Route
         path="/bodega"
-        element={
-          usuarioActual?.rol === "bodega"
-            ? <Bodega />
-            : <Navigate to="/" />
-        }
+        element={authOrRedirect(["bodega"], <Bodega />)}
       />
 
       <Route
         path="/bodega-mp"
-        element={
-          usuarioActual?.rol === "bodega_mp"
-            ? <BodegaMP />
-            : <Navigate to="/" />
-        }
+        element={authOrRedirect(["bodega_mp"], <BodegaMP />)}
       />
 
       <Route
         path="/bodega-pt"
-        element={
-          usuarioActual?.rol === "bodega_pt"
-            ? <BodegaPT />
-            : <Navigate to="/" />
-        }
+        element={authOrRedirect(["bodega_pt"], <BodegaPT />)}
       />
 
       {/* 🆕 MICRO */}
       <Route
         path="/microbiologia"
-        element={
-          usuarioActual?.rol === "microbiologia"
-            ? <Microbiologia />
-            : <Navigate to="/" />
-        }
+        element={authOrRedirect(["microbiologia"], <Microbiologia />)}
       />
 
       {/* 🆕 ControlCalidad */}
       <Route
         path="/controlcalidad"
-        element={
-          usuarioActual?.rol === "controlcalidad"
-            ? <ControlCalidad />
-            : <Navigate to="/" />
-        }
+        element={authOrRedirect(["controlcalidad"], <ControlCalidad />)}
       />
 
       {/* 🆕 PedidosFinalizados */}
       <Route
         path="/pedidos-finalizados"
-        element={
-          ["produccion", "atencion", "gerencia"].includes(usuarioActual?.rol)
-            ? <PedidosFinalizados />
-            : <Navigate to="/" />
-        }
+        element={authOrRedirect(["produccion", "atencion", "gerencia"], <PedidosFinalizados />)}
       />
 
       {/* DASHBOARD */}
       <Route
         path="/dashboard"
-        element={
-          ["produccion", "gerencia", "atencion", "planeacion"].includes(usuarioActual?.rol)
-            ? <Dashboard />
-            : <Navigate to="/" />
-        }
+        element={authOrRedirect(["produccion", "gerencia", "atencion", "planeacion"], <Dashboard />)}
       />
 
       {/* MANTENIMIENTO */}
       <Route
         path="/mantenimiento"
-        element={
-          ["mantenimiento"].includes(usuarioActual?.rol)
-            ? <Mantenimiento />
-            : <Navigate to="/" />
-        }
+        element={authOrRedirect(["mantenimiento"], <Mantenimiento />)}
       />
 
       {/* MANTENIMIENTO TÉCNICO */}
       <Route
         path="/tecnico-mantenimiento"
-        element={
-          ["tecnicomantenimiento", "analistamantenimiento", "gerencia"].includes(usuarioActual?.rol)
-            ? <TecnicoMantenimiento />
-            : <Navigate to="/" />
-        }
+        element={authOrRedirect(["tecnicomantenimiento", "analistamantenimiento", "gerencia"], <TecnicoMantenimiento />)}
       />
 
       <Route
         path="/mantenimiento/equipos"
-        element={
-          ["mantenimiento", "analistamantenimiento", "tecnicomantenimiento", "gerencia"].includes(usuarioActual?.rol)
-            ? <GestionEquipos />
-            : <Navigate to="/" />
-        }
+        element={authOrRedirect(["mantenimiento", "analistamantenimiento", "tecnicomantenimiento", "gerencia"], <GestionEquipos />)}
       />
 
       <Route
@@ -328,95 +250,55 @@ export default function AppRouter() {
 
       <Route
         path="/mantenimiento/proveedores"
-        element={
-          ["mantenimiento", "gerencia"].includes(usuarioActual?.rol)
-            ? <GestionProveedoresMant />
-            : <Navigate to="/" />
-        }
+        element={authOrRedirect(["mantenimiento", "gerencia"], <GestionProveedoresMant />)}
       />
 
       <Route
         path="/mantenimiento/proyectos"
-        element={
-          ["mantenimiento", "gerencia"].includes(usuarioActual?.rol)
-            ? <ProyectosMantenimiento />
-            : <Navigate to="/" />
-        }
+        element={authOrRedirect(["mantenimiento", "gerencia"], <ProyectosMantenimiento />)}
       />
 
       <Route
         path="/mantenimiento/plan-maestro"
-        element={
-          ["mantenimiento", "analistamantenimiento", "tecnicomantenimiento", "gerencia"].includes(usuarioActual?.rol)
-            ? <PlanMaestro />
-            : <Navigate to="/" />
-        }
+        element={authOrRedirect(["mantenimiento", "analistamantenimiento", "tecnicomantenimiento", "gerencia"], <PlanMaestro />)}
       />
 
       <Route
         path="/mantenimiento/repuestos"
-        element={
-          ["mantenimiento", "analistamantenimiento", "tecnicomantenimiento", "gerencia"].includes(usuarioActual?.rol)
-            ? <GestionRepuestos />
-            : <Navigate to="/" />
-        }
+        element={authOrRedirect(["mantenimiento", "analistamantenimiento", "tecnicomantenimiento", "gerencia"], <GestionRepuestos />)}
       />
 
       <Route
         path="/mantenimiento/importar-cronograma"
-        element={
-          ["mantenimiento", "gerencia"].includes(usuarioActual?.rol)
-            ? <ImportarCronograma />
-            : <Navigate to="/" />
-        }
+        element={authOrRedirect(["mantenimiento", "gerencia"], <ImportarCronograma />)}
       />
 
       <Route
         path="/mantenimiento/importar-equipos"
-        element={
-          ["mantenimiento", "gerencia"].includes(usuarioActual?.rol)
-            ? <ImportarEquiposExcel />
-            : <Navigate to="/" />
-        }
+        element={authOrRedirect(["mantenimiento", "gerencia"], <ImportarEquiposExcel />)}
       />
 
       {/* KPIs MANTENIMIENTO */}
       <Route
         path="/kpis-mantenimiento"
-        element={
-          ["mantenimiento", "gerencia"].includes(usuarioActual?.rol)
-            ? <KpisMantenimiento />
-            : <Navigate to="/" />
-        }
+        element={authOrRedirect(["mantenimiento", "gerencia"], <KpisMantenimiento />)}
       />
 
       {/* CALENDARIO PRODUCCIÓN (COMPARTIDO) */}
       <Route
         path="/calendario"
-        element={
-          ["produccion", "gerencia", "microbiologia", "controlcalidad", "planeacion", "atencion"].includes(usuarioActual?.rol)
-            ? <CalendarioProduccion />
-            : <Navigate to="/" />
-        }
+        element={authOrRedirect(["produccion", "gerencia", "microbiologia", "controlcalidad", "planeacion", "atencion"], <CalendarioProduccion />)}
       />
 
 
       <Route
         path="/consolidado"
-        element={
-          ["produccion", "gerencia", "atencion", "direcciontecnica", "planeacion"].includes(usuarioActual?.rol)
-            ? <ConsolidadoPedidos />
-            : <Navigate to="/" />
-        }
+        element={authOrRedirect(["produccion", "gerencia", "atencion", "direcciontecnica", "planeacion"], <ConsolidadoPedidos />)}
       />
 
       <Route
         path="/consolidado-formato"
-        element={
-          ["produccion", "gerencia", "atencion", "direcciontecnica", "planeacion"].includes(usuarioActual?.rol)
-            ? <ConsolidadoFormato />
-            : <Navigate to="/" />
-        }
+        element={authOrRedirect(["produccion", "gerencia", "atencion", "direcciontecnica", "planeacion"], <ConsolidadoFormato />)}
       />
 
     </Routes>

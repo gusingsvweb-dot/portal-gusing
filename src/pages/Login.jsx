@@ -6,10 +6,17 @@ import { useNavigate } from "react-router-dom";
 import "./Login.css";
 
 export default function Login() {
-  const { login, register, verifyEmailCode, sendResetCode, verifyResetCode, updatePassword } = useAuth();
+  const { usuarioActual, login, register, verifyEmailCode, sendResetCode, verifyResetCode, updatePassword } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { isNoOficial, setIsNoOficial } = useConfig();
   const navigate = useNavigate();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (usuarioActual?.rol) {
+      redirigirPorRol(usuarioActual.rol);
+    }
+  }, [usuarioActual]);
 
   // Estados UI
   const [mode, setMode] = useState("login"); // "login" | "register" | "verify" | "forgot" | "reset"

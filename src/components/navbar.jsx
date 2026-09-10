@@ -290,7 +290,7 @@ export default function Navbar() {
     const comboText = title + " " + msg;
 
     let targetId = n.pedido_id;
-    const codeMatch = comboText.match(/\b(mc|m|prod|oc|sol)[-\s]*(\d+)\b/i);
+    const codeMatch = comboText.match(/\b(mc|m|mm|mp|prod|oc|sol)[-\s]*(\d+)\b/i);
     if (codeMatch) {
       if (!targetId) targetId = codeMatch[2];
     } else if (!targetId) {
@@ -300,76 +300,114 @@ export default function Navbar() {
 
     const idQuery = targetId ? `?id=${targetId}` : "";
 
-    // 1. Microbiología
-    if (comboText.includes("microbiologia") || comboText.includes("microbiología") || comboText.includes("mc-")) {
-      return `/microbiologia${idQuery}`;
-    }
+    // Determinar la ruta garantizando que el usuario tenga permiso según su rol
+    switch (rol) {
+      case "mantenimiento":
+        if (comboText.includes("stock") || comboText.includes("repuesto") || comboText.includes("inventario")) {
+          return `/mantenimiento/repuestos${idQuery}`;
+        }
+        if (comboText.includes("plan") || comboText.includes("cronograma")) {
+          return `/mantenimiento/plan-maestro${idQuery}`;
+        }
+        if (comboText.includes("equipo")) {
+          return `/mantenimiento/equipos${idQuery}`;
+        }
+        if (comboText.includes("proveedor")) {
+          return `/mantenimiento/proveedores${idQuery}`;
+        }
+        if (comboText.includes("proyecto")) {
+          return `/mantenimiento/proyectos${idQuery}`;
+        }
+        return `/mantenimiento${idQuery}`;
 
-    // 2. Compras
-    if (comboText.includes("compra") || comboText.includes("orden de compra") || comboText.includes("oc-")) {
-      if (rol === "gerencia") return `/gerenciacompras${idQuery}`;
-      return `/compras${idQuery}`;
-    }
-
-    // 3. Mantenimiento / Tickets / Solicitudes
-    if (
-      comboText.includes("ticket") ||
-      comboText.includes("preventivo") ||
-      comboText.includes("correctivo") ||
-      comboText.includes("solicitud m") ||
-      comboText.includes("mantenimiento") ||
-      comboText.includes("m-")
-    ) {
-      if (rol === "tecnicomantenimiento" || rol === "analistamantenimiento") {
+      case "tecnicomantenimiento":
+      case "analistamantenimiento":
+        if (comboText.includes("stock") || comboText.includes("repuesto") || comboText.includes("inventario")) {
+          return `/mantenimiento/repuestos${idQuery}`;
+        }
+        if (comboText.includes("plan") || comboText.includes("cronograma")) {
+          return `/mantenimiento/plan-maestro${idQuery}`;
+        }
+        if (comboText.includes("equipo")) {
+          return `/mantenimiento/equipos${idQuery}`;
+        }
         return `/tecnico-mantenimiento${idQuery}`;
-      }
-      if (rol === "usuario") {
+
+      case "gerencia":
+        if (comboText.includes("compra") || comboText.includes("orden de compra") || comboText.includes("oc-")) {
+          return `/gerenciacompras${idQuery}`;
+        }
+        if (
+          comboText.includes("ticket") ||
+          comboText.includes("mantenimiento") ||
+          comboText.includes("preventivo") ||
+          comboText.includes("correctivo") ||
+          comboText.includes("solicitud m") ||
+          comboText.includes("mc-") ||
+          comboText.includes("m-")
+        ) {
+          return `/mantenimiento${idQuery}`;
+        }
+        if (comboText.includes("equipo")) return `/mantenimiento/equipos${idQuery}`;
+        if (comboText.includes("cronograma")) return `/mantenimiento/plan-maestro${idQuery}`;
+        return `/gerencia${idQuery}`;
+
+      case "compras":
+        return `/compras${idQuery}`;
+
+      case "microbiologia":
+        return `/microbiologia${idQuery}`;
+
+      case "usuario":
         return `/usuario/mis-solicitudes${idQuery}`;
-      }
-      return `/mantenimiento${idQuery}`;
+
+      case "atencion":
+        if (comboText.includes("autoriza")) {
+          return `/autorizar-despachos${idQuery}`;
+        }
+        return `/pedidos-curso${idQuery}`;
+
+      case "produccion":
+        return `/produccion${idQuery}`;
+
+      case "bodega":
+        return `/bodega${idQuery}`;
+      case "bodega_mp":
+        return `/bodega-mp${idQuery}`;
+      case "bodega_pt":
+        return `/bodega-pt${idQuery}`;
+      case "acondicionamiento":
+        return `/acondicionamiento${idQuery}`;
+      case "controlcalidad":
+        return `/controlcalidad${idQuery}`;
+      case "direcciontecnica":
+        return `/direccion-tecnica${idQuery}`;
+      case "garantiacalidad":
+        return `/garantiacalidad${idQuery}`;
+      case "gestioncalidad":
+        return `/gestioncalidad${idQuery}`;
+
+      default:
+        const routes = {
+          produccion: "/produccion",
+          bodega: "/bodega",
+          bodega_mp: "/bodega-mp",
+          bodega_pt: "/bodega-pt",
+          microbiologia: "/microbiologia",
+          mantenimiento: "/mantenimiento",
+          compras: "/compras",
+          acondicionamiento: "/acondicionamiento",
+          controlcalidad: "/controlcalidad",
+          direcciontecnica: "/direccion-tecnica",
+          garantiacalidad: "/garantiacalidad",
+          usuario: "/usuario/mis-solicitudes",
+          atencion: "/pedidos-curso",
+          tecnicomantenimiento: "/tecnico-mantenimiento",
+          analistamantenimiento: "/tecnico-mantenimiento"
+        };
+        const base = routes[rol] || "/dashboard";
+        return `${base}${idQuery}`;
     }
-
-    // 4. Fallbacks según el rol
-    const routes = {
-      produccion: "/produccion",
-      bodega: "/bodega",
-      bodega_mp: "/bodega-mp",
-      bodega_pt: "/bodega-pt",
-      microbiologia: "/microbiologia",
-      mantenimiento: "/mantenimiento",
-      compras: "/compras",
-      acondicionamiento: "/Acondicionamiento",
-      controlcalidad: "/ControlCalidad",
-      direcciontecnica: "/direccion-tecnica",
-      garantiacalidad: "/garantiacalidad",
-      usuario: "/usuario/mis-solicitudes",
-      atencion: "/pedidos-curso",
-      tecnicomantenimiento: "/tecnico-mantenimiento",
-      analistamantenimiento: "/tecnico-mantenimiento"
-    };
-
-    const base = routes[rol] || "/dashboard";
-
-    if (rol === "tecnicomantenimiento" || rol === "analistamantenimiento") {
-      if (comboText.includes("stock") || comboText.includes("repuesto") || comboText.includes("inventario")) return "/mantenimiento/repuestos";
-      if (comboText.includes("plan") || comboText.includes("cronograma")) return "/mantenimiento/plan-maestro";
-      return `/tecnico-mantenimiento${idQuery}`;
-    }
-
-    if (rol === "mantenimiento") {
-      if (comboText.includes("stock") || comboText.includes("repuesto") || comboText.includes("inventario")) return "/mantenimiento/repuestos";
-      if (comboText.includes("plan") || comboText.includes("cronograma")) return "/mantenimiento/plan-maestro";
-      return `/mantenimiento${idQuery}`;
-    }
-
-    if (rol === "atencion") {
-      if (comboText.includes("autoriza")) {
-        return `/autorizar-despachos${idQuery}`;
-      }
-      return `/pedidos-curso${idQuery}`;
-    }
-
-    return `${base}${idQuery}`;
   };
 
   const handleNotifClick = (n) => {
