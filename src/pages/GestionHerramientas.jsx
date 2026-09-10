@@ -507,16 +507,6 @@ export default function GestionHerramientas({ embedded = false }) {
               <option value="En Reparación">En Reparación</option>
               <option value="Fuera de Servicio">Fuera de Servicio</option>
             </select>
-
-            {/* Calibration Expiry Filter */}
-            <select className="v2-select" style={{ width: "185px", padding: "8px", borderRadius: "8px" }}
-              value={filtroCalibracion} onChange={e => setFiltroCalibracion(e.target.value)}>
-              <option value="todos">Todas las Calibraciones</option>
-              <option value="vigente">Calibración Vigente</option>
-              <option value="proxima">Próxima a vencer (&lt;30d)</option>
-              <option value="vencida">Vencida 🚨</option>
-              <option value="no_requiere">No requiere calibración</option>
-            </select>
           </div>
         </div>
 
