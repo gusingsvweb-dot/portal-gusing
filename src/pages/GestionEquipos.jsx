@@ -483,8 +483,8 @@ export default function GestionEquipos() {
 
         {/* STATS ROW */}
         <div className="activos-stats-row">
-          <div className="activo-stat" onClick={() => { setFiltroCrit("todos"); setFiltroFrec("todos"); setFiltroTipo("todos"); setFiltroEstado("todos"); }} style={{ "--a": filtroCrit === "todos" && filtroFrec === "todos" && filtroTipo === "todos" && filtroEstado === "todos" ? "var(--mant-primary)" : "#94a3b8" }}>
-            <span className="as-val">{stats.total}</span><span className="as-lbl">Total Equipos</span>
+          <div className="activo-stat" onClick={() => { setFiltroCrit("todos"); setFiltroFrec("todos"); setFiltroTipo("todos"); setFiltroEstado("todos"); }} style={{ "--a": "var(--mant-primary)" }}>
+            <span className="as-val" style={{ color: "var(--mant-primary)" }}>{stats.total}</span><span className="as-lbl">Total Ítems</span>
           </div>
           <div className="activo-stat" onClick={() => { setFiltroEstado(filtroEstado === "Activo" ? "todos" : "Activo"); }} style={{ "--a": filtroEstado === "Activo" ? "#16a34a" : "#22c55e" }}>
             <span className="as-val" style={{ color: "#16a34a" }}>{stats.activosCount}</span><span className="as-lbl">Equipos Activos</span>
