@@ -1,0 +1,1 @@
+ALTER TABLE "NO_activos" ADD COLUMN IF NOT EXISTS "manual_url" TEXT;

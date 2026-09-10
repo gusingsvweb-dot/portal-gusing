@@ -1,24 +1,34 @@
 import { createClient } from '@supabase/supabase-js';
-const supabase = createClient('https://hmvznxwwaoassdiqlaax.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhtdnpueHd3YW9hc3NkaXFsYWF4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MzQyNjYzNCwiZXhwIjoyMDc5MDAyNjM0fQ.Cbu2aSH3Gk6T_poLxEUkhH3vBEf5BPqrD6CPybOrn5c');
+import fs from 'fs';
 
-async function run() {
-  const { data: sol, error } = await supabase
-    .from('NO_solicitudes') // the real table name might be NO_solicitudes, wait let me check the st() mapping
-    .select('id, consecutivo, area_id')
-    .eq('area_id', 1)
-    .order('created_at', { ascending: true });
-    
-  if (error) { console.log(error); return; }
+const env = fs.readFileSync('.env', 'utf-8').split('\n').reduce((acc, line) => {
+  const [k, ...v] = line.split('=');
+  if (k && k.trim()) acc[k.trim()] = v.join('=').trim();
+  return acc;
+}, {});
+
+const supabase = createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY);
+
+async function run(table) {
+  // Get all with area_id = 1 ordered by id
+  const { data, error } = await supabase.from(table).select('id, consecutivo').eq('area_id', 1).order('id', { ascending: true });
+  if (error) { console.error(error); return; }
   
-  console.log("Found " + sol.length + " solicitudes for Mantenimiento");
+  let currentCons = 1;
+  // If some already have consecutivo, we might want to respect them or just re-number everything?
+  // Let's just assign consecutivo = currentCons++ for everyone to make it perfectly linear!
   
-  let i = 1;
-  for (const s of sol) {
-    if (s.consecutivo !== i) {
-      console.log(`Fixing id ${s.id}: consecutivo ${s.consecutivo} -> ${i}`);
-      await supabase.from('NO_solicitudes').update({ consecutivo: i }).eq('id', s.id);
-    }
-    i++;
+  for (const row of data) {
+    console.log(`Updating ${table} ID ${row.id} to consecutivo ${currentCons}`);
+    await supabase.from(table).update({ consecutivo: currentCons }).eq('id', row.id);
+    currentCons++;
   }
 }
-run();
+
+async function main() {
+  await run('solicitudes');
+  await run('NO_solicitudes');
+  console.log("Done");
+}
+
+main();

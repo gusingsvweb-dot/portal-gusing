@@ -186,9 +186,12 @@
   border: 1px solid #bbf7d0;
 }
 
-.scheduled-badge.completado { background: #dcfce7; color: #166534; }
-.scheduled-badge.pendiente { background: #eff6ff; color: #1d4ed8; border-color: #dbeafe; }
-.scheduled-badge.vencido { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
+.scheduled-badge.completado, .scheduled-badge.ejecutado { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+.scheduled-badge.pendiente, .scheduled-badge.programado { background: #eff6ff; color: #1d4ed8; border: 1px solid #dbeafe; }
+.scheduled-badge.vencido { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+.scheduled-badge.nuevo { background: #cff4fc; color: #0891b2; border: 1px solid #a5f3fc; }
+.scheduled-badge.reprogramado { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+.scheduled-badge.anulado { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
 
 /* ── LEGEND ── */
 .anual-legend {
@@ -218,10 +221,16 @@
 .dot.p { background: #3b82f6; }
 .dot.c { background: #10b981; }
 .dot.v { background: #ef4444; }
+.dot.n { background: #06b6d4; }
+.dot.r { background: #f59e0b; }
+.dot.a { background: #64748b; }
 
-.month-col.has-plan.pendiente { background: #f0f7ff; }
-.month-col.has-plan.completado { background: #f0fdf4; }
+.month-col.has-plan.pendiente, .month-col.has-plan.programado { background: #f0f7ff; }
+.month-col.has-plan.completado, .month-col.has-plan.ejecutado { background: #f0fdf4; }
 .month-col.has-plan.vencido { background: #fef2f2; }
+.month-col.has-plan.nuevo { background: #ecfeff; }
+.month-col.has-plan.reprogramado { background: #fffbeb; }
+.month-col.has-plan.anulado { background: #f8fafc; }
 
 /* Grid */
 .pm-grid {

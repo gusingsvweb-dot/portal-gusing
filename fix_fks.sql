@@ -1,0 +1,3 @@
+ALTER TABLE compras_solicitudes_detalle DROP CONSTRAINT IF EXISTS compras_solicitudes_detalle_consecutivo_asignado_por_fkey;
+ALTER TABLE compras_eventos DROP CONSTRAINT IF EXISTS compras_eventos_actor_id_fkey;
+ALTER TABLE compras_eventos DROP CONSTRAINT IF EXISTS compras_eventos_creado_por_fkey;

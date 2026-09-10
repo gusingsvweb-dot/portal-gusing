@@ -27,6 +27,27 @@ export default function PlanMaestro() {
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [completando, setCompletando] = useState(null); // id del plan siendo completado
+  const [selectedStatusEntry, setSelectedStatusEntry] = useState(null);
+
+  function getStatusInfo(status) {
+    const st = (status || "").toLowerCase();
+    if (st === "ejecutado" || st === "completado") {
+      return { label: "Ejecutado", icon: "✓", class: "ejecutado", color: "#166534", bg: "#dcfce7" };
+    }
+    if (st === "vencido") {
+      return { label: "Vencido", icon: "!", class: "vencido", color: "#991b1b", bg: "#fee2e2" };
+    }
+    if (st === "nuevo") {
+      return { label: "Nuevo", icon: "N", class: "nuevo", color: "#0891b2", bg: "#cff4fc" };
+    }
+    if (st === "reprogramado") {
+      return { label: "Reprogramado", icon: "R", class: "reprogramado", color: "#b45309", bg: "#fef3c7" };
+    }
+    if (st === "anulado") {
+      return { label: "Anulado", icon: "A", class: "anulado", color: "#475569", bg: "#f1f5f9" };
+    }
+    return { label: "Programado", icon: "P", class: "programado", color: "#1d4ed8", bg: "#eff6ff" };
+  }
 
   // Filtros Motor Automático
   const [filtroMes, setFiltroMes] = useState("todos"); // "todos" | "0"-"11"
@@ -328,17 +349,19 @@ export default function PlanMaestro() {
     e.dataTransfer.setData("planId", planId);
   }
 
-  async function toggleMonthStatus(monthEntry) {
+  async function changeMonthStatus(monthEntry, newStatus) {
     if (isReadOnly) return;
-    const isEj = monthEntry.status?.toLowerCase() === "ejecutado" || monthEntry.status?.toLowerCase() === "completado";
-    const newStatus = isEj ? "Pendiente" : "Ejecutado";
-    await supabase.from(st("maintenance_schedule_months")).update({ status: newStatus }).eq("id", monthEntry.id);
-    
-    // Al marcar como Ejecutado desde el Cronograma Anual, registrar en el historial de solicitudes/intervenciones del equipo
-    if (newStatus === "Ejecutado") {
-      try {
-        const scheduleItem = cronogramaAnual.find(i => i.id === monthEntry.schedule_id);
-        const act = activos.find(a => a.codigo === scheduleItem?.equipment_code);
+    setSaving(true);
+
+    try {
+      // 1. Actualizar el estado del mes en la base de datos
+      await supabase.from(st("maintenance_schedule_months")).update({ status: newStatus }).eq("id", monthEntry.id);
+
+      const scheduleItem = cronogramaAnual.find(i => i.id === monthEntry.schedule_id);
+      const act = activos.find(a => a.codigo === scheduleItem?.equipment_code);
+
+      // 2. Si se marca como "Ejecutado", registrar en el historial de solicitudes/intervenciones del equipo
+      if (newStatus === "Ejecutado") {
         if (act) {
           const { data: maxData } = await supabase
             .from(st("solicitudes"))
@@ -363,17 +386,49 @@ export default function PlanMaestro() {
             area_solicitante: "MANTENIMIENTO",
           }]);
         }
-      } catch (errHist) {
-        console.error("Error al registrar intervención en historial desde cronograma:", errHist);
       }
-    }
 
-    setCronogramaAnual(prev => prev.map(item => ({
-      ...item,
-      maintenance_schedule_months: item.maintenance_schedule_months?.map(m =>
-        m.id === monthEntry.id ? { ...m, status: newStatus } : m
-      )
-    })));
+      // 3. Si se marca como "Reprogramado", crear/actualizar la entrada en el MES SIGUIENTE como "Programado"
+      if (newStatus === "Reprogramado") {
+        const nextMonthNum = monthEntry.month_number === 12 ? 1 : monthEntry.month_number + 1;
+
+        // Verificar si ya existe en el schedule actual
+        const existingNextMonth = scheduleItem?.maintenance_schedule_months?.find(m => m.month_number === nextMonthNum);
+
+        if (existingNextMonth) {
+          await supabase
+            .from(st("maintenance_schedule_months"))
+            .update({ status: "Programado", is_scheduled: true })
+            .eq("id", existingNextMonth.id);
+        } else if (scheduleItem) {
+          // Insertar en la BD para el mes siguiente
+          await supabase.from(st("maintenance_schedule_months")).insert([{
+            schedule_id: scheduleItem.id,
+            month_number: nextMonthNum,
+            month_name: MESES[nextMonthNum - 1],
+            is_scheduled: true,
+            status: "Programado"
+          }]);
+        }
+
+        // Si existe plan preventivo en el motor, mover la fecha de próxima ejecución al mes siguiente
+        if (act) {
+          const nextDateObj = new Date(selectedYear, nextMonthNum - 1, 15);
+          await supabase
+            .from(st("planes_preventivos"))
+            .update({ proxima_fecha: nextDateObj.toISOString().split("T")[0] })
+            .eq("activo_id", act.id);
+        }
+      }
+
+      setSelectedStatusEntry(null);
+      await loadData();
+    } catch (err) {
+      console.error("Error al cambiar estado de mes:", err);
+      alert("Error al guardar el estado: " + err.message);
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function savePlan() {
@@ -758,9 +813,12 @@ export default function PlanMaestro() {
               </div>
               <select className="v2-select" style={{ width: "160px" }} value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)}>
                 <option value="todos">Todos los estados</option>
-                <option value="ejecutado">Ejecutados ✓</option>
-                <option value="pendiente">Pendientes</option>
-                <option value="vencido">Vencidos !</option>
+                <option value="programado">Programado (P)</option>
+                <option value="ejecutado">Ejecutado (✓)</option>
+                <option value="vencido">Vencido (!)</option>
+                <option value="nuevo">Nuevo (N)</option>
+                <option value="reprogramado">Reprogramado (R)</option>
+                <option value="anulado">Anulado (A)</option>
               </select>
               {cronogramaAnual.length > 0 && !isReadOnly && (
                 <button className="mant-btn-action success" style={{ fontSize: "0.8rem", padding: "8px 16px" }} onClick={syncWithMotor} disabled={syncing}>
@@ -771,9 +829,12 @@ export default function PlanMaestro() {
 
             {cronogramaAnual.length > 0 && (
               <div className="anual-legend">
-                <span className="legend-item"><span className="dot p"></span> Programado (click para completar)</span>
-                <span className="legend-item"><span className="dot c"></span> Completado (click para revertir)</span>
-                <span className="legend-item"><span className="dot v"></span> Vencido</span>
+                <span className="legend-item"><span className="dot p"></span> Programado (P)</span>
+                <span className="legend-item"><span className="dot c"></span> Ejecutado (✓)</span>
+                <span className="legend-item"><span className="dot v"></span> Vencido (!)</span>
+                <span className="legend-item"><span className="dot n"></span> Nuevo (N)</span>
+                <span className="legend-item"><span className="dot r"></span> Reprogramado (R)</span>
+                <span className="legend-item"><span className="dot a"></span> Anulado (A)</span>
               </div>
             )}
 
@@ -795,18 +856,19 @@ export default function PlanMaestro() {
                   {cronogramaFiltrado.map(item => {
                     const mesEntry = item.maintenance_schedule_months?.find(m => m.month_number === parseInt(filtroMesAnual));
                     if (!mesEntry) return null;
-                    const isCompletado = mesEntry.status?.toLowerCase() === "ejecutado" || mesEntry.status?.toLowerCase() === "completado";
+                    const stInfo = getStatusInfo(mesEntry.status);
                     return (
-                      <div key={item.id} className={`anual-mes-card ${isCompletado ? "anual-mes-completado" : "anual-mes-pendiente"}`}>
+                      <div key={item.id} className={`anual-mes-card anual-mes-${stInfo.class}`}>
                         <div className="anual-mes-card-top">
                           <span className="codigo-cell">{item.equipment_code}</span>
                           <button
-                                className={`anual-estado-btn ${isCompletado ? "estado-completado" : "estado-pendiente"}`}
-                                onClick={() => toggleMonthStatus(mesEntry)}
-                                title={isCompletado ? "Marcar como pendiente" : "Marcar como ejecutado"}
-                              >
-                                {isCompletado ? "✓ Ejecutado" : "○ Pendiente"}
-                              </button>
+                            className={`anual-estado-btn estado-${stInfo.class}`}
+                            style={{ background: stInfo.bg, color: stInfo.color, borderColor: stInfo.color }}
+                            onClick={() => !isReadOnly && setSelectedStatusEntry(mesEntry)}
+                            title={`Estado: ${stInfo.label} — Click para cambiar`}
+                          >
+                            {stInfo.icon} {stInfo.label}
+                          </button>
                         </div>
                         <p className="anual-mes-equipo">{item.equipment_name}</p>
                         <p className="anual-mes-tarea">{item.task_description || "—"}</p>
@@ -841,16 +903,16 @@ export default function PlanMaestro() {
                         {[1,2,3,4,5,6,7,8,9,10,11,12].map(m => {
                           const scheduled = item.maintenance_schedule_months?.find(mon => mon.month_number === m);
                           if (!scheduled) return <td key={m} className="month-col empty"></td>;
-                          const statusClass = scheduled.status.toLowerCase();
-                          const statusIcon = statusClass === "ejecutado" ? "✓" : statusClass === "vencido" ? "!" : "P";
+                          const stInfo = getStatusInfo(scheduled.status);
                           return (
-                            <td key={m} className={`month-col has-plan ${statusClass}`}>
+                            <td key={m} className={`month-col has-plan ${stInfo.class}`}>
                               <div
-                                className={`scheduled-badge ${statusClass} badge-clickable`}
-                                title={`${scheduled.month_name || MESES[m-1]}: ${scheduled.status} — Click para cambiar`}
-                                onClick={() => statusClass !== "vencido" && toggleMonthStatus(scheduled)}
+                                className={`scheduled-badge ${stInfo.class} badge-clickable`}
+                                style={{ background: stInfo.bg, color: stInfo.color }}
+                                title={`${scheduled.month_name || MESES[m-1]}: ${stInfo.label} — Click para cambiar`}
+                                onClick={() => !isReadOnly && setSelectedStatusEntry(scheduled)}
                               >
-                                {statusIcon}
+                                {stInfo.icon}
                               </div>
                             </td>
                           );
@@ -911,6 +973,63 @@ export default function PlanMaestro() {
                 <button className="v2-btn-secondary" onClick={() => { setShowModal(false); resetForm(); }}>Cancelar</button>
                 <button className="v2-btn-primary" onClick={savePlan} disabled={saving}>
                   {saving ? "Guardando..." : form.id ? "Actualizar" : "Guardar Programa"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL CAMBIAR ESTADO DE MES */}
+        {selectedStatusEntry && (
+          <div className="mant-modal-overlay-v2" onClick={() => setSelectedStatusEntry(null)}>
+            <div className="mant-modal-content-centered" style={{ maxWidth: "450px" }} onClick={e => e.stopPropagation()}>
+              <div className="modal-v2-header">
+                <h3>📌 Cambiar Estado ({selectedStatusEntry.month_name || MESES[(selectedStatusEntry.month_number || 1) - 1]})</h3>
+                <button className="close-btn-v2" onClick={() => setSelectedStatusEntry(null)}>✖</button>
+              </div>
+              <div className="modal-v2-body" style={{ display: "flex", flexDirection: "column", gap: "10px", padding: "16px 0" }}>
+                <p style={{ fontSize: "0.9rem", color: "#64748b", marginBottom: "6px" }}>
+                  Seleccione la acción o nuevo estado para este mantenimiento:
+                </p>
+                <button
+                  className="mant-btn-action success"
+                  style={{ justifyContent: "flex-start", padding: "12px 16px", fontSize: "0.95rem" }}
+                  onClick={() => changeMonthStatus(selectedStatusEntry, "Ejecutado")}
+                  disabled={saving}
+                >
+                  ✓ Marcar como Ejecutado (Completar)
+                </button>
+                <button
+                  className="mant-btn-action warning"
+                  style={{ justifyContent: "flex-start", padding: "12px 16px", fontSize: "0.95rem", background: "#d97706", color: "#fff" }}
+                  onClick={() => changeMonthStatus(selectedStatusEntry, "Reprogramado")}
+                  disabled={saving}
+                >
+                  🔄 Reprogramar (Mover al mes siguiente)
+                </button>
+                <button
+                  className="mant-btn-action primary"
+                  style={{ justifyContent: "flex-start", padding: "12px 16px", fontSize: "0.95rem" }}
+                  onClick={() => changeMonthStatus(selectedStatusEntry, "Nuevo")}
+                  disabled={saving}
+                >
+                  ✨ Marcar como Nuevo
+                </button>
+                <button
+                  className="mant-btn-action secondary"
+                  style={{ justifyContent: "flex-start", padding: "12px 16px", fontSize: "0.95rem", background: "#64748b", color: "#fff" }}
+                  onClick={() => changeMonthStatus(selectedStatusEntry, "Anulado")}
+                  disabled={saving}
+                >
+                  🚫 Marcar como Anulado
+                </button>
+                <button
+                  className="mant-btn-action secondary"
+                  style={{ justifyContent: "flex-start", padding: "12px 16px", fontSize: "0.95rem" }}
+                  onClick={() => changeMonthStatus(selectedStatusEntry, "Programado")}
+                  disabled={saving}
+                >
+                  📌 Marcar como Programado
                 </button>
               </div>
             </div>
