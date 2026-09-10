@@ -14,7 +14,7 @@ const MESES_CORTO = ["ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SEP","OCT"
 export default function PlanMaestro() {
   const { usuarioActual } = useAuth();
   const navigate = useNavigate();
-  const isReadOnly = usuarioActual?.rol === "tecnicomantenimiento";
+  const isReadOnly = false;
   const [planes, setPlanes] = useState([]);
   const [activos, setActivos] = useState([]);
   const [cronogramaAnual, setCronogramaAnual] = useState([]);
