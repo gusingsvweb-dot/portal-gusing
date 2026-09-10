@@ -38,7 +38,6 @@ export default function GestionHerramientas({ embedded = false }) {
   const [filtroText, setFiltroText] = useState("");
   const [filtroCrit, setFiltroCrit] = useState("todos");
   const [filtroEstado, setFiltroEstado] = useState("todos");
-  const [filtroCalibracion, setFiltroCalibracion] = useState("todos");
   const [saving, setSaving] = useState(false);
   const [proveedores, setProveedores] = useState([]);
   const [tiposSolicitud, setTiposSolicitud] = useState([]);
@@ -179,15 +178,6 @@ export default function GestionHerramientas({ embedded = false }) {
       // Filter status
       if (filtroEstado !== "todos" && parsed.status !== filtroEstado) return false;
       
-      // Filter calibration alert
-      if (filtroCalibracion !== "todos") {
-        const calStatus = getCalibrationStatus(parsed.nextCal);
-        if (filtroCalibracion === "vencida" && calStatus.class !== "cal-expired") return false;
-        if (filtroCalibracion === "proxima" && calStatus.class !== "cal-warning") return false;
-        if (filtroCalibracion === "vigente" && calStatus.class !== "cal-ok") return false;
-        if (filtroCalibracion === "no_requiere" && calStatus.class !== "cal-none") return false;
-      }
-
       // Filter text
       if (filtroText.trim()) {
         const q = filtroText.toLowerCase();
@@ -206,7 +196,7 @@ export default function GestionHerramientas({ embedded = false }) {
 
       return true;
     });
-  }, [activos, filtroCrit, filtroEstado, filtroCalibracion, filtroText, areas]);
+  }, [activos, filtroCrit, filtroEstado, filtroText, areas]);
 
   async function openEdit(a, e) {
     e.stopPropagation();
@@ -470,7 +460,7 @@ export default function GestionHerramientas({ embedded = false }) {
           <header className="mant-header-section">
             <div>
               <h2 className="mant-title">Equipos y Herramientas de Mantenimiento</h2>
-              <p className="mant-subtitle">Control de calibración, vigencia y estado operativo para herramientas del taller — {activos.length} herramientas registradas</p>
+              <p className="mant-subtitle">Control y estado operativo para herramientas del taller — {activos.length} herramientas registradas</p>
             </div>
             <div className="mant-actions-group">
               {!isReadOnly && (
@@ -487,13 +477,13 @@ export default function GestionHerramientas({ embedded = false }) {
 
         {/* STATS ROW */}
         <div className="activos-stats-row">
-          <div className="activo-stat" onClick={() => { setFiltroEstado("todos"); setFiltroCalibracion("todos"); }} style={{ "--a": "var(--mant-primary)" }}>
+          <div className="activo-stat" onClick={() => setFiltroEstado("todos")} style={{ "--a": "var(--mant-primary)" }}>
             <span className="as-val">{stats.total}</span><span className="as-lbl">Total Herramientas</span>
           </div>
-          <div className="activo-stat" onClick={() => { setFiltroEstado("Disponible"); setFiltroCalibracion("todos"); }} style={{ "--a": "#10b981" }}>
+          <div className="activo-stat" onClick={() => setFiltroEstado("Disponible")} style={{ "--a": "#10b981" }}>
             <span className="as-val" style={{ color: "#10b981" }}>{stats.disponibles}</span><span className="as-lbl">Disponibles</span>
           </div>
-          <div className="activo-stat" onClick={() => { setFiltroEstado("En Reparación"); setFiltroCalibracion("todos"); }} style={{ "--a": "#ef4444" }}>
+          <div className="activo-stat" onClick={() => setFiltroEstado("En Reparación")} style={{ "--a": "#ef4444" }}>
             <span className="as-val" style={{ color: "#ef4444" }}>{stats.noDisponible}</span><span className="as-lbl">No Disponible</span>
           </div>
         </div>
@@ -542,7 +532,6 @@ export default function GestionHerramientas({ embedded = false }) {
             {filtered.map(a => {
               const area = areas.find(ar => ar.id === a.area_id);
               const parsed = parseDesc(a.descripcion);
-              const calStatus = getCalibrationStatus(parsed.nextCal);
               const stCol = ESTADO_COLORS[parsed.status] || { bg: "#f1f5f9", color: "#475569", border: "#cbd5e1" };
 
               return (
@@ -568,7 +557,7 @@ export default function GestionHerramientas({ embedded = false }) {
                     </div>
                   )}
 
-                  {/* Status & Calibration Alert Row */}
+                  {/* Status Row */}
                   <div style={{ display: "flex", flexDirection: "column", gap: "6px", margin: "10px 0" }}>
                     <div style={{ 
                       fontSize: "0.72rem", padding: "4px 8px", borderRadius: "6px", display: "inline-flex", width: "fit-content",
@@ -576,15 +565,6 @@ export default function GestionHerramientas({ embedded = false }) {
                     }}>
                       Estado: {parsed.status}
                     </div>
-                    
-                    {parsed.nextCal && (
-                      <div style={{ 
-                        fontSize: "0.7rem", padding: "4px 8px", borderRadius: "6px", display: "inline-flex", width: "fit-content",
-                        backgroundColor: calStatus.bg, color: calStatus.color, border: `1px solid ${calStatus.border}`, fontWeight: "bold"
-                      }}>
-                        Calibración: {calStatus.label}
-                      </div>
-                    )}
                   </div>
 
                   <div className="v2-location-info" style={{ marginTop: "auto", fontSize: "0.75rem" }}>📍 {area?.nombre || "Sin taller"}</div>
@@ -626,7 +606,7 @@ export default function GestionHerramientas({ embedded = false }) {
                     <select className="v2-select" value={form.tipo} onChange={e => setForm({ ...form, tipo: e.target.value })}>
                       <option value="Herramienta Manual">Herramienta Manual</option>
                       <option value="Herramienta Eléctrica">Herramienta Eléctrica</option>
-                      <option value="Equipo de Medición">Equipo de Medición / Calibración</option>
+                      <option value="Equipo de Medición">Equipo de Medición</option>
                       <option value="Equipo de Seguridad">Equipo de Seguridad</option>
                       <option value="Herramienta">Otra Herramienta</option>
                     </select>
@@ -668,20 +648,6 @@ export default function GestionHerramientas({ embedded = false }) {
                   </div>
                 </div>
 
-                {/* Calibration Dates (Visible always, useful for measuring tools) */}
-                <div className="v2-form-row">
-                  <div className="v2-form-group">
-                    <label>Última Calibración / Control</label>
-                    <input className="v2-input" type="date" value={form.lastCal}
-                      onChange={e => setForm({ ...form, lastCal: e.target.value })} />
-                  </div>
-                  <div className="v2-form-group">
-                    <label>Próxima Calibración (Vencimiento)</label>
-                    <input className="v2-input" type="date" value={form.nextCal}
-                      onChange={e => setForm({ ...form, nextCal: e.target.value })} />
-                  </div>
-                </div>
-
                 <div className="v2-form-group">
                   <label>Ubicación / Taller <span className="req">*</span></label>
                   <div style={{ display: "flex", gap: "8px" }}>
@@ -703,7 +669,7 @@ export default function GestionHerramientas({ embedded = false }) {
                 </div>
 
                 <div className="v2-form-group">
-                  <label>Certificado de Calibración / Manual (PDF)</label>
+                  <label>Manual / Ficha Técnica (PDF)</label>
                   <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
                     <input className="v2-input" type="file" accept=".pdf" onChange={e => setFile(e.target.files[0])} />
                     {form.manual_url && (

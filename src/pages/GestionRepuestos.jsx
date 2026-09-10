@@ -21,9 +21,22 @@ export default function GestionRepuestos() {
   const [filtroText, setFiltroText] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const [form, setForm] = useState({ nombre: "", stock: 0, costo: 0, unidad: "Unidad", stock_minimo: 5 });
+  const [form, setForm] = useState({ id: null, nombre: "", sku: "", stock: 0, costo: 0, unidad: "Unidad", stock_minimo: 5 });
 
   useEffect(() => { loadData(); }, []);
+
+  function parseRepuesto(r) {
+    let sku = r.sku || "";
+    let nombre = r.nombre || "";
+    if (!sku && nombre.startsWith("[SKU:")) {
+      const match = nombre.match(/^\[SKU:\s*([^\]]+)\]\s*(.*)$/i);
+      if (match) {
+        sku = match[1];
+        nombre = match[2];
+      }
+    }
+    return { ...r, sku, nombreLimpio: nombre };
+  }
 
   async function loadData() {
     setLoading(true);
@@ -42,26 +55,30 @@ export default function GestionRepuestos() {
   }, [repuestos]);
 
   const displayList = useMemo(() => {
-    let res = [...repuestos];
+    let res = repuestos.map(parseRepuesto);
     if (filtroText.trim()) {
       const q = filtroText.toLowerCase();
-      res = res.filter(r => r.nombre?.toLowerCase().includes(q) || r.unidad?.toLowerCase().includes(q));
+      res = res.filter(r => r.nombreLimpio?.toLowerCase().includes(q) || r.sku?.toLowerCase().includes(q) || r.unidad?.toLowerCase().includes(q));
     }
     if (sortBy === "stock_asc") res.sort((a, b) => a.stock - b.stock);
     else if (sortBy === "stock_desc") res.sort((a, b) => b.stock - a.stock);
     else if (sortBy === "costo_desc") res.sort((a, b) => b.costo - a.costo);
     else if (sortBy === "bajo_stock") res.sort(a => (isBajoStock(a) ? -1 : 1));
-    else res.sort((a, b) => a.nombre?.localeCompare(b.nombre));
+    else res.sort((a, b) => a.nombreLimpio?.localeCompare(b.nombreLimpio));
     return res;
   }, [repuestos, sortBy, filtroText]);
 
   async function saveRepuesto() {
     if (!form.nombre) return alert("Nombre es obligatorio");
     setSaving(true);
+    const finalNombre = form.sku?.trim() ? `[SKU: ${form.sku.trim()}] ${form.nombre.trim()}` : form.nombre.trim();
     const payload = {
       ...form,
+      nombre: finalNombre,
       stock_minimo: parseInt(form.stock_minimo) || 5,
     };
+    delete payload.sku;
+    delete payload.nombreLimpio;
     const { error } = await supabase.from(st("repuestos")).upsert([payload]);
     if (error) alert("Error: " + error.message);
     else { setShowModal(false); resetForm(); loadData(); }
@@ -76,8 +93,12 @@ export default function GestionRepuestos() {
     else loadData();
   }
 
-  function resetForm() { setForm({ nombre: "", stock: 0, costo: 0, unidad: "Unidad", stock_minimo: 5 }); }
-  function openEdit(r) { setForm({ ...r, stock_minimo: r.stock_minimo ?? 5 }); setShowModal(true); }
+  function resetForm() { setForm({ id: null, nombre: "", sku: "", stock: 0, costo: 0, unidad: "Unidad", stock_minimo: 5 }); }
+  function openEdit(r) {
+    const parsed = parseRepuesto(r);
+    setForm({ ...r, nombre: parsed.nombreLimpio, sku: parsed.sku, stock_minimo: r.stock_minimo ?? 5 });
+    setShowModal(true);
+  }
 
   const stockPct = (r) => {
     const max = Math.max((r.stock_minimo ?? 5) * 4, 20, r.stock);
@@ -170,10 +191,15 @@ export default function GestionRepuestos() {
                 <div key={r.id} className={`rep-card ${bajo ? "rep-card-bajo" : ""}`} onClick={() => openEdit(r)}>
                   <div className="rep-card-header">
                     <span className="v2-id-tag">REP-{r.id}</span>
+                    {r.sku && (
+                      <span className="v2-type-badge" style={{ backgroundColor: "#e0e7ff", color: "#4338ca", fontWeight: "700" }}>
+                        SKU: {r.sku}
+                      </span>
+                    )}
                     {bajo && <span className="rep-bajo-badge">⚠️ BAJO STOCK</span>}
                   </div>
 
-                  <h4 className="rep-card-name">{r.nombre}</h4>
+                  <h4 className="rep-card-name">{r.nombreLimpio}</h4>
 
                   {/* Barra de stock con indicador de mínimo */}
                   <div className="rep-stock-bar-wrap" title={`Stock: ${r.stock} / Mínimo: ${minimo}`}>
@@ -225,11 +251,19 @@ export default function GestionRepuestos() {
                 <button className="close-btn-v2" onClick={() => { setShowModal(false); resetForm(); }}>✖</button>
               </div>
               <div className="modal-v2-body">
-                <div className="v2-form-group">
-                  <label>Nombre del Insumo / Repuesto <span className="req">*</span></label>
-                  <input className="v2-input" value={form.nombre}
-                    onChange={e => setForm({ ...form, nombre: e.target.value })}
-                    placeholder="Ej: Filtro de aire HEPA 24x24" />
+                <div className="v2-form-row">
+                  <div className="v2-form-group" style={{ flex: 1 }}>
+                    <label>Código SKU / Referencia</label>
+                    <input className="v2-input" value={form.sku}
+                      onChange={e => setForm({ ...form, sku: e.target.value })}
+                      placeholder="Ej: SKU-FIL-2424" />
+                  </div>
+                  <div className="v2-form-group" style={{ flex: 2 }}>
+                    <label>Nombre del Insumo / Repuesto <span className="req">*</span></label>
+                    <input className="v2-input" value={form.nombre}
+                      onChange={e => setForm({ ...form, nombre: e.target.value })}
+                      placeholder="Ej: Filtro de aire HEPA 24x24" />
+                  </div>
                 </div>
                 <div className="v2-form-row">
                   <div className="v2-form-group">
