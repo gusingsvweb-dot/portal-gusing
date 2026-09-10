@@ -575,10 +575,11 @@ export default function PlanMaestro() {
                           </span>
                         </div>
                       </div>
-                      <div className={`pm-dias-chip ${isVencido ? "chip-vencido" : isProximo ? "chip-proximo" : "chip-ok"}`}>
-                        {isVencido ? `⚠️ Vencido hace ${Math.abs(dias)} día${dias !== -1 ? "s" : ""}` :
-                          `⏳ En ${dias} día${dias !== 1 ? "s" : ""}`}
-                      </div>
+                      {isVencido && (
+                        <div className="pm-dias-chip chip-vencido">
+                          ⚠️ Vencido hace {Math.abs(dias)} día{dias !== -1 ? "s" : ""}
+                        </div>
+                      )}
                       <div className="pm-card-footer">
                         {!isReadOnly && (
                           <>
