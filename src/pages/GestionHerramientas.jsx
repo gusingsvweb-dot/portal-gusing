@@ -10,7 +10,6 @@ import "./GestionEquipos.css";
 const TIPO_ICON = { 
   "Herramienta Manual": "🔧", 
   "Herramienta Eléctrica": "🔌", 
-  "Equipo de Medición": "📐", 
   "Equipo de Seguridad": "🦺", 
   "Herramienta": "🔧" 
 };
@@ -51,13 +50,10 @@ export default function GestionHerramientas({ embedded = false }) {
     codigo: "",
     criticidad: "Baja",
     manual_url: "",
-    // Metadata fields stored in descripcion
     brand: "",
     model: "",
     serial: "",
     status: "Disponible",
-    lastCal: "",
-    nextCal: "",
     notes: ""
   });
   const [file, setFile] = useState(null);
@@ -74,7 +70,7 @@ export default function GestionHerramientas({ embedded = false }) {
 
   // Parses description column as JSON or falls back to plain text notes
   function parseDesc(descText) {
-    const defaultData = { notes: descText || "", brand: "", model: "", serial: "", status: "Disponible", lastCal: "", nextCal: "" };
+    const defaultData = { notes: descText || "", brand: "", model: "", serial: "", status: "Disponible" };
     if (!descText) return defaultData;
     if (descText.trim().startsWith("{") && descText.trim().endsWith("}")) {
       try {
@@ -86,25 +82,6 @@ export default function GestionHerramientas({ embedded = false }) {
     return defaultData;
   }
 
-  // Returns calibration status logic
-  function getCalibrationStatus(nextCalDate) {
-    if (!nextCalDate) return { label: "No requiere", class: "cal-none", icon: "⚪", color: "#64748b", bg: "#f1f5f9" };
-    const next = new Date(nextCalDate + "T00:00:00");
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    const diffTime = next - today;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays < 0) {
-      return { label: "VENCIDA 🚨", class: "cal-expired", icon: "🚨", color: "#b91c1c", bg: "#fee2e2", border: "#fecaca" };
-    } else if (diffDays <= 30) {
-      return { label: `PRÓXIMA (${diffDays}d) ⏳`, class: "cal-warning", icon: "⏳", color: "#b45309", bg: "#fef3c7", border: "#fde68a" };
-    } else {
-      return { label: "VIGENTE ✅", class: "cal-ok", icon: "✅", color: "#15803d", bg: "#dcfce7", border: "#bbf7d0" };
-    }
-  }
-
   async function loadData() {
     setLoading(true);
     const [{ data: act }, { data: ars }, { data: provs }, { data: types }] = await Promise.all([
@@ -114,13 +91,11 @@ export default function GestionHerramientas({ embedded = false }) {
       supabase.from(st("tipos_solicitud")).select("*")
     ]);
 
-    // Filter tools
-    const toolTypes = ["Herramienta", "Herramienta Manual", "Herramienta Eléctrica", "Equipo de Medición", "Equipo de Seguridad"];
+    // Filter tools only
+    const toolTypes = ["Herramienta", "Herramienta Manual", "Herramienta Eléctrica", "Equipo de Seguridad"];
     const toolsOnly = (act || []).filter(a => 
       toolTypes.includes(a.tipo) || 
       a.tipo?.toLowerCase().includes("herramienta") || 
-      a.tipo?.toLowerCase().includes("medicion") || 
-      a.tipo?.toLowerCase().includes("medición") || 
       a.tipo?.toLowerCase().includes("seguridad")
     );
 
@@ -146,7 +121,6 @@ export default function GestionHerramientas({ embedded = false }) {
   }
 
   const stats = useMemo(() => {
-    let vencidas = 0;
     let disponibles = 0;
     let enReparacion = 0;
 
@@ -154,16 +128,12 @@ export default function GestionHerramientas({ embedded = false }) {
       const parsed = parseDesc(a.descripcion);
       if (parsed.status === "Disponible") disponibles++;
       if (parsed.status === "En Reparación" || parsed.status === "Fuera de Servicio") enReparacion++;
-      if (parsed.nextCal && getCalibrationStatus(parsed.nextCal).class === "cal-expired") {
-        vencidas++;
-      }
     });
 
     return {
       total: activos.length,
       disponibles,
       enReparacion,
-      vencidas,
       noDisponible: activos.length - disponibles
     };
   }, [activos]);
@@ -207,8 +177,6 @@ export default function GestionHerramientas({ embedded = false }) {
       model: parsed.model || "",
       serial: parsed.serial || "",
       status: parsed.status || "Disponible",
-      lastCal: parsed.lastCal || "",
-      nextCal: parsed.nextCal || "",
       notes: parsed.notes || ""
     });
     setShowForm(true);
@@ -229,7 +197,7 @@ export default function GestionHerramientas({ embedded = false }) {
         .upload(filePath, file);
 
       if (uploadError) {
-        alert("Error subiendo manual/certificado: " + uploadError.message);
+        alert("Error subiendo manual/ficha técnica: " + uploadError.message);
       } else {
         const { data: urlData } = supabase.storage
           .from('manuales_equipos')
@@ -244,9 +212,7 @@ export default function GestionHerramientas({ embedded = false }) {
       brand: form.brand || "",
       model: form.model || "",
       serial: form.serial || "",
-      status: form.status || "Disponible",
-      lastCal: form.lastCal || "",
-      nextCal: form.nextCal || ""
+      status: form.status || "Disponible"
     });
 
     const payload = {
@@ -345,13 +311,12 @@ export default function GestionHerramientas({ embedded = false }) {
   function printHojaRutina() {
     if (!selectedEquipo) return;
     const parsed = parseDesc(selectedEquipo.descripcion);
-    const calStatus = getCalibrationStatus(parsed.nextCal);
     const printWindow = window.open("", "_blank");
     
     const html = `
       <html>
         <head>
-          <title>Hoja de Control de Calibración - ${selectedEquipo.nombre}</title>
+          <title>Ficha de Herramienta - ${selectedEquipo.nombre}</title>
           <style>
             body { font-family: sans-serif; padding: 40px; color: #333; line-height: 1.6; }
             .header { display: flex; justify-content: space-between; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
@@ -359,7 +324,6 @@ export default function GestionHerramientas({ embedded = false }) {
             .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 30px; background: #f9f9f9; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; }
             .info-item { font-size: 13px; }
             .info-item strong { color: #475569; }
-            .alert-box { padding: 10px 15px; border-radius: 6px; font-weight: bold; margin-bottom: 20px; display: inline-block; font-size: 13px; }
             table { width: 100%; border-collapse: collapse; margin-top: 20px; }
             th { background: #f1f5f9; text-align: left; padding: 10px; border: 1px solid #cbd5e1; font-size: 12px; }
             td { padding: 10px; border: 1px solid #cbd5e1; font-size: 12px; vertical-align: top; }
@@ -368,34 +332,29 @@ export default function GestionHerramientas({ embedded = false }) {
         </head>
         <body>
           <div class="header">
-            <div class="title">SISTEMA GMP — REGISTRO DE CALIBRACIÓN Y CONTROL</div>
+            <div class="title">INVENTARIO DE MANTENIMIENTO — FICHA DE HERRAMIENTA</div>
             <div style="text-align: right; font-size: 12px;">
-              <div>Código Serie: ${selectedEquipo.codigo || "N/A"}</div>
+              <div>Código / TAG: ${selectedEquipo.codigo || "N/A"}</div>
               <div>Fecha Emisión: ${new Date().toLocaleDateString()}</div>
             </div>
           </div>
           <div class="info-grid">
-            <div class="info-item"><strong>HERRAMIENTA / EQUIPO:</strong> ${selectedEquipo.nombre}</div>
+            <div class="info-item"><strong>HERRAMIENTA:</strong> ${selectedEquipo.nombre}</div>
             <div class="info-item"><strong>MARCA / MODELO:</strong> ${parsed.brand || "N/A"} / ${parsed.model || "N/A"}</div>
             <div class="info-item"><strong>NÚMERO SERIE:</strong> ${parsed.serial || "N/A"}</div>
             <div class="info-item"><strong>CATEGORÍA:</strong> ${selectedEquipo.tipo}</div>
             <div class="info-item"><strong>UBICACIÓN / TALLER:</strong> ${areas.find(a => a.id === selectedEquipo.area_id)?.nombre || "N/A"}</div>
             <div class="info-item"><strong>ESTADO OPERATIVO:</strong> ${parsed.status}</div>
-            <div class="info-item"><strong>ÚLT. CALIBRACIÓN:</strong> ${parsed.lastCal ? new Date(parsed.lastCal + "T00:00:00").toLocaleDateString() : "No registrada"}</div>
-            <div class="info-item"><strong>PRÓX. CALIBRACIÓN:</strong> ${parsed.nextCal ? new Date(parsed.nextCal + "T00:00:00").toLocaleDateString() : "No registrada"}</div>
-          </div>
-          <div class="alert-box" style="background-color: ${calStatus.bg}; color: ${calStatus.color}; border: 1px solid ${calStatus.color}40;">
-            ESTADO DE VIGENCIA DE CALIBRACIÓN: ${calStatus.label}
           </div>
           
           ${parsed.notes ? `
             <div style="margin-bottom: 25px; background: #fff; border-left: 4px solid #cbd5e1; padding-left: 10px;">
-              <strong>Especificaciones / Notas:</strong>
+              <strong>Especificaciones / Observaciones:</strong>
               <p style="margin: 5px 0 0; font-size: 12px; color: #475569;">${parsed.notes}</p>
             </div>
           ` : ""}
 
-          <h3>HISTORIAL DE CALIBRACIONES Y SERVICIOS</h3>
+          <h3>HISTORIAL DE INTERVENCIONES Y SERVICIOS</h3>
           <table>
             <thead>
               <tr>
@@ -403,7 +362,7 @@ export default function GestionHerramientas({ embedded = false }) {
                 <th>OT</th>
                 <th>TIPO</th>
                 <th>DESCRIPCIÓN DE INTERVENCIÓN</th>
-                <th>ACCIONES Y AJUSTES REALIZADOS</th>
+                <th>ACCIONES REALIZADAS</th>
                 <th>RESPONSABLE</th>
               </tr>
             </thead>
@@ -418,10 +377,10 @@ export default function GestionHerramientas({ embedded = false }) {
                   <td>${r.usuario_id}</td>
                 </tr>
               `).join("")}
-              ${rutina.length === 0 ? '<tr><td colspan="6" style="text-align: center; color: #94a3b8;">No registra intervenciones en el historial.</td></tr>' : ""}
+              ${rutina.length === 0 ? '<tr><td colspan="6" style="text-align: center; color: #94a3b8;">No registra intervenciones en el historial.</td> Modo de mantenimiento regular.' : ""}
             </tbody>
           </table>
-          <div class="footer">Documento de control interno de mantenimiento — Laboratorios Gusing SAS</div>
+          <div class="footer">Documento de inventario interno de mantenimiento — Laboratorios Gusing SAS</div>
           <script>window.print(); setTimeout(() => window.close(), 500);</script>
         </body>
       </html>
@@ -443,8 +402,6 @@ export default function GestionHerramientas({ embedded = false }) {
       model: "",
       serial: "",
       status: "Disponible",
-      lastCal: "",
-      nextCal: "",
       notes: ""
     });
     setFile(null);
@@ -584,7 +541,7 @@ export default function GestionHerramientas({ embedded = false }) {
               </div>
               <div className="modal-v2-body">
                 <div className="v2-form-group">
-                  <label>Nombre de la Herramienta / Instrumento <span className="req">*</span></label>
+                  <label>Nombre de la Herramienta <span className="req">*</span></label>
                   <input className="v2-input" type="text" value={form.nombre}
                     onChange={e => setForm({ ...form, nombre: e.target.value })}
                     placeholder="Ej: Taladro Percutor Makita 18V" />
@@ -596,7 +553,6 @@ export default function GestionHerramientas({ embedded = false }) {
                     <select className="v2-select" value={form.tipo} onChange={e => setForm({ ...form, tipo: e.target.value })}>
                       <option value="Herramienta Manual">Herramienta Manual</option>
                       <option value="Herramienta Eléctrica">Herramienta Eléctrica</option>
-                      <option value="Equipo de Medición">Equipo de Medición</option>
                       <option value="Equipo de Seguridad">Equipo de Seguridad</option>
                       <option value="Herramienta">Otra Herramienta</option>
                     </select>
@@ -616,12 +572,12 @@ export default function GestionHerramientas({ embedded = false }) {
                   <div className="v2-form-group">
                     <label>Marca</label>
                     <input className="v2-input" type="text" value={form.brand}
-                      onChange={e => setForm({ ...form, brand: e.target.value })} placeholder="Ej: Bosch, Fluke" />
+                      onChange={e => setForm({ ...form, brand: e.target.value })} placeholder="Ej: Bosch, Makita" />
                   </div>
                   <div className="v2-form-group">
                     <label>Modelo</label>
                     <input className="v2-input" type="text" value={form.model}
-                      onChange={e => setForm({ ...form, model: e.target.value })} placeholder="Ej: 115, DHP482" />
+                      onChange={e => setForm({ ...form, model: e.target.value })} placeholder="Ej: DHP482" />
                   </div>
                 </div>
 
@@ -674,7 +630,7 @@ export default function GestionHerramientas({ embedded = false }) {
                   <label>Observaciones / Accesorios / Características Técnicas</label>
                   <textarea className="v2-input" rows={2} value={form.notes}
                     onChange={e => setForm({ ...form, notes: e.target.value })}
-                    placeholder="Incluye accesorios, estado físico, rango de medición, etc..." />
+                    placeholder="Incluye accesorios, estado físico, especificaciones, etc..." />
                 </div>
               </div>
               <div className="modal-v2-footer">
@@ -706,7 +662,7 @@ export default function GestionHerramientas({ embedded = false }) {
                 <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
                   {selectedEquipo.manual_url && (
                     <a href={selectedEquipo.manual_url} target="_blank" rel="noreferrer" className="v2-btn-secondary" style={{ textDecoration: "none", fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "5px" }}>
-                      📄 Ver Certificado
+                      📄 Ver Ficha Técnica
                     </a>
                   )}
                   <button className="v2-btn-primary" style={{ padding: "8px 16px", fontSize: "0.85rem" }} onClick={printHojaRutina}>
@@ -721,16 +677,16 @@ export default function GestionHerramientas({ embedded = false }) {
                 ) : (
                   <>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px" }}>
-                      <h4 className="v2-subtitle" style={{ margin: 0 }}>Historial de Mantenimiento / Calibración</h4>
+                      <h4 className="v2-subtitle" style={{ margin: 0 }}>Historial de Mantenimiento</h4>
                       <button className="v2-btn-primary" style={{ fontSize: "0.75rem", padding: "6px 12px" }} onClick={() => setShowManualInt(true)}>
-                        + Registrar Calibración/Mantenimiento Manual
+                        + Registrar Mantenimiento Manual
                       </button>
                     </div>
 
                     {showManualInt && (
                       <div className="v2-inline-manual-form" style={{ background: "#f8fafc", padding: "15px", borderRadius: "12px", border: "1px solid #e2e8f0", marginBottom: "20px" }}>
                         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px" }}>
-                          <strong>Nueva Intervención / Calibración</strong>
+                          <strong>Nueva Intervención de Mantenimiento</strong>
                           <button className="close-btn-v2" onClick={() => setShowManualInt(false)}>✖</button>
                         </div>
                         <div className="v2-form-row">
@@ -757,14 +713,14 @@ export default function GestionHerramientas({ embedded = false }) {
                               value={manualIntForm.tipo_solicitud_id} 
                               onChange={e => setManualIntForm({...manualIntForm, tipo_solicitud_id: e.target.value})}
                             >
-                              {tiposSolicitud.filter(t => [2, 5, 6].includes(t.id) || t.nombre.toLowerCase().includes("calibracion") || t.nombre.toLowerCase().includes("calibración")).map(t => (
+                              {tiposSolicitud.filter(t => [2, 5, 6].includes(t.id)).map(t => (
                                 <option key={t.id} value={t.id}>{t.nombre}</option>
                               ))}
                             </select>
                           </div>
                         </div>
                         <div className="v2-form-group">
-                          <label>Descripción / Problema / Estado de Calibración</label>
+                          <label>Descripción / Problema</label>
                           <input type="text" className="v2-input" value={manualIntForm.descripcion} onChange={e => setManualIntForm({...manualIntForm, descripcion: e.target.value})} />
                         </div>
                         <div className="v2-form-group">
@@ -782,7 +738,7 @@ export default function GestionHerramientas({ embedded = false }) {
                     {rutina.length === 0 ? (
                       <div className="v2-empty-state">
                         <div className="v2-empty-icon">📭</div>
-                        <p>Esta herramienta no registra mantenimiento o calibraciones previas.</p>
+                        <p>Esta herramienta no registra mantenimiento previo.</p>
                       </div>
                     ) : (
                       <div className="v2-timeline">
