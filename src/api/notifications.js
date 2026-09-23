@@ -6,17 +6,24 @@ import { supabase, st } from "./supabaseClient";
 export async function notifyUserByUsername(username, titulo, mensaje, pedidoId = null) {
     if (!username) return false;
     try {
-        const { data: userRow, error } = await supabase
+        const { data: userRows, error } = await supabase
             .from(st("usuarios"))
-            .select("id")
-            .eq("usuario", username)
-            .single();
+            .select("id, usuario, nombre");
 
-        if (error || !userRow) {
+        if (error || !userRows) {
+            console.warn("notifyUserByUsername: error buscando usuarios:", error);
+            return false;
+        }
+
+        const norm = (s) => (s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[\s._-]+/g, "");
+        const target = norm(username);
+        const matched = userRows.find(u => norm(u.usuario) === target || norm(u.nombre) === target);
+
+        if (!matched) {
             console.warn("notifyUserByUsername: usuario no encontrado:", username);
             return false;
         }
-        return notifyUser(userRow.id, titulo, mensaje, pedidoId);
+        return notifyUser(matched.id, titulo, mensaje, pedidoId);
     } catch (err) {
         console.error("Error en notifyUserByUsername:", err);
         return false;

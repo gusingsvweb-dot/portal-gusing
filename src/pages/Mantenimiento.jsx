@@ -34,6 +34,7 @@ export default function Mantenimiento() {
   };
   const [solicitudes, setSolicitudes] = useState([]);
   const [proveedores, setProveedores] = useState([]);
+  const [tecnicosInternos, setTecnicosInternos] = useState([]);
   const [allRepuestos, setAllRepuestos] = useState([]);
   const [selected, setSelected] = useState(null);
   const [accion, setAccion] = useState("");
@@ -74,7 +75,8 @@ export default function Mantenimiento() {
         { data: arsRaw },
         { data: actRaw },
         { data: provRaw },
-        { data: repsRaw }
+        { data: repsRaw },
+        { data: usersRaw }
       ] = await Promise.all([
         supabase.from(st("solicitudes")).select("*").eq("area_id", 1).order("id", { ascending: false }),
         supabase.from(st("tipos_solicitud")).select("*"),
@@ -83,7 +85,8 @@ export default function Mantenimiento() {
         supabase.from(st("areas")).select("*"),
         supabase.from(st("activos")).select("*"),
         supabase.from(st("proveedores_mant")).select("*"),
-        supabase.from(st("repuestos")).select("*")
+        supabase.from(st("repuestos")).select("*"),
+        supabase.from(st("usuarios")).select("id, usuario, nombre, rol, areadetrabajo")
       ]);
 
       if (solErr) throw solErr;
@@ -107,8 +110,36 @@ export default function Mantenimiento() {
         proveedor: provMap.get(s.proveedor_id)
       }));
 
+      // Unificar personal técnico interno y analistas
+      const provTechs = (provRaw || []).filter(p => p.tipo === "Interno").map(p => ({
+        id: p.id,
+        nombre: p.nombre,
+        usuario: p.nombre.toLowerCase().replace(/\s+/g, '.'),
+        rol: "tecnicomantenimiento",
+        tipo: "Interno"
+      }));
+
+      const userTechs = (usersRaw || [])
+        .filter(u => ["tecnicomantenimiento", "analistamantenimiento", "mantenimiento"].includes(u.rol) || u.areadetrabajo === "Mantenimiento")
+        .map(u => ({
+          id: u.id,
+          nombre: u.nombre || u.usuario,
+          usuario: u.usuario,
+          rol: u.rol,
+          tipo: "Interno"
+        }));
+
+      const techMap = new Map();
+      [...provTechs, ...userTechs].forEach(t => {
+        const key = (t.nombre || t.usuario || "").toLowerCase().trim();
+        if (key && !techMap.has(key)) {
+          techMap.set(key, t);
+        }
+      });
+
       setSolicitudes(hydrated);
       setProveedores(provRaw || []);
+      setTecnicosInternos(Array.from(techMap.values()));
       setAllRepuestos(repsRaw || []);
       setAllActivos(actRaw || []);
 
@@ -507,11 +538,13 @@ export default function Mantenimiento() {
           </div>
 
           <div className="mant-filter-tec">
-            <label>Filtrar por Técnico:</label>
+            <label>Filtrar por Técnico / Analista:</label>
             <select className="v2-select" value={filtroTecnico} onChange={e => setFiltroTecnico(e.target.value)}>
-              <option value="todos">Todos los técnicos</option>
-              {proveedores.filter(p => p.tipo === "Interno").map(t => (
-                <option key={t.id} value={t.nombre}>{t.nombre}</option>
+              <option value="todos">Todos los técnicos y analistas</option>
+              {tecnicosInternos.map(t => (
+                <option key={t.id || t.usuario} value={t.nombre || t.usuario}>
+                  {t.nombre || t.usuario} {t.rol === "analistamantenimiento" ? "(Analista)" : ""}
+                </option>
               ))}
               <option value="">Sin asignar</option>
             </select>
@@ -618,8 +651,10 @@ export default function Mantenimiento() {
                         disabled={selected.estado_id >= 14}
                       >
                         <option value="">Sin asignar...</option>
-                        {proveedores.filter(p => p.tipo === "Interno").map(t => (
-                          <option key={t.id} value={t.nombre}>{t.nombre}</option>
+                        {tecnicosInternos.map(t => (
+                          <option key={t.id || t.usuario} value={t.nombre || t.usuario}>
+                            {t.nombre || t.usuario} {t.rol === "analistamantenimiento" ? "(Analista)" : ""}
+                          </option>
                         ))}
                       </select>
                     </div>
@@ -772,11 +807,9 @@ export default function Mantenimiento() {
               {selected.estado_id < 14 && (
                 <>
                   {(selected.estado_id === 1 || selected.estado_id === 25) ? (
-                    (usuarioActual?.rol === "tecnicomantenimiento" || !selected.tecnico_asignado || usuarioActual?.rol === "gerencia") && (
-                      <button className="mant-btn-action primary" onClick={avanzarEstado} disabled={saving}>
-                        {saving ? "Guardando..." : "Iniciar Trabajo →"}
-                      </button>
-                    )
+                    <button className="mant-btn-action primary" onClick={avanzarEstado} disabled={saving}>
+                      {saving ? "Guardando..." : "Iniciar Trabajo →"}
+                    </button>
                   ) : (
                     <button className="mant-btn-action primary" onClick={avanzarEstado} disabled={saving}>
                       {saving ? "Guardando..." : "Finalizar y Cerrar Ticket ✓"}
@@ -828,9 +861,11 @@ export default function Mantenimiento() {
                   <label>Asignar a Técnico</label>
                     <select className="v2-select" value={manualForm.tecnico_asignado} 
                       onChange={e => setManualForm({...manualForm, tecnico_asignado: e.target.value})}>
-                      <option value="">Seleccione técnico...</option>
-                      {proveedores.filter(p => p.tipo === "Interno").map(t => (
-                        <option key={t.id} value={t.nombre}>{t.nombre}</option>
+                      <option value="">Seleccione técnico/analista...</option>
+                      {tecnicosInternos.map(t => (
+                        <option key={t.id || t.usuario} value={t.nombre || t.usuario}>
+                          {t.nombre || t.usuario} {t.rol === "analistamantenimiento" ? "(Analista)" : ""}
+                        </option>
                       ))}
                     </select>
                 </div>

@@ -26,9 +26,48 @@ export default function TecnicoMantenimiento() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [filtro, setFiltro] = useState("");
+  const [filtroVista, setFiltroVista] = useState("mis_tickets");
   const [activeTab, setActiveTab] = useState("info");
   const [showHistory, setShowHistory] = useState(false);
   const [justificacion, setJustificacion] = useState("");
+
+  const normalizeString = (str) => {
+    if (!str) return "";
+    return String(str)
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[\s._-]+/g, "");
+  };
+
+  const isTicketAssignedToUser = (tecnicoAsignado, user) => {
+    if (!tecnicoAsignado || !user) return false;
+
+    const normAssigned = normalizeString(tecnicoAsignado);
+    if (!normAssigned) return false;
+
+    const userKeys = [
+      user.usuario,
+      user.nombre,
+      user.correo,
+      user.email,
+      user.id ? String(user.id) : null
+    ].filter(Boolean).map(normalizeString).filter(Boolean);
+
+    if (userKeys.some(k => normAssigned === k || normAssigned.includes(k) || k.includes(normAssigned))) {
+      return true;
+    }
+
+    // Comparar palabras clave (primer nombre, apellido, o alias)
+    const assignedWords = tecnicoAsignado.toLowerCase().split(/[\s._-]+/).filter(w => w.length > 2);
+    const userWords = [user.usuario, user.nombre].filter(Boolean).join(" ").toLowerCase().split(/[\s._-]+/).filter(w => w.length > 2);
+    if (assignedWords.some(aw => userWords.includes(aw))) {
+      return true;
+    }
+
+    return false;
+  };
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -101,15 +140,23 @@ export default function TecnicoMantenimiento() {
 
   const filtered = useMemo(() => {
     const q = filtro.toLowerCase();
-    
-    // Normalizamos el usuario actual (ej. juan.b) para compararlo con el tecnico_asignado
-    const formatName = (name) => name ? name.trim().toLowerCase().replace(/\s+/g, '.') : "";
-    const currentUsername = usuarioActual?.usuario || "";
 
-    // Filtrar solo las del técnico logueado O las no asignadas
     let res = solicitudes.filter(s => {
-      const assigned = formatName(s.tecnico_asignado);
-      return assigned === formatName(currentUsername) || assigned === "";
+      const assigned = (s.tecnico_asignado || "").trim();
+      const isMine = isTicketAssignedToUser(assigned, usuarioActual);
+      const isUnassigned = !assigned;
+
+      if (filtroVista === "solo_mios") {
+        return isMine;
+      }
+      if (filtroVista === "sin_asignar") {
+        return isUnassigned;
+      }
+      if (filtroVista === "todos") {
+        return true;
+      }
+      // default "mis_tickets": muestra asignadas a este usuario o sin asignar
+      return isMine || isUnassigned;
     });
 
     if (q) {
@@ -117,12 +164,14 @@ export default function TecnicoMantenimiento() {
         (s.id && s.id.toString().includes(q)) ||
         s.tipos_solicitud?.nombre?.toLowerCase().includes(q) ||
         s.activos?.nombre?.toLowerCase().includes(q) ||
+        s.activos?.codigo?.toLowerCase().includes(q) ||
         s.area_solicitante?.toLowerCase().includes(q) ||
+        s.tecnico_asignado?.toLowerCase().includes(q) ||
         String(s.consecutivo)?.includes(q)
       );
     }
     return res;
-  }, [solicitudes, filtro, usuarioActual]);
+  }, [solicitudes, filtro, filtroVista, usuarioActual]);
 
   const stats = useMemo(() => ({
     total: filtered.length,
@@ -301,9 +350,10 @@ export default function TecnicoMantenimiento() {
     setSaving(true);
     setError("");
     try {
+      const techName = usuarioActual?.nombre || usuarioActual?.usuario || "TÉCNICO INTERNO";
       const updates = { 
         estado_id: 13, 
-        tecnico_asignado: usuarioActual?.usuario || "TÉCNICO INTERNO" 
+        tecnico_asignado: techName 
       };
       
       const { error: updError } = await supabase
@@ -338,12 +388,17 @@ export default function TecnicoMantenimiento() {
 
   return (
     <>
-      <Navbar rol="tecnicomantenimiento" />
+      <Navbar />
       <div className="mant-container">
         <header className="mant-header-section">
           <div>
-            <h2 className="mant-title">Mis Tickets de Mantenimiento</h2>
-            <p className="mant-subtitle">Tablero del Técnico — {new Date().toLocaleDateString("es-CO", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</p>
+            <h2 className="mant-title">
+              {usuarioActual?.rol === "analistamantenimiento" ? "Panel del Analista de Mantenimiento" : "Mis Tickets de Mantenimiento"}
+            </h2>
+            <p className="mant-subtitle">
+              {usuarioActual?.rol === "analistamantenimiento" ? "Gestión y seguimiento técnico — " : "Tablero del Técnico — "}
+              {new Date().toLocaleDateString("es-CO", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+            </p>
           </div>
           <div style={{ display: "flex", gap: "20px", alignItems: "center" }}>
             <button className="mant-btn-action secondary" onClick={() => setShowHistory(true)}>📜 Ver Mi Historial</button>
@@ -359,7 +414,7 @@ export default function TecnicoMantenimiento() {
           <>
             {/* STAT CARDS */}
             <div className="mant-stats-row">
-              <StatCard label="Mis Tickets" value={stats.total} icon="🔧" accent="#6366f1" />
+              <StatCard label="Tickets Visibles" value={stats.total} icon="🔧" accent="#6366f1" />
               <StatCard label="Pendientes" value={stats.pendientes} icon="⏳" accent="#f59e0b" />
               <StatCard label="En Proceso" value={stats.proceso} icon="⚙️" accent="#3b82f6" />
               <StatCard label="Finalizadas" value={stats.finalizados} icon="✅" accent="#10b981" />
@@ -376,6 +431,16 @@ export default function TecnicoMantenimiento() {
                   onChange={e => setFiltro(e.target.value)}
                 />
                 {filtro && <button className="search-clear" onClick={() => setFiltro("")}>✖</button>}
+              </div>
+
+              <div className="mant-filter-tec">
+                <label>Vista:</label>
+                <select className="v2-select" value={filtroVista} onChange={e => setFiltroVista(e.target.value)}>
+                  <option value="mis_tickets">Mis Asignados + Generales</option>
+                  <option value="solo_mios">Solo Asignados a Mí</option>
+                  <option value="sin_asignar">Sin Asignar (Generales)</option>
+                  <option value="todos">Todos los Tickets del Área</option>
+                </select>
               </div>
             </div>
 
