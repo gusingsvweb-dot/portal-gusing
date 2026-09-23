@@ -11,6 +11,16 @@ import { useAuth } from "../context/AuthContext";
 const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 const MESES_CORTO = ["ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SEP","OCT","NOV","DIC"];
 
+function formatMesAnio(fechaStr) {
+  if (!fechaStr || fechaStr === "N/A" || fechaStr === "—") return "—";
+  const str = String(fechaStr).trim();
+  const match = str.match(/^(\d{4})-(\d{2})(?:-\d{2})?/);
+  if (match) {
+    return `${match[1]}-${match[2]}`;
+  }
+  return str;
+}
+
 export default function PlanMaestro() {
   const { usuarioActual } = useAuth();
   const navigate = useNavigate();
@@ -670,12 +680,12 @@ export default function PlanMaestro() {
                       <div className="pm-dates-box">
                         <div className="pm-date-row">
                           <span className="pm-date-lbl">Última ejecución</span>
-                          <span className="pm-date-val">{p.ultima_fecha || "—"}</span>
+                          <span className="pm-date-val">{formatMesAnio(p.ultima_fecha)}</span>
                         </div>
                         <div className="pm-date-row pm-next-row">
                           <span className="pm-date-lbl">Próxima fecha</span>
                           <span className={`pm-date-val ${isVencido ? "pm-date-vencida" : isProximo ? "pm-date-proximo" : "pm-date-ok"}`}>
-                            {p.proxima_fecha}
+                            {formatMesAnio(p.proxima_fecha)}
                           </span>
                         </div>
                       </div>
@@ -764,12 +774,12 @@ export default function PlanMaestro() {
                           </p>
                           <div className="pm-fechas">
                             <span>Última ejecución</span>
-                            <strong>{isCompletada ? p.ultima_fecha : p.ultima_fecha || "N/A"}</strong>
+                            <strong>{formatMesAnio(p.ultima_fecha)}</strong>
                           </div>
                           <div className="pm-fechas">
                             <span>Próxima fecha</span>
                             <strong style={{ color: isCompletada ? "var(--mant-success)" : isVencida ? "var(--mant-danger)" : isProxima ? "#f59e0b" : "inherit" }}>
-                              {isCompletada ? `Completado: ${p.ultima_fecha}` : p.proxima_fecha}
+                              {isCompletada ? `Completado: ${formatMesAnio(p.ultima_fecha)}` : formatMesAnio(p.proxima_fecha)}
                             </strong>
                           </div>
                         </div>
