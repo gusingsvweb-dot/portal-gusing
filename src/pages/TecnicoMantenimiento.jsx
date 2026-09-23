@@ -47,22 +47,17 @@ export default function TecnicoMantenimiento() {
     const normAssigned = normalizeString(tecnicoAsignado);
     if (!normAssigned) return false;
 
-    const userKeys = [
-      user.usuario,
-      user.nombre,
-      user.correo,
-      user.email,
-      user.id ? String(user.id) : null
-    ].filter(Boolean).map(normalizeString).filter(Boolean);
+    const normUser = normalizeString(user.usuario);
+    const normNombre = normalizeString(user.nombre);
+    const normEmail = normalizeString(user.correo || user.email);
 
-    if (userKeys.some(k => normAssigned === k || normAssigned.includes(k) || k.includes(normAssigned))) {
+    if (normUser && (normAssigned === normUser || normAssigned.includes(normUser) || normUser.includes(normAssigned))) {
       return true;
     }
-
-    // Comparar palabras clave (primer nombre, apellido, o alias)
-    const assignedWords = tecnicoAsignado.toLowerCase().split(/[\s._-]+/).filter(w => w.length > 2);
-    const userWords = [user.usuario, user.nombre].filter(Boolean).join(" ").toLowerCase().split(/[\s._-]+/).filter(w => w.length > 2);
-    if (assignedWords.some(aw => userWords.includes(aw))) {
+    if (normNombre && (normAssigned === normNombre || normAssigned.includes(normNombre) || normNombre.includes(normAssigned))) {
+      return true;
+    }
+    if (normEmail && (normAssigned === normEmail || normAssigned.includes(normEmail))) {
       return true;
     }
 
@@ -138,29 +133,12 @@ export default function TecnicoMantenimiento() {
     }
   }, [targetId, solicitudes]);
 
-  const filtered = useMemo(() => {
-    const q = filtro.toLowerCase();
+  const { ticketsGenerales, misAsignadas, enProceso, terminadas, historyTickets } = useMemo(() => {
+    const q = filtro.toLowerCase().trim();
 
-    let res = solicitudes.filter(s => {
-      const assigned = (s.tecnico_asignado || "").trim();
-      const isMine = isTicketAssignedToUser(assigned, usuarioActual);
-      const isUnassigned = !assigned;
-
-      if (filtroVista === "solo_mios") {
-        return isMine;
-      }
-      if (filtroVista === "sin_asignar") {
-        return isUnassigned;
-      }
-      if (filtroVista === "todos") {
-        return true;
-      }
-      // default "mis_tickets": muestra asignadas a este usuario o sin asignar
-      return isMine || isUnassigned;
-    });
-
-    if (q) {
-      res = res.filter(s =>
+    const matchesSearch = (s) => {
+      if (!q) return true;
+      return (
         (s.id && s.id.toString().includes(q)) ||
         s.tipos_solicitud?.nombre?.toLowerCase().includes(q) ||
         s.activos?.nombre?.toLowerCase().includes(q) ||
@@ -169,16 +147,66 @@ export default function TecnicoMantenimiento() {
         s.tecnico_asignado?.toLowerCase().includes(q) ||
         String(s.consecutivo)?.includes(q)
       );
+    };
+
+    const searchFiltered = solicitudes.filter(matchesSearch);
+
+    // 1. Tickets Generales: Todos los que NO tengan técnico asignado (pendientes estado 1 o 25)
+    let gen = searchFiltered.filter(s => 
+      (s.estado_id === 1 || s.estado_id === 25) && 
+      (!s.tecnico_asignado || s.tecnico_asignado.trim() === "")
+    );
+
+    // 2. Mis Asignadas: Pendientes asignados a mí (o todos si filtroVista === 'todos')
+    let asig = searchFiltered.filter(s => {
+      if (s.estado_id !== 1 && s.estado_id !== 25) return false;
+      const assigned = (s.tecnico_asignado || "").trim();
+      if (!assigned) return false;
+      if (filtroVista === "todos") return true;
+      return isTicketAssignedToUser(assigned, usuarioActual);
+    });
+
+    // 3. En Proceso: Estado 13
+    let proc = searchFiltered.filter(s => {
+      if (s.estado_id !== 13) return false;
+      if (filtroVista === "todos") return true;
+      if (filtroVista === "sin_asignar") return !s.tecnico_asignado || s.tecnico_asignado.trim() === "";
+      return isTicketAssignedToUser(s.tecnico_asignado, usuarioActual);
+    });
+
+    // 4. Terminadas: Estado 14 o 15
+    let done = searchFiltered.filter(s => {
+      if (s.estado_id !== 14 && s.estado_id !== 15) return false;
+      if (filtroVista === "todos") return true;
+      if (filtroVista === "sin_asignar") return !s.tecnico_asignado || s.tecnico_asignado.trim() === "";
+      return isTicketAssignedToUser(s.tecnico_asignado, usuarioActual);
+    });
+
+    if (filtroVista === "solo_mios") {
+      gen = [];
+    } else if (filtroVista === "sin_asignar") {
+      asig = [];
+      proc = [];
+      done = [];
     }
-    return res;
+
+    const hist = solicitudes.filter(s => [14, 15].includes(s.estado_id) && isTicketAssignedToUser(s.tecnico_asignado, usuarioActual));
+
+    return {
+      ticketsGenerales: gen,
+      misAsignadas: asig,
+      enProceso: proc,
+      terminadas: done,
+      historyTickets: hist
+    };
   }, [solicitudes, filtro, filtroVista, usuarioActual]);
 
   const stats = useMemo(() => ({
-    total: filtered.length,
-    pendientes: filtered.filter(s => s.estado_id === 1 || s.estado_id === 25).length,
-    proceso: filtered.filter(s => s.estado_id === 13).length,
-    finalizados: filtered.filter(s => [14, 15].includes(s.estado_id)).length,
-  }), [filtered]);
+    total: ticketsGenerales.length + misAsignadas.length + enProceso.length + terminadas.length,
+    pendientes: ticketsGenerales.length + misAsignadas.length,
+    proceso: enProceso.length,
+    finalizados: terminadas.length,
+  }), [ticketsGenerales, misAsignadas, enProceso, terminadas]);
 
   const openModal = async (s) => {
     setSelected(s);
@@ -446,14 +474,34 @@ export default function TecnicoMantenimiento() {
 
             {/* KANBAN BOARD */}
             <div className="mant-board">
-              <KanbanColumn title="Tickets Generales" type="pending" icon="📬"
-                items={filtered.filter(s => (s.estado_id === 1 || s.estado_id === 25) && (!s.tecnico_asignado || s.tecnico_asignado.trim() === ""))} onCardClick={openModal} />
-              <KanbanColumn title="Mis Asignadas" type="pending" icon="⏳"
-                items={filtered.filter(s => (s.estado_id === 1 || s.estado_id === 25) && (s.tecnico_asignado && s.tecnico_asignado.trim() !== ""))} onCardClick={openModal} />
-              <KanbanColumn title="En Proceso" type="process" icon="⚙️"
-                items={filtered.filter(s => s.estado_id === 13)} onCardClick={openModal} />
-              <KanbanColumn title="Terminadas" type="done" icon="✅"
-                items={filtered.filter(s => [14, 15].includes(s.estado_id))} onCardClick={openModal} />
+              <KanbanColumn 
+                title="Tickets Generales" 
+                type="pending" 
+                icon="📬"
+                items={ticketsGenerales} 
+                onCardClick={openModal} 
+              />
+              <KanbanColumn 
+                title={filtroVista === "todos" ? "Asignadas (Todas)" : "Mis Asignadas"} 
+                type="pending" 
+                icon="⏳"
+                items={misAsignadas} 
+                onCardClick={openModal} 
+              />
+              <KanbanColumn 
+                title="En Proceso" 
+                type="process" 
+                icon="⚙️"
+                items={enProceso} 
+                onCardClick={openModal} 
+              />
+              <KanbanColumn 
+                title="Terminadas" 
+                type="done" 
+                icon="✅"
+                items={terminadas} 
+                onCardClick={openModal} 
+              />
             </div>
           </>
         )}
@@ -626,7 +674,7 @@ export default function TecnicoMantenimiento() {
               <button className="close-btn-v2" onClick={() => setShowHistory(false)}>✖</button>
             </div>
             <div className="modal-v2-body scroll-v2" style={{ maxHeight: "70vh" }}>
-              {filtered.length === 0 ? <p>No hay intervenciones registradas en tu historial.</p> : (
+              {historyTickets.length === 0 ? <p>No hay intervenciones registradas en tu historial.</p> : (
                 <table className="anual-table">
                   <thead>
                     <tr>
@@ -638,7 +686,7 @@ export default function TecnicoMantenimiento() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filtered.map(h => (
+                    {historyTickets.map(h => (
                       <tr key={h.id}>
                         <td>{new Date(h.fecha_cierre || h.created_at).toLocaleDateString()}</td>
                         <td>{getTicketCode(h)}</td>
