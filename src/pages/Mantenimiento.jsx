@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo, useCallback, useRef } from "react"
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
 import { supabase, st, ss } from "../api/supabaseClient";
-import { getTicketCode } from "../utils/formatters";
+import { getTicketCode, getTicketCategory, parseTicketDetails } from "../utils/formatters";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { notifyUserByUsername, notifyRoles } from "../api/notifications";
@@ -47,6 +47,7 @@ export default function Mantenimiento() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [filtro, setFiltro] = useState("");
+  const [filtroCategoria, setFiltroCategoria] = useState("todos");
   const [filtroTecnico, setFiltroTecnico] = useState("todos");
   const [filtroProveedor, setFiltroProveedor] = useState("todos");
   const [activeTab, setActiveTab] = useState("info");
@@ -194,8 +195,12 @@ export default function Mantenimiento() {
   const [activeStat, setActiveStat] = useState("");
 
   const filtered = useMemo(() => {
-    const q = filtro.toLowerCase();
+    const q = filtro.toLowerCase().trim();
     let res = solicitudes;
+
+    if (filtroCategoria !== "todos") {
+      res = res.filter(s => getTicketCategory(s) === filtroCategoria);
+    }
     
     if (filtroTecnico !== "todos") {
       res = res.filter(s => s.tecnico_asignado === filtroTecnico);
@@ -216,17 +221,23 @@ export default function Mantenimiento() {
     }
 
     if (q) {
-      res = res.filter(s =>
-        s.descripcion?.toLowerCase().includes(q) ||
-        s.tipos_solicitud?.nombre?.toLowerCase().includes(q) ||
-        s.activos?.nombre?.toLowerCase().includes(q) ||
-        s.activos?.codigo?.toLowerCase().includes(q) ||
-        s.area_solicitante?.toLowerCase().includes(q) ||
-        String(s.consecutivo)?.includes(q)
-      );
+      res = res.filter(s => {
+        const parsed = parseTicketDetails(s);
+        return (
+          parsed.descripcionLimpia?.toLowerCase().includes(q) ||
+          parsed.solicitante?.toLowerCase().includes(q) ||
+          parsed.area?.toLowerCase().includes(q) ||
+          s.tipos_solicitud?.nombre?.toLowerCase().includes(q) ||
+          s.activos?.nombre?.toLowerCase().includes(q) ||
+          s.activos?.codigo?.toLowerCase().includes(q) ||
+          s.tecnico_asignado?.toLowerCase().includes(q) ||
+          String(s.consecutivo)?.includes(q) ||
+          String(s.id)?.includes(q)
+        );
+      });
     }
     return res;
-  }, [solicitudes, filtro, filtroTecnico, filtroProveedor, activeStat]);
+  }, [solicitudes, filtro, filtroCategoria, filtroTecnico, filtroProveedor, activeStat]);
 
   const openModal = async (s) => {
     setSelected(s);
@@ -538,6 +549,16 @@ export default function Mantenimiento() {
           </div>
 
           <div className="mant-filter-tec">
+            <label>Filtrar por Categoría:</label>
+            <select className="v2-select" value={filtroCategoria} onChange={e => setFiltroCategoria(e.target.value)}>
+              <option value="todos">Todas las categorías</option>
+              <option value="equipos">Equipos</option>
+              <option value="computo">Equipos de Cómputo</option>
+              <option value="instalaciones">Instalaciones</option>
+            </select>
+          </div>
+
+          <div className="mant-filter-tec">
             <label>Filtrar por Técnico / Analista:</label>
             <select className="v2-select" value={filtroTecnico} onChange={e => setFiltroTecnico(e.target.value)}>
               <option value="todos">Todos los técnicos y analistas</option>
@@ -574,7 +595,9 @@ export default function Mantenimiento() {
       </div>
 
       {/* MODAL */}
-      {selected && (
+      {selected && (() => {
+        const parsed = parseTicketDetails(selected);
+        return (
         <div className="mant-modal-overlay" onClick={closeModal}>
           <div className="mant-modal-box" onClick={e => e.stopPropagation()}>
             {/* Modal Header */}
@@ -635,8 +658,8 @@ export default function Mantenimiento() {
                       )}
                     </div>
 
-                    <InfoBox label="Área Solicitante" value={selected.area_solicitante} />
-                    <InfoBox label="Solicitante" value={selected.usuario_id} />
+                    <InfoBox label="Área Solicitante" value={parsed.area} />
+                    <InfoBox label="Solicitante" value={parsed.solicitante} />
                     <InfoBox label="Equipo" value={selected.activos?.nombre || "N/A"} />
                     <InfoBox label="Fecha Apertura" value={new Date(selected.created_at).toLocaleString("es-CO")} />
                     {selected.fecha_cierre && <InfoBox label="Fecha Cierre" value={new Date(selected.fecha_cierre).toLocaleString("es-CO")} />}
@@ -661,7 +684,7 @@ export default function Mantenimiento() {
                   </div>
                   <div className="modal-section">
                     <span className="modal-section-label">Descripción del Problema</span>
-                    <div className="modal-text-box">{selected.descripcion}</div>
+                    <div className="modal-text-box">{parsed.descripcionLimpia}</div>
                   </div>
                   {/* Asignar proveedor inline */}
                   {(selected.estado_id === 1 || selected.estado_id === 25 || selected.estado_id === 13) && (
@@ -820,7 +843,8 @@ export default function Mantenimiento() {
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
 
         {/* MANUAL INTERVENTION MODAL */}
         {showManualForm && (
@@ -995,8 +1019,7 @@ function KanbanColumn({ title, type, icon, items, onCardClick }) {
 
 function KanbanCard({ data, onClick }) {
   const priorityClass = PRIORITY_CLASS[data.prioridad_id] || "priority-low";
-  const tagMatch = data.descripcion?.match(/^\[([^\]]+)\]/);
-  const displayDesc = tagMatch ? data.descripcion.replace(tagMatch[0], "").trim() : data.descripcion;
+  const parsed = parseTicketDetails(data);
   const isUrgent = data.prioridad_id === 3;
 
   return (
@@ -1007,10 +1030,10 @@ function KanbanCard({ data, onClick }) {
       </div>
 
       <h4 className="card-type">{data.tipos_solicitud?.nombre?.replace("_antiguo", "").trim()}</h4>
-      <p className="card-desc">{displayDesc}</p>
+      <p className="card-desc">{parsed.descripcionLimpia}</p>
 
       <div className="card-meta">
-        <span className="card-meta-item">👤 {data.area_solicitante || "—"}</span>
+        <span className="card-meta-item">👤 {parsed.solicitante !== "—" ? parsed.solicitante : parsed.area}</span>
         {data.activos && <span className="card-meta-item">⚙️ {data.activos.nombre}</span>}
       </div>
 

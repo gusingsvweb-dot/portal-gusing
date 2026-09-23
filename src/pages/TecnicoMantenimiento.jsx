@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo, useCallback } from "react";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
 import { supabase, st } from "../api/supabaseClient";
-import { getTicketCode } from "../utils/formatters";
+import { getTicketCode, getTicketCategory, parseTicketDetails } from "../utils/formatters";
 import { useAuth } from "../context/AuthContext";
 import { useSearchParams } from "react-router-dom";
 import { notifyUserByUsername, notifyRoles } from "../api/notifications";
@@ -26,6 +26,7 @@ export default function TecnicoMantenimiento() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [filtro, setFiltro] = useState("");
+  const [filtroCategoria, setFiltroCategoria] = useState("todos");
   const [filtroVista, setFiltroVista] = useState("mis_tickets");
   const [activeTab, setActiveTab] = useState("info");
   const [showHistory, setShowHistory] = useState(false);
@@ -138,18 +139,26 @@ export default function TecnicoMantenimiento() {
 
     const matchesSearch = (s) => {
       if (!q) return true;
+      const parsed = parseTicketDetails(s);
       return (
         (s.id && s.id.toString().includes(q)) ||
+        parsed.descripcionLimpia?.toLowerCase().includes(q) ||
+        parsed.solicitante?.toLowerCase().includes(q) ||
+        parsed.area?.toLowerCase().includes(q) ||
         s.tipos_solicitud?.nombre?.toLowerCase().includes(q) ||
         s.activos?.nombre?.toLowerCase().includes(q) ||
         s.activos?.codigo?.toLowerCase().includes(q) ||
-        s.area_solicitante?.toLowerCase().includes(q) ||
         s.tecnico_asignado?.toLowerCase().includes(q) ||
         String(s.consecutivo)?.includes(q)
       );
     };
 
-    const searchFiltered = solicitudes.filter(matchesSearch);
+    const searchFiltered = solicitudes.filter(s => {
+      if (filtroCategoria !== "todos" && getTicketCategory(s) !== filtroCategoria) {
+        return false;
+      }
+      return matchesSearch(s);
+    });
 
     // 1. Tickets Generales: Todos los que NO tengan técnico asignado (pendientes estado 1 o 25)
     let gen = searchFiltered.filter(s => 
@@ -199,7 +208,7 @@ export default function TecnicoMantenimiento() {
       terminadas: done,
       historyTickets: hist
     };
-  }, [solicitudes, filtro, filtroVista, usuarioActual]);
+  }, [solicitudes, filtro, filtroCategoria, filtroVista, usuarioActual]);
 
   const stats = useMemo(() => ({
     total: ticketsGenerales.length + misAsignadas.length + enProceso.length + terminadas.length,
@@ -462,6 +471,16 @@ export default function TecnicoMantenimiento() {
               </div>
 
               <div className="mant-filter-tec">
+                <label>Categoría:</label>
+                <select className="v2-select" value={filtroCategoria} onChange={e => setFiltroCategoria(e.target.value)}>
+                  <option value="todos">Todas las categorías</option>
+                  <option value="equipos">Equipos</option>
+                  <option value="computo">Equipos de Cómputo</option>
+                  <option value="instalaciones">Instalaciones</option>
+                </select>
+              </div>
+
+              <div className="mant-filter-tec">
                 <label>Vista:</label>
                 <select className="v2-select" value={filtroVista} onChange={e => setFiltroVista(e.target.value)}>
                   <option value="mis_tickets">Mis Asignados + Generales</option>
@@ -508,7 +527,9 @@ export default function TecnicoMantenimiento() {
       </div>
 
       {/* MODAL DETALLE DE TICKET */}
-      {selected && (
+      {selected && (() => {
+        const parsed = parseTicketDetails(selected);
+        return (
         <div className="mant-modal-overlay-v2" onClick={closeModal}>
           <div className="mant-modal-content-centered" onClick={e => e.stopPropagation()}>
             <div className="modal-v2-header">
@@ -538,13 +559,13 @@ export default function TecnicoMantenimiento() {
                   <div className="modal-info-grid">
                     <InfoBox label="Tipo" value={selected.tipos_solicitud?.nombre?.replace("_antiguo", "").trim()} />
                     <InfoBox label="Prioridad" value={selected.prioridades?.nombre} />
-                    <InfoBox label="Solicitante" value={selected.usuario_id || "Desconocido"} />
-                    <InfoBox label="Área Solicitante" value={selected.area_solicitante} />
+                    <InfoBox label="Área Solicitante" value={parsed.area} />
+                    <InfoBox label="Solicitante" value={parsed.solicitante} />
                     <InfoBox label="Equipo" value={selected.activos?.nombre || "N/A"} />
                   </div>
                   <div className="modal-section">
                     <span className="modal-section-label">Descripción del Problema</span>
-                    <div className="modal-text-box">{selected.descripcion}</div>
+                    <div className="modal-text-box">{parsed.descripcionLimpia}</div>
                   </div>
                 </>
               )}
@@ -663,7 +684,7 @@ export default function TecnicoMantenimiento() {
             </div>
           </div>
         </div>
-      )}
+      ); })()}
 
       {/* MODAL HISTORIAL COMPLETO */}
       {showHistory && (
@@ -749,8 +770,7 @@ function KanbanColumn({ title, type, icon, items, onCardClick }) {
 
 function KanbanCard({ data, onClick }) {
   const priorityClass = PRIORITY_CLASS[data.prioridad_id] || "priority-low";
-  const tagMatch = data.descripcion?.match(/^\[([^\]]+)\]/);
-  const displayDesc = tagMatch ? data.descripcion.replace(tagMatch[0], "").trim() : data.descripcion;
+  const parsed = parseTicketDetails(data);
   const isUrgent = data.prioridad_id === 3;
 
   return (
@@ -761,10 +781,13 @@ function KanbanCard({ data, onClick }) {
       </div>
 
       <h4 className="card-type">{data.tipos_solicitud?.nombre?.replace("_antiguo", "").trim()}</h4>
-      <p className="card-desc">{displayDesc}</p>
+      <p className="card-desc">{parsed.descripcionLimpia}</p>
 
       <div className="card-meta">
         <span className="card-meta-item">⚙️ {data.activos?.nombre || "Sin Equipo"}</span>
+        {parsed.solicitante && parsed.solicitante !== "—" && (
+          <span className="card-meta-item">👤 {parsed.solicitante}</span>
+        )}
       </div>
 
       <div className="card-footer">
