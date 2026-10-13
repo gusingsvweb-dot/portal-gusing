@@ -614,7 +614,7 @@ export default function TecnicoMantenimiento() {
 
                 <div className="mant-filter-top-right">
                   <span className="filter-count">
-                    🎯 {filtered.length} ticket{filtered.length !== 1 ? "s" : ""}
+                    🎯 {stats.total} ticket{stats.total !== 1 ? "s" : ""}
                   </span>
                   {(filtro || filtroCategoria !== "todos" || filtroArea !== "todos" || filtroPrioridad !== "todos" || filtroVista !== "mis_tickets") && (
                     <button 
