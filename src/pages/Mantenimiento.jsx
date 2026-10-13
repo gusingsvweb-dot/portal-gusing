@@ -1143,11 +1143,7 @@ function KanbanCard({ data, onClick }) {
     instalaciones: "Instalación"
   };
 
-  const prioIcons = {
-    1: "🌱",
-    2: "⚡",
-    3: "🔥"
-  };
+
 
   return (
     <div className={`mant-card ${priorityClass} ${isUrgent ? "card-urgent" : ""}`} onClick={onClick}>
@@ -1159,7 +1155,7 @@ function KanbanCard({ data, onClick }) {
           </span>
         </div>
         <span className={`card-prio-badge prio-${data.prioridad_id}`}>
-          {prioIcons[data.prioridad_id] || ""} {data.prioridades?.nombre || PRIORITY_LABEL[data.prioridad_id]}
+          {data.prioridades?.nombre || PRIORITY_LABEL[data.prioridad_id]}
         </span>
       </div>
 
