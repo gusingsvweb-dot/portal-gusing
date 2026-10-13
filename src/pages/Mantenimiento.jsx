@@ -537,25 +537,26 @@ export default function Mantenimiento() {
     <>
       <Navbar />
       <div className="mant-container">
-        {/* HEADER */}
+        {/* HEADER HERO */}
         <header className="mant-header-section">
-          <div>
-            <h2 className="mant-title">Tablero de Mantenimiento</h2>
-            <p className="mant-subtitle">{new Date().toLocaleDateString("es-CO", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</p>
-          </div>
-          <div className="mant-hero-img-container">
-            <img src="/mantenimiento_hero.png" alt="Mantenimiento" className="mant-hero-mini-img" />
-          </div>
-          <div className="mant-nav-pills-wrapper">
-            {canScrollLeft && (
-              <button className="nav-pill-arrow" onClick={() => scrollPills(-1)} aria-label="Anterior">‹</button>
-            )}
-            <div className="mant-nav-pills" ref={pillsRef} onScroll={checkPillsScroll}>
-              <button className="nav-pill active" onClick={() => setShowManualForm(true)}>+ Añadir Ticket</button>
+          <div className="mant-header-left">
+            <div className="mant-badge-pulse">
+              <span className="pulse-dot"></span>
+              Gestión Integral & SLA
             </div>
-            {canScrollRight && (
-              <button className="nav-pill-arrow" onClick={() => scrollPills(1)} aria-label="Siguiente">›</button>
-            )}
+            <h2 className="mant-title">Tablero de Mantenimiento</h2>
+            <p className="mant-subtitle">
+              <span>📅</span> {new Date().toLocaleDateString("es-CO", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+            </p>
+          </div>
+
+          <div className="mant-header-actions">
+            <button className="mant-btn-primary-glow" onClick={() => setShowManualForm(true)}>
+              <span>✨</span> + Añadir Ticket
+            </button>
+            <div className="mant-hero-img-container">
+              <img src="/mantenimiento_hero.png" alt="Mantenimiento" className="mant-hero-mini-img" />
+            </div>
           </div>
         </header>
 
@@ -575,72 +576,120 @@ export default function Mantenimiento() {
           <StatCard label="Calificación Prom." value={stats.promedioCalificacion} icon="🏆" accent="#10b981" onClick={() => setActiveStat(activeStat === "calificados" ? "" : "calificados")} isActive={activeStat === "calificados"} />
         </div>
 
-        {/* FILTER BAR */}
-        <div className="mant-filter-bar">
-          <div className="mant-search-wrap">
-            <span className="search-icon">🔍</span>
-            <input
-              className="mant-search-input"
-              placeholder="Buscar por tipo, equipo, área, consecutivo..."
-              value={filtro}
-              onChange={e => setFiltro(e.target.value)}
-            />
-            {filtro && <button className="search-clear" onClick={() => setFiltro("")}>✖</button>}
+        {/* COMMAND FILTER TOOLBAR */}
+        <div className="mant-filter-toolbar">
+          <div className="mant-filter-row-top">
+            <div className="mant-search-wrap">
+              <span className="search-icon">🔍</span>
+              <input
+                className="mant-search-input"
+                placeholder="Buscar por tipo, equipo, área, consecutivo..."
+                value={filtro}
+                onChange={e => setFiltro(e.target.value)}
+              />
+              {filtro && <button className="search-clear" onClick={() => setFiltro("")}>✖</button>}
+            </div>
+
+            <div className="mant-category-pills">
+              <button 
+                type="button"
+                className={`mant-cat-pill ${filtroCategoria === "todos" ? "active" : ""}`}
+                onClick={() => setFiltroCategoria("todos")}
+              >
+                Todas
+              </button>
+              <button 
+                type="button"
+                className={`mant-cat-pill ${filtroCategoria === "equipos" ? "active" : ""}`}
+                onClick={() => setFiltroCategoria("equipos")}
+              >
+                ⚙️ Equipos
+              </button>
+              <button 
+                type="button"
+                className={`mant-cat-pill ${filtroCategoria === "computo" ? "active" : ""}`}
+                onClick={() => setFiltroCategoria("computo")}
+              >
+                💻 Cómputo
+              </button>
+              <button 
+                type="button"
+                className={`mant-cat-pill ${filtroCategoria === "instalaciones" ? "active" : ""}`}
+                onClick={() => setFiltroCategoria("instalaciones")}
+              >
+                🏢 Instalaciones
+              </button>
+            </div>
+
+            <div className="mant-filter-top-right">
+              <span className="filter-count">
+                🎯 {filtered.length} ticket{filtered.length !== 1 ? "s" : ""}
+              </span>
+              {(filtro || filtroCategoria !== "todos" || filtroArea !== "todos" || filtroPrioridad !== "todos" || filtroTecnico !== "todos" || filtroProveedor !== "todos" || activeStat !== "") && (
+                <button 
+                  type="button"
+                  className="mant-clear-all-btn"
+                  onClick={() => {
+                    setFiltro("");
+                    setFiltroCategoria("todos");
+                    setFiltroArea("todos");
+                    setFiltroPrioridad("todos");
+                    setFiltroTecnico("todos");
+                    setFiltroProveedor("todos");
+                    setActiveStat("");
+                  }}
+                  title="Restablecer todos los filtros"
+                >
+                  Limpiar filtros
+                </button>
+              )}
+            </div>
           </div>
 
-          <div className="mant-filter-tec">
-            <label>Filtrar por Categoría:</label>
-            <select className="v2-select" value={filtroCategoria} onChange={e => setFiltroCategoria(e.target.value)}>
-              <option value="todos">Todas las categorías</option>
-              <option value="equipos">Equipos</option>
-              <option value="computo">Equipos de Cómputo</option>
-              <option value="instalaciones">Instalaciones</option>
-            </select>
-          </div>
+          <div className="mant-filter-row-bottom">
+            <div className="mant-filter-item">
+              <label>Área Solicitante</label>
+              <select className="mant-select-modern" value={filtroArea} onChange={e => setFiltroArea(e.target.value)}>
+                <option value="todos">Todas las áreas</option>
+                {AREAS_SOLICITANTES_DEFINIDAS.map(a => (
+                  <option key={a} value={a}>{a}</option>
+                ))}
+              </select>
+            </div>
 
-          <div className="mant-filter-tec">
-            <label>Filtrar por Área Solicitante:</label>
-            <select className="v2-select" value={filtroArea} onChange={e => setFiltroArea(e.target.value)}>
-              <option value="todos">Todas las áreas</option>
-              {AREAS_SOLICITANTES_DEFINIDAS.map(a => (
-                <option key={a} value={a}>{a}</option>
-              ))}
-            </select>
-          </div>
+            <div className="mant-filter-item">
+              <label>Prioridad</label>
+              <select className="mant-select-modern" value={filtroPrioridad} onChange={e => setFiltroPrioridad(e.target.value)}>
+                <option value="todos">Todas las prioridades</option>
+                {allPrioridades.map(p => (
+                  <option key={p.id} value={p.id}>{p.nombre}</option>
+                ))}
+              </select>
+            </div>
 
-          <div className="mant-filter-tec">
-            <label>Filtrar por Prioridad:</label>
-            <select className="v2-select" value={filtroPrioridad} onChange={e => setFiltroPrioridad(e.target.value)}>
-              <option value="todos">Todas las prioridades</option>
-              {allPrioridades.map(p => (
-                <option key={p.id} value={p.id}>{p.nombre}</option>
-              ))}
-            </select>
-          </div>
+            <div className="mant-filter-item">
+              <label>Técnico / Analista</label>
+              <select className="mant-select-modern" value={filtroTecnico} onChange={e => setFiltroTecnico(e.target.value)}>
+                <option value="todos">Todos los técnicos y analistas</option>
+                {tecnicosInternos.map(t => (
+                  <option key={t.id || t.usuario} value={t.nombre || t.usuario}>
+                    {t.nombre || t.usuario} {t.rol === "analistamantenimiento" ? "(Analista)" : ""}
+                  </option>
+                ))}
+                <option value="sin_asignar">Sin asignar</option>
+              </select>
+            </div>
 
-          <div className="mant-filter-tec">
-            <label>Filtrar por Técnico / Analista:</label>
-            <select className="v2-select" value={filtroTecnico} onChange={e => setFiltroTecnico(e.target.value)}>
-              <option value="todos">Todos los técnicos y analistas</option>
-              {tecnicosInternos.map(t => (
-                <option key={t.id || t.usuario} value={t.nombre || t.usuario}>
-                  {t.nombre || t.usuario} {t.rol === "analistamantenimiento" ? "(Analista)" : ""}
-                </option>
-              ))}
-              <option value="sin_asignar">Sin asignar</option>
-            </select>
+            <div className="mant-filter-item">
+              <label>Proveedor Externo</label>
+              <select className="mant-select-modern" value={filtroProveedor} onChange={e => setFiltroProveedor(e.target.value)}>
+                <option value="todos">Todos los proveedores</option>
+                {proveedores.filter(p => p.tipo !== "Interno").map(p => (
+                  <option key={p.id} value={p.id}>{p.nombre}</option>
+                ))}
+              </select>
+            </div>
           </div>
-
-          <div className="mant-filter-tec">
-            <label>Filtrar por Proveedor:</label>
-            <select className="v2-select" value={filtroProveedor} onChange={e => setFiltroProveedor(e.target.value)}>
-              <option value="todos">Todos los proveedores</option>
-              {proveedores.filter(p => p.tipo !== "Interno").map(p => (
-                <option key={p.id} value={p.id}>{p.nombre}</option>
-              ))}
-            </select>
-          </div>
-          {filtro && <span className="filter-count">{filtered.length} resultado{filtered.length !== 1 ? "s" : ""}</span>}
         </div>
 
         {/* KANBAN BOARD */}
@@ -1081,12 +1130,37 @@ function KanbanCard({ data, onClick }) {
   const priorityClass = PRIORITY_CLASS[data.prioridad_id] || "priority-low";
   const parsed = parseTicketDetails(data);
   const isUrgent = data.prioridad_id === 3;
+  const category = getTicketCategory(data);
+
+  const categoryIcons = {
+    equipos: "⚙️",
+    computo: "💻",
+    instalaciones: "🏢"
+  };
+  const categoryLabels = {
+    equipos: "Equipo",
+    computo: "Cómputo",
+    instalaciones: "Instalación"
+  };
+
+  const prioIcons = {
+    1: "🌱",
+    2: "⚡",
+    3: "🔥"
+  };
 
   return (
     <div className={`mant-card ${priorityClass} ${isUrgent ? "card-urgent" : ""}`} onClick={onClick}>
       <div className="card-top">
-        <span className="card-id-tag">{getTicketCode(data)}</span>
-        <span className={`card-prio-badge prio-${data.prioridad_id}`}>{data.prioridades?.nombre || PRIORITY_LABEL[data.prioridad_id]}</span>
+        <div className="card-top-left">
+          <span className="card-id-tag">{getTicketCode(data)}</span>
+          <span className="card-cat-tag">
+            {categoryIcons[category] || "📦"} {categoryLabels[category] || "General"}
+          </span>
+        </div>
+        <span className={`card-prio-badge prio-${data.prioridad_id}`}>
+          {prioIcons[data.prioridad_id] || ""} {data.prioridades?.nombre || PRIORITY_LABEL[data.prioridad_id]}
+        </span>
       </div>
 
       <h4 className="card-type">{data.tipos_solicitud?.nombre?.replace("_antiguo", "").trim()}</h4>
@@ -1106,7 +1180,7 @@ function KanbanCard({ data, onClick }) {
       )}
 
       <div className="card-footer">
-        <span className="card-date">{new Date(data.created_at).toLocaleDateString("es-CO")}</span>
+        <span className="card-date">🕒 {new Date(data.created_at).toLocaleDateString("es-CO")}</span>
         {data.activos?.criticidad === "Alta" && <span className="crit-mini-badge">CRÍTICO</span>}
       </div>
     </div>
