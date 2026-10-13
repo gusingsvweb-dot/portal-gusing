@@ -99,7 +99,7 @@ export default function TecnicoMantenimiento() {
 
       if (solErr) throw solErr;
 
-      setAllPrioridades(prioRaw || []);
+      setAllPrioridades((prioRaw || []).filter(p => !p.nombre?.toLowerCase().includes("muy alto")));
 
       const provTechs = (provRaw || []).filter(p => p.tipo === "Interno").map(p => ({
         id: p.id,

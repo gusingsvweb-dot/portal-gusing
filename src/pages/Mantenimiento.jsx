@@ -94,7 +94,7 @@ export default function Mantenimiento() {
 
       if (solErr) throw solErr;
 
-      setAllPrioridades(prioRaw || []);
+      setAllPrioridades((prioRaw || []).filter(p => !p.nombre?.toLowerCase().includes("muy alto")));
       
       const tMap = new Map(tiposRaw?.map(t => [t.id, t]));
       const pMap = new Map(prioRaw?.map(p => [p.id, p]));
