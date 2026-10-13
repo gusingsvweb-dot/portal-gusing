@@ -16,6 +16,10 @@ function formatMesAnio(fechaStr) {
   const str = String(fechaStr).trim();
   const match = str.match(/^(\d{4})-(\d{2})(?:-\d{2})?/);
   if (match) {
+    const mesIdx = parseInt(match[2], 10) - 1;
+    if (mesIdx >= 0 && mesIdx < 12) {
+      return `${MESES[mesIdx]} ${match[1]}`;
+    }
     return `${match[1]}-${match[2]}`;
   }
   return str;
@@ -453,13 +457,18 @@ export default function PlanMaestro() {
   }
 
   async function savePlan() {
-    if (!form.activo_id || !form.proxima_fecha) return alert("Activo y Fecha son obligatorios");
+    if (!form.activo_id || !form.proxima_fecha) return alert("Activo y Mes/Año son obligatorios");
     setSaving(true);
     
     // Eliminamos objetos unidos (como 'activos') antes de guardar en la tabla plana
     const payload = { ...form };
     delete payload.activos;
     delete payload.maintenance_schedule_months;
+
+    // Normalizar a primer día del mes si viene como YYYY-MM
+    if (payload.proxima_fecha && payload.proxima_fecha.length === 7) {
+      payload.proxima_fecha = `${payload.proxima_fecha}-01`;
+    }
 
     const { error } = await supabase.from(st("planes_preventivos")).upsert([payload]);
     if (error) alert("Error: " + error.message);
@@ -975,9 +984,13 @@ export default function PlanMaestro() {
                       onChange={e => setForm({ ...form, frecuencia_dias: parseInt(e.target.value) || 1 })} />
                   </div>
                   <div className="v2-form-group">
-                    <label>Primera / Próxima Fecha <span className="req">*</span></label>
-                    <input type="date" className="v2-input" value={form.proxima_fecha}
-                      onChange={e => setForm({ ...form, proxima_fecha: e.target.value })} />
+                    <label>Mes y Año Programado <span className="req">*</span></label>
+                    <input 
+                      type="month" 
+                      className="v2-input" 
+                      value={form.proxima_fecha ? form.proxima_fecha.substring(0, 7) : ""}
+                      onChange={e => setForm({ ...form, proxima_fecha: e.target.value })} 
+                    />
                   </div>
                 </div>
                 <div className="v2-form-group">

@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo, useCallback } from "react";
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
 import { supabase, st } from "../api/supabaseClient";
-import { getTicketCode, getTicketCategory, parseTicketDetails } from "../utils/formatters";
+import { getTicketCode, getTicketCategory, parseTicketDetails, AREAS_SOLICITANTES_DEFINIDAS } from "../utils/formatters";
 import { useAuth } from "../context/AuthContext";
 import { useSearchParams } from "react-router-dom";
 import { notifyUserByUsername, notifyRoles } from "../api/notifications";
@@ -18,7 +18,10 @@ export default function TecnicoMantenimiento() {
   const targetId = searchParams.get("id");
   const [solicitudes, setSolicitudes] = useState([]);
   const [allRepuestos, setAllRepuestos] = useState([]);
+  const [allPrioridades, setAllPrioridades] = useState([]);
+  const [tecnicosInternos, setTecnicosInternos] = useState([]);
   const [selected, setSelected] = useState(null);
+  const [prioridadId, setPrioridadId] = useState("");
   const [accion, setAccion] = useState("");
   const [consumos, setConsumos] = useState([]);
   const [consumosGuardados, setConsumosGuardados] = useState([]);
@@ -27,6 +30,8 @@ export default function TecnicoMantenimiento() {
   const [saving, setSaving] = useState(false);
   const [filtro, setFiltro] = useState("");
   const [filtroCategoria, setFiltroCategoria] = useState("todos");
+  const [filtroArea, setFiltroArea] = useState("todos");
+  const [filtroPrioridad, setFiltroPrioridad] = useState("todos");
   const [filtroVista, setFiltroVista] = useState("mis_tickets");
   const [activeTab, setActiveTab] = useState("info");
   const [showHistory, setShowHistory] = useState(false);
@@ -77,7 +82,9 @@ export default function TecnicoMantenimiento() {
         { data: estRaw },
         { data: arsRaw },
         { data: actRaw },
-        { data: repsRaw }
+        { data: repsRaw },
+        { data: usersRaw },
+        { data: provRaw }
       ] = await Promise.all([
         supabase.from(st("solicitudes")).select("*").eq("area_id", 1).order("id", { ascending: false }),
         supabase.from(st("tipos_solicitud")).select("*"),
@@ -85,10 +92,41 @@ export default function TecnicoMantenimiento() {
         supabase.from(st("estados")).select("*"),
         supabase.from(st("areas")).select("*"),
         supabase.from(st("activos")).select("*"),
-        supabase.from(st("repuestos")).select("*")
+        supabase.from(st("repuestos")).select("*"),
+        supabase.from(st("usuarios")).select("id, usuario, nombre, rol, areadetrabajo"),
+        supabase.from(st("proveedores_mant")).select("id, nombre, tipo")
       ]);
 
       if (solErr) throw solErr;
+
+      setAllPrioridades(prioRaw || []);
+
+      const provTechs = (provRaw || []).filter(p => p.tipo === "Interno").map(p => ({
+        id: p.id,
+        nombre: p.nombre,
+        usuario: p.nombre.toLowerCase().replace(/\s+/g, '.'),
+        rol: "tecnicomantenimiento",
+        tipo: "Interno"
+      }));
+
+      const userTechs = (usersRaw || [])
+        .filter(u => ["tecnicomantenimiento", "analistamantenimiento", "mantenimiento"].includes(u.rol) || u.areadetrabajo === "Mantenimiento")
+        .map(u => ({
+          id: u.id,
+          nombre: u.nombre || u.usuario,
+          usuario: u.usuario,
+          rol: u.rol,
+          tipo: "Interno"
+        }));
+
+      const techMap = new Map();
+      [...provTechs, ...userTechs].forEach(t => {
+        const key = (t.nombre || t.usuario || "").toLowerCase().trim();
+        if (key && !techMap.has(key)) {
+          techMap.set(key, t);
+        }
+      });
+      setTecnicosInternos(Array.from(techMap.values()));
 
       const tMap = new Map(tiposRaw?.map(t => [t.id, t]));
       const pMap = new Map(prioRaw?.map(p => [p.id, p]));
@@ -157,6 +195,18 @@ export default function TecnicoMantenimiento() {
       if (filtroCategoria !== "todos" && getTicketCategory(s) !== filtroCategoria) {
         return false;
       }
+      if (filtroArea !== "todos") {
+        const parsed = parseTicketDetails(s);
+        const a1 = (parsed.area || "").toLowerCase();
+        const a2 = (s.area_solicitante || "").toLowerCase();
+        const target = filtroArea.toLowerCase();
+        if (a1 !== target && a2 !== target && !a1.includes(target) && !target.includes(a1)) {
+          return false;
+        }
+      }
+      if (filtroPrioridad !== "todos" && String(s.prioridad_id) !== String(filtroPrioridad)) {
+        return false;
+      }
       return matchesSearch(s);
     });
 
@@ -208,7 +258,7 @@ export default function TecnicoMantenimiento() {
       terminadas: done,
       historyTickets: hist
     };
-  }, [solicitudes, filtro, filtroCategoria, filtroVista, usuarioActual]);
+  }, [solicitudes, filtro, filtroCategoria, filtroArea, filtroPrioridad, filtroVista, usuarioActual]);
 
   const stats = useMemo(() => ({
     total: ticketsGenerales.length + misAsignadas.length + enProceso.length + terminadas.length,
@@ -219,6 +269,7 @@ export default function TecnicoMantenimiento() {
 
   const openModal = async (s) => {
     setSelected(s);
+    setPrioridadId(s.prioridad_id || "");
     setAccion(s.accion_realizada || "");
     setJustificacion(s.justificacion === "N/A" ? "" : s.justificacion || "");
     setConsumos([]);
@@ -245,12 +296,65 @@ export default function TecnicoMantenimiento() {
 
   const closeModal = () => {
     setSelected(null);
+    setPrioridadId("");
     setAccion("");
     setJustificacion("");
     setConsumos([]);
     setConsumosGuardados([]);
     setActiveTab("info");
     setSearchParams({}); // Limpiar URL para que vuelva a funcionar el click de la notificación
+  };
+
+  const updatePrioridad = async () => {
+    if (!prioridadId || !selected) return;
+    setSaving(true);
+    await supabase.from(st("solicitudes")).update({ prioridad_id: prioridadId }).eq("id", selected.id);
+    setSaving(false);
+    loadData();
+    const nuevaPrio = allPrioridades.find(p => String(p.id) === String(prioridadId));
+    setSelected(prev => ({ ...prev, prioridad_id: prioridadId, prioridades: nuevaPrio }));
+  };
+
+  const updateTecnico = async (tecnico) => {
+    if (!selected) return;
+    setSaving(true);
+    const isUnassigning = !tecnico || tecnico === "" || tecnico === "sin_asignar";
+    const updateData = {
+      tecnico_asignado: isUnassigning ? null : tecnico
+    };
+
+    if (isUnassigning) {
+      if (selected.estado_id === 25) {
+        updateData.estado_id = 1;
+      }
+    } else if (selected.estado_id === 1) {
+      updateData.estado_id = 25;
+    }
+
+    const { error: err } = await supabase.from(st("solicitudes")).update(updateData).eq("id", selected.id);
+    if (err) {
+      console.error("Error al asignar técnico:", err);
+      setError("Error al asignar: " + err.message);
+    }
+    setSaving(false);
+    loadData();
+    setSelected(prev => ({
+      ...prev,
+      ...updateData,
+      estados: updateData.estado_id
+        ? (updateData.estado_id === 25 ? { id: 25, nombre: "Asignado" } : { id: 1, nombre: "Pendiente" })
+        : prev.estados
+    }));
+
+    if (tecnico && !isUnassigning) {
+      const techUsername = tecnico.toLowerCase().replace(/\s+/g, ".");
+      await notifyUserByUsername(
+        techUsername,
+        "👷 Ticket Asignado",
+        `Se te ha asignado el ticket ${getTicketCode(selected)} para ${selected.activos?.nombre || "equipo"}.`,
+        selected.id
+      );
+    }
   };
 
   const guardarNovedad = async () => {
@@ -358,8 +462,8 @@ export default function TecnicoMantenimiento() {
         if (isEnProceso) {
           await notifyUserByUsername(
             selected.usuario_id,
-            "✅ Ticket de Mantenimiento Finalizado",
-            `La solicitud ${orderId} para ${equipoNombre} ha sido completada por el técnico. Por favor, califica el servicio.`,
+            `⭐ Calificación Requerida: Ticket ${orderId}`,
+            `La solicitud ${orderId} para ${equipoNombre} ha sido completada por el técnico. Por favor califica la atención recibida en 'Mis Solicitudes' para completar el cierre.`,
             selected.id
           );
         } else {
@@ -481,6 +585,26 @@ export default function TecnicoMantenimiento() {
               </div>
 
               <div className="mant-filter-tec">
+                <label>Área Solicitante:</label>
+                <select className="v2-select" value={filtroArea} onChange={e => setFiltroArea(e.target.value)}>
+                  <option value="todos">Todas las áreas</option>
+                  {AREAS_SOLICITANTES_DEFINIDAS.map(a => (
+                    <option key={a} value={a}>{a}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="mant-filter-tec">
+                <label>Prioridad:</label>
+                <select className="v2-select" value={filtroPrioridad} onChange={e => setFiltroPrioridad(e.target.value)}>
+                  <option value="todos">Todas las prioridades</option>
+                  {allPrioridades.map(p => (
+                    <option key={p.id} value={p.id}>{p.nombre}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="mant-filter-tec">
                 <label>Vista:</label>
                 <select className="v2-select" value={filtroVista} onChange={e => setFiltroVista(e.target.value)}>
                   <option value="mis_tickets">Mis Asignados + Generales</option>
@@ -558,10 +682,58 @@ export default function TecnicoMantenimiento() {
                 <>
                   <div className="modal-info-grid">
                     <InfoBox label="Tipo" value={selected.tipos_solicitud?.nombre?.replace("_antiguo", "").trim()} />
-                    <InfoBox label="Prioridad" value={selected.prioridades?.nombre} />
+                    
+                    {/* Prioridad Editable */}
+                    <div className="info-item-box">
+                      <label>Prioridad</label>
+                      {selected.estado_id < 14 ? (
+                        <div style={{ display: "flex", gap: "5px" }}>
+                          <select 
+                            className="v2-select" 
+                            style={{ padding: "4px 8px", fontSize: "0.85rem" }}
+                            value={prioridadId} 
+                            onChange={e => setPrioridadId(e.target.value)}
+                          >
+                            {allPrioridades
+                              .filter(p => p.nombre !== "Muy Alto")
+                              .map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)
+                            }
+                          </select>
+                          <button 
+                            className="mant-btn-action success" 
+                            style={{ padding: "4px 10px", fontSize: "0.75rem" }}
+                            onClick={updatePrioridad} 
+                            disabled={saving || String(prioridadId) === String(selected.prioridad_id)}
+                          >
+                            {saving ? "..." : "Guardar"}
+                          </button>
+                        </div>
+                      ) : (
+                        <span>{selected.prioridades?.nombre}</span>
+                      )}
+                    </div>
+
                     <InfoBox label="Área Solicitante" value={parsed.area} />
                     <InfoBox label="Solicitante" value={parsed.solicitante} />
                     <InfoBox label="Equipo" value={selected.activos?.nombre || "N/A"} />
+
+                    {/* Reasignar Técnico */}
+                    <div className="info-item-box">
+                      <label>Asignar Técnico</label>
+                      <select 
+                        className="v2-select" 
+                        value={selected.tecnico_asignado || ""} 
+                        onChange={e => updateTecnico(e.target.value)}
+                        disabled={selected.estado_id >= 14}
+                      >
+                        <option value="">Sin asignar...</option>
+                        {tecnicosInternos.map(t => (
+                          <option key={t.id || t.usuario} value={t.nombre || t.usuario}>
+                            {t.nombre || t.usuario} {t.rol === "analistamantenimiento" ? "(Analista)" : ""}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                   <div className="modal-section">
                     <span className="modal-section-label">Descripción del Problema</span>

@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo, useCallback, useRef } from "react"
 import Navbar from "../components/navbar";
 import Footer from "../components/Footer";
 import { supabase, st, ss } from "../api/supabaseClient";
-import { getTicketCode, getTicketCategory, parseTicketDetails } from "../utils/formatters";
+import { getTicketCode, getTicketCategory, parseTicketDetails, AREAS_SOLICITANTES_DEFINIDAS } from "../utils/formatters";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { notifyUserByUsername, notifyRoles } from "../api/notifications";
@@ -48,6 +48,8 @@ export default function Mantenimiento() {
   const [saving, setSaving] = useState(false);
   const [filtro, setFiltro] = useState("");
   const [filtroCategoria, setFiltroCategoria] = useState("todos");
+  const [filtroArea, setFiltroArea] = useState("todos");
+  const [filtroPrioridad, setFiltroPrioridad] = useState("todos");
   const [filtroTecnico, setFiltroTecnico] = useState("todos");
   const [filtroProveedor, setFiltroProveedor] = useState("todos");
   const [activeTab, setActiveTab] = useState("info");
@@ -201,9 +203,27 @@ export default function Mantenimiento() {
     if (filtroCategoria !== "todos") {
       res = res.filter(s => getTicketCategory(s) === filtroCategoria);
     }
+
+    if (filtroArea !== "todos") {
+      res = res.filter(s => {
+        const parsed = parseTicketDetails(s);
+        const a1 = (parsed.area || "").toLowerCase();
+        const a2 = (s.area_solicitante || "").toLowerCase();
+        const target = filtroArea.toLowerCase();
+        return a1 === target || a2 === target || a1.includes(target) || target.includes(a1);
+      });
+    }
+
+    if (filtroPrioridad !== "todos") {
+      res = res.filter(s => String(s.prioridad_id) === String(filtroPrioridad));
+    }
     
     if (filtroTecnico !== "todos") {
-      res = res.filter(s => s.tecnico_asignado === filtroTecnico);
+      if (filtroTecnico === "" || filtroTecnico === "sin_asignar") {
+        res = res.filter(s => !s.tecnico_asignado || s.tecnico_asignado.trim() === "");
+      } else {
+        res = res.filter(s => s.tecnico_asignado === filtroTecnico);
+      }
     }
 
     if (filtroProveedor !== "todos") {
@@ -237,7 +257,7 @@ export default function Mantenimiento() {
       });
     }
     return res;
-  }, [solicitudes, filtro, filtroCategoria, filtroTecnico, filtroProveedor, activeStat]);
+  }, [solicitudes, filtro, filtroCategoria, filtroArea, filtroPrioridad, filtroTecnico, filtroProveedor, activeStat]);
 
   const openModal = async (s) => {
     setSelected(s);
@@ -371,10 +391,12 @@ export default function Mantenimiento() {
       );
     } else if (next === 14) {
       if (selected.usuario_id) {
+        const ticketCode = getTicketCode(selected);
+        const eqName = selected.activos?.nombre || "equipo";
         await notifyUserByUsername(
           selected.usuario_id,
-          "✅ Ticket de Mantenimiento Finalizado",
-          `La solicitud M-${selected.consecutivo} para ${selected.activos?.nombre || "equipo"} ha sido finalizada. Por favor, califica el servicio.`,
+          `⭐ Calificación Requerida: Ticket ${ticketCode}`,
+          `El ticket ${ticketCode} para ${eqName} ha sido finalizado. Por favor califica la atención recibida en 'Mis Solicitudes' para completar el cierre.`,
           selected.id
         );
       }
@@ -414,22 +436,40 @@ export default function Mantenimiento() {
   const updateTecnico = async (tecnico) => {
     if (!selected) return;
     setSaving(true);
-    const updateData = { tecnico_asignado: tecnico };
-    if (selected.estado_id === 1) {
+    const isUnassigning = !tecnico || tecnico === "" || tecnico === "sin_asignar";
+    const updateData = {
+      tecnico_asignado: isUnassigning ? null : tecnico
+    };
+
+    if (isUnassigning) {
+      if (selected.estado_id === 25) {
+        updateData.estado_id = 1;
+      }
+    } else if (selected.estado_id === 1) {
       updateData.estado_id = 25;
     }
-    await supabase.from(st("solicitudes")).update(updateData).eq("id", selected.id);
+
+    const { error: err } = await supabase.from(st("solicitudes")).update(updateData).eq("id", selected.id);
+    if (err) {
+      console.error("Error al asignar técnico:", err);
+      setError("Error al asignar: " + err.message);
+    }
     setSaving(false);
     loadData();
-    setSelected(prev => ({ ...prev, ...updateData, estados: updateData.estado_id === 25 ? { id: 25, nombre: "Asignado" } : prev.estados }));
+    setSelected(prev => ({
+      ...prev,
+      ...updateData,
+      estados: updateData.estado_id
+        ? (updateData.estado_id === 25 ? { id: 25, nombre: "Asignado" } : { id: 1, nombre: "Pendiente" })
+        : prev.estados
+    }));
 
-    if (tecnico) {
-      // El técnico viene como "JUAN ANDRES BELTRAN", pero el usuario en la BD es "juan.andres.beltran"
+    if (tecnico && !isUnassigning) {
       const techUsername = tecnico.toLowerCase().replace(/\s+/g, ".");
       await notifyUserByUsername(
         techUsername,
         "👷 Ticket Asignado",
-        `Se te ha asignado el ticket M-${selected.consecutivo || selected.id} para ${selected.activos?.nombre || "equipo"}.`,
+        `Se te ha asignado el ticket ${getTicketCode(selected)} para ${selected.activos?.nombre || "equipo"}.`,
         selected.id
       );
     }
@@ -559,6 +599,26 @@ export default function Mantenimiento() {
           </div>
 
           <div className="mant-filter-tec">
+            <label>Filtrar por Área Solicitante:</label>
+            <select className="v2-select" value={filtroArea} onChange={e => setFiltroArea(e.target.value)}>
+              <option value="todos">Todas las áreas</option>
+              {AREAS_SOLICITANTES_DEFINIDAS.map(a => (
+                <option key={a} value={a}>{a}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="mant-filter-tec">
+            <label>Filtrar por Prioridad:</label>
+            <select className="v2-select" value={filtroPrioridad} onChange={e => setFiltroPrioridad(e.target.value)}>
+              <option value="todos">Todas las prioridades</option>
+              {allPrioridades.map(p => (
+                <option key={p.id} value={p.id}>{p.nombre}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="mant-filter-tec">
             <label>Filtrar por Técnico / Analista:</label>
             <select className="v2-select" value={filtroTecnico} onChange={e => setFiltroTecnico(e.target.value)}>
               <option value="todos">Todos los técnicos y analistas</option>
@@ -567,7 +627,7 @@ export default function Mantenimiento() {
                   {t.nombre || t.usuario} {t.rol === "analistamantenimiento" ? "(Analista)" : ""}
                 </option>
               ))}
-              <option value="">Sin asignar</option>
+              <option value="sin_asignar">Sin asignar</option>
             </select>
           </div>
 

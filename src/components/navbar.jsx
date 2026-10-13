@@ -561,7 +561,10 @@ export default function Navbar() {
                         style={{ cursor: 'pointer' }}
                       >
                         <div className="notif-content-wrapper">
-                          <div className="notif-item-title">{n.titulo}</div>
+                          <div className="notif-item-title">
+                            {n.titulo}
+                            {!n.leida && <span className="notif-unread-tag">🔵 Pendiente</span>}
+                          </div>
                           <div className="notif-item-msg">{n.mensaje}</div>
                           <div className="notif-item-date">
                             🕒 {new Date(n.created_at).toLocaleString("es-CO")}
@@ -608,12 +611,15 @@ export default function Navbar() {
         </button>
 
         {isNoOficial && (
-          <div style={{ 
-            backgroundColor: '#ef4444', color: '#fff', padding: '4px 12px', borderRadius: '20px', 
-            fontSize: '11px', fontWeight: 'bold', marginRight: '10px', boxShadow: '0 0 10px rgba(239, 68, 68, 0.5)',
-            border: '1px solid #fff', whiteSpace: 'nowrap'
-          }}>
-            ⚠️ NO OFICIAL
+          <div 
+            title="Ambiente No Oficial" 
+            style={{ 
+              backgroundColor: '#ef4444', color: '#fff', padding: '2px 8px', borderRadius: '12px', 
+              fontSize: '13px', fontWeight: 'bold', marginRight: '10px', boxShadow: '0 0 8px rgba(239, 68, 68, 0.4)',
+              border: '1px solid #fff', cursor: 'pointer', display: 'flex', alignItems: 'center'
+            }}
+          >
+            ⚠️
           </div>
         )}
 

@@ -5,7 +5,7 @@ import Footer from "../components/Footer";
 import "./CrearSolicitud.css";
 import { useAuth } from "../context/AuthContext";
 import CamposDinamicos from "../components/solicitudes/CamposDinamicos";
-import { getTicketCode } from "../utils/formatters";
+import { getTicketCode, AREAS_SOLICITANTES_DEFINIDAS } from "../utils/formatters";
 import { notifyRoles } from "../api/notifications";
 
 export default function CrearSolicitud() {
@@ -22,6 +22,7 @@ export default function CrearSolicitud() {
     prioridad_id: "",
     descripcion: "",
     nombre_solicitante: "", // Nuevo campo
+    area_solicitante: "",  // Área solicitante definida
     activo_id: "", 
     maint_category: "", // Nuevo para jerarquía
     maint_type: "",      // Nuevo para jerarquía
@@ -66,6 +67,18 @@ export default function CrearSolicitud() {
     }
   }, [form.area_id, tipos]);
 
+  useEffect(() => {
+    if (usuarioActual && !form.area_solicitante) {
+      const userArea = (usuarioActual.areadetrabajo || "").toLowerCase().trim();
+      const match = AREAS_SOLICITANTES_DEFINIDAS.find(a => 
+        userArea && (a.toLowerCase().includes(userArea) || userArea.includes(a.toLowerCase()))
+      );
+      if (match) {
+        setForm(prev => ({ ...prev, area_solicitante: match }));
+      }
+    }
+  }, [usuarioActual]);
+
   // ================================
   // Guardar solicitud
   // ================================
@@ -99,6 +112,10 @@ export default function CrearSolicitud() {
 
     if (!form.nombre_solicitante || form.nombre_solicitante.trim().length === 0) {
       return setMensaje("⚠️ Debes ingresar tu nombre.");
+    }
+
+    if (!form.area_solicitante) {
+      return setMensaje("⚠️ Debes seleccionar tu Área Solicitante.");
     }
 
     if (!isComprasRender && !form.prioridad_id) {
@@ -162,7 +179,7 @@ export default function CrearSolicitud() {
         descripcion: finalDesc,
         justificacion: "N/A",
         usuario_id: usuarioActual?.usuario,
-        area_solicitante: usuarioActual?.areadetrabajo,
+        area_solicitante: form.area_solicitante,
         estado_id: 1, // Pendiente
         area_id: form.area_id,
         consecutivo: nextConsecutivo,
@@ -312,15 +329,32 @@ export default function CrearSolicitud() {
           <input
             type="text"
             className="v2-input"
-            style={{ width: "100%", marginBottom: "20px", padding: "12px", border: "1px solid var(--border)", borderRadius: "10px" }}
+            style={{ width: "100%", marginBottom: "15px", padding: "12px", border: "1px solid var(--border)", borderRadius: "10px" }}
             placeholder="Ej. Juan Pérez"
             value={form.nombre_solicitante || ""}
             onChange={(e) => setForm({ ...form, nombre_solicitante: e.target.value })}
             required
           />
 
-          {/* Área */}
-          <label>Área a solicitar *</label>
+          {/* Área Solicitante (Origen) */}
+          <label>Área solicitante *</label>
+          <select
+            className="v2-select"
+            style={{ width: "100%", marginBottom: "20px", padding: "12px", border: "1px solid var(--border)", borderRadius: "10px" }}
+            value={form.area_solicitante || ""}
+            onChange={(e) => setForm({ ...form, area_solicitante: e.target.value })}
+            required
+          >
+            <option value="">Selecciona tu área solicitante...</option>
+            {AREAS_SOLICITANTES_DEFINIDAS.map((a) => (
+              <option key={a} value={a}>
+                {a}
+              </option>
+            ))}
+          </select>
+
+          {/* Área a solicitar (Destino) */}
+          <label>Área a solicitar (Destino) *</label>
           <select
             value={form.area_id}
             onChange={(e) => setForm({ ...form, area_id: e.target.value })}

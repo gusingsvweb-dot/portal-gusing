@@ -93,3 +93,17 @@ export function parseTicketDetails(solicitud) {
     descripcionLimpia: cleanDesc || rawDesc
   };
 }
+
+export const AREAS_SOLICITANTES_DEFINIDAS = [
+  "Producción",
+  "Acondicionamiento",
+  "Control de Calidad",
+  "Garantía de Calidad",
+  "Microbiología",
+  "Bodega MP",
+  "Bodega PT",
+  "Dirección Técnica / I+D",
+  "Compras",
+  "Mantenimiento",
+  "Administración / Gerencia"
+];
