@@ -27,6 +27,12 @@ const loginImages = [
 export default function BackgroundCarousel() {
     const { theme } = useTheme();
     const location = useLocation();
+
+    // No renderizar el carrusel de fondo en la página pública de capacitaciones
+    if (location.pathname.startsWith("/capacitaciones")) {
+        return null;
+    }
+
     const isLogin = location.pathname === "/" || location.pathname === "/login";
 
     const images = isLogin ? loginImages : defaultImages;

@@ -351,7 +351,7 @@ ${reserva.teams_link ? `🔗 *Enlace Teams:* ${reserva.teams_link}` : ""}
   const totalPendientes = TOTAL_SESIONES - totalProgramadas;
 
   return (
-    <>
+    <div className="cap-page-wrapper">
       <div className="cap-page-container">
         {/* BARRA SUPERIOR PÚBLICA (Independiente del Login) */}
         <header className="cap-public-topbar">
@@ -359,7 +359,7 @@ ${reserva.teams_link ? `🔗 *Enlace Teams:* ${reserva.teams_link}` : ""}
             <img src={LOGO_GUSING} alt="Laboratorios Gusing" className="cap-public-logo" />
             <div>
               <span className="cap-public-company">Laboratorios Gusing S.A.S.</span>
-              <span className="cap-public-portal-tag">Agendamiento de Capacitaciones Virtuales</span>
+              <span className="cap-public-portal-tag">Capacitaciones Virtuales</span>
             </div>
           </div>
           <a href="/" className="cap-public-login-link">
@@ -370,8 +370,17 @@ ${reserva.teams_link ? `🔗 *Enlace Teams:* ${reserva.teams_link}` : ""}
         {/* BANNER CORPORATIVO */}
         <section className="cap-hero-banner">
           <div className="cap-brand-row">
-            <img src={LOGO_GUSING} alt="Laboratorios Gusing" className="cap-brand-logo" />
-            <span className="cap-brand-badge">Plan de Formación 2026</span>
+            <span className="cap-brand-badge">★ Plan de Formación 2026</span>
+            <span
+              className="cap-brand-badge"
+              style={{
+                background: "rgba(255, 255, 255, 0.15)",
+                color: "#ffffff",
+                borderColor: "rgba(255, 255, 255, 0.35)"
+              }}
+            >
+              6 Sesiones Virtuales
+            </span>
           </div>
           <h1 className="cap-hero-title">Capacitación Microsoft Office & OneDrive</h1>
           <p className="cap-hero-subtitle">
@@ -380,20 +389,30 @@ ${reserva.teams_link ? `🔗 *Enlace Teams:* ${reserva.teams_link}` : ""}
           </p>
         </section>
 
-        {/* NAVEGACIÓN DE PESTAÑAS (Mobile-First) */}
+        {/* NAVEGACIÓN DE PESTAÑAS (Mobile-First: 3 Columnas) */}
         <nav className="cap-tabs-nav" aria-label="Secciones del módulo">
           <button
             className={`cap-tab-btn ${activeTab === "beneficios" ? "active" : ""}`}
             onClick={() => setActiveTab("beneficios")}
           >
-            <span>📖</span> Programa y Tarifas
+            <span className="cap-tab-icon">📖</span>
+            <span className="cap-tab-text-mobile">Tarifas</span>
+            <span className="cap-tab-text-desktop">Programa y Tarifas</span>
           </button>
           <button
             className={`cap-tab-btn ${activeTab === "agendar" ? "active" : ""}`}
             onClick={() => setActiveTab("agendar")}
           >
-            <span>📅</span> Agendar Sesión
-            {totalPendientes > 0 && <span className="cap-tab-badge">{totalPendientes} pendientes</span>}
+            <span className="cap-tab-icon">📅</span>
+            <span className="cap-tab-text-mobile">
+              Agendar {totalPendientes > 0 && `(${totalPendientes})`}
+            </span>
+            <span className="cap-tab-text-desktop">
+              Agendar Sesión{" "}
+              {totalPendientes > 0 && (
+                <span className="cap-tab-badge">{totalPendientes} pendientes</span>
+              )}
+            </span>
           </button>
           <button
             className={`cap-tab-btn ${activeTab === "admin" ? "active" : ""}`}
@@ -407,7 +426,13 @@ ${reserva.teams_link ? `🔗 *Enlace Teams:* ${reserva.teams_link}` : ""}
               }
             }}
           >
-            <span>⚙️</span> Panel de Control ({totalProgramadas}/{TOTAL_SESIONES})
+            <span className="cap-tab-icon">⚙️</span>
+            <span className="cap-tab-text-mobile">
+              Control ({totalProgramadas}/{TOTAL_SESIONES})
+            </span>
+            <span className="cap-tab-text-desktop">
+              Panel de Control ({totalProgramadas}/{TOTAL_SESIONES})
+            </span>
           </button>
         </nav>
 
@@ -1231,6 +1256,6 @@ ${reserva.teams_link ? `🔗 *Enlace Teams:* ${reserva.teams_link}` : ""}
           </div>
         )}
       </div>
-    </>
+    </div>
   );
 }
