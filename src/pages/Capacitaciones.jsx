@@ -405,10 +405,10 @@ ${reserva.teams_link ? `🔗 *Enlace Teams:* ${reserva.teams_link}` : ""}
           >
             <span className="cap-tab-icon">📅</span>
             <span className="cap-tab-text-mobile">
-              Agendar {totalPendientes > 0 && `(${totalPendientes})`}
+              Agendar Virtual {totalPendientes > 0 && `(${totalPendientes})`}
             </span>
             <span className="cap-tab-text-desktop">
-              Agendar Sesión{" "}
+              Agendar Capacitación Virtual{" "}
               {totalPendientes > 0 && (
                 <span className="cap-tab-badge">{totalPendientes} pendientes</span>
               )}
@@ -501,14 +501,13 @@ ${reserva.teams_link ? `🔗 *Enlace Teams:* ${reserva.teams_link}` : ""}
 
                 <p
                   style={{
-                    fontSize: "0.8rem",
+                    fontSize: "0.82rem",
                     color: "var(--text-sub)",
                     marginTop: "1.25rem",
                     lineHeight: "1.4"
                   }}
                 >
-                  * Nota: La alternativa presencial no incluye grabaciones en video y requiere
-                  coordinación logística previa de salas físicas.
+                  * <strong>Nota sobre modalidad presencial:</strong> La alternativa presencial no incluye grabaciones en video y requiere coordinación logística previa. <strong>En la imagen compartida de la propuesta se muestran los horarios presenciales disponibles.</strong> Esta plataforma en línea es exclusiva para el agendamiento de las sesiones virtuales.
                 </p>
               </div>
             </div>
@@ -544,13 +543,23 @@ ${reserva.teams_link ? `🔗 *Enlace Teams:* ${reserva.teams_link}` : ""}
         {activeTab === "agendar" && (
           <div className="cap-tab-content">
             <div className="cap-section-header">
+              <div className="cap-virtual-tag">
+                <span>💻</span> Modalidad 100% Virtual
+              </div>
               <h2 className="cap-section-title">
-                <span>📝</span> Agendar Sesión de Capacitación
+                <span>📅</span> Agendar Capacitación Virtual
               </h2>
               <p className="cap-section-desc">
-                Selecciona tu grupo, ingresa los datos de contacto y escoge un horario disponible de
-                noviembre.
+                Esta agenda es exclusiva para las sesiones virtuales grupales en vivo por Microsoft Teams.
               </p>
+            </div>
+
+            {/* Aviso informativo de horarios presenciales */}
+            <div className="cap-notice-presencial-box">
+              <span className="cap-notice-icon">📋</span>
+              <div>
+                <strong>Agenda 100% Virtual:</strong> Los cupos y horarios aquí listados son exclusivamente para capacitaciones virtuales. <em>En la imagen compartida de la propuesta se muestran los horarios presenciales disponibles</em> en caso de requerir dicha alternativa.
+              </div>
             </div>
 
             {mensajeError && (
@@ -683,7 +692,7 @@ ${reserva.teams_link ? `🔗 *Enlace Teams:* ${reserva.teams_link}` : ""}
                 </div>
 
                 <h3 className="cap-form-step-title" style={{ marginTop: "1.5rem" }}>
-                  <span className="cap-step-num">4</span> Horario Disponible (90 minutos)
+                  <span className="cap-step-num">4</span> Horario Virtual Disponible (90 minutos)
                 </h3>
 
                 {slotsParaFechaSeleccionada.length === 0 ? (
@@ -765,7 +774,7 @@ ${reserva.teams_link ? `🔗 *Enlace Teams:* ${reserva.teams_link}` : ""}
                     "Guardando reserva..."
                   ) : (
                     <>
-                      <span>🔒</span> CONFIRMAR Y GUARDAR RESERVA
+                      <span>🔒</span> CONFIRMAR Y GUARDAR RESERVA VIRTUAL
                     </>
                   )}
                 </button>

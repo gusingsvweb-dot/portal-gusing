@@ -233,7 +233,9 @@
 /* Textos adaptables: corto en móvil, completo en desktop */
 .cap-tab-text-mobile {
   display: inline-block;
-  white-space: nowrap;
+  font-size: 0.74rem;
+  line-height: 1.15;
+  text-align: center;
 }
 
 .cap-tab-text-desktop {
@@ -248,6 +250,55 @@
   padding: 1px 6px;
   border-radius: 10px;
   font-weight: 800;
+}
+
+/* Tag distintivo de Modalidad Virtual */
+.cap-virtual-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #dbeafe;
+  color: #1e40af;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 3px 10px;
+  border-radius: 12px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-bottom: 0.45rem;
+}
+
+.dark-theme .cap-virtual-tag {
+  background: #1e3a8a;
+  color: #93c5fd;
+}
+
+/* Caja de aviso sobre disponibilidad presencial */
+.cap-notice-presencial-box {
+  background: #f0fdf4;
+  border: 1.5px solid #86efac;
+  border-radius: 14px;
+  padding: 10px 14px;
+  margin-bottom: 1.25rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.84rem;
+  line-height: 1.4;
+  color: #166534;
+}
+
+.dark-theme .cap-notice-presencial-box {
+  background: #064e3b;
+  border-color: #059669;
+  color: #bbf7d0;
+}
+
+.cap-notice-icon {
+  font-size: 1.25rem;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-top: 2px;
 }
 
 /* === SECTIONS TITLES === */
