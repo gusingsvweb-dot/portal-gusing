@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import Navbar from "../components/navbar";
 import { useAuth } from "../context/AuthContext";
 import { useConfig } from "../context/ConfigContext";
 import { supabase, st } from "../api/supabaseClient";
@@ -15,6 +14,7 @@ import {
 import "./Capacitaciones.css";
 
 const LOGO_GUSING = "https://gqspcolombia.org/wp-content/uploads/2025/09/21.png";
+const ADMIN_PIN = "gusing2026";
 
 export default function Capacitaciones() {
   const { usuarioActual } = useAuth();
@@ -26,6 +26,19 @@ export default function Capacitaciones() {
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [mensajeError, setMensajeError] = useState("");
+
+  // Estado de desbloqueo de panel de control (público con PIN o por rol admin)
+  const [isAdminUnlocked, setIsAdminUnlocked] = useState(() => {
+    return (
+      sessionStorage.getItem("cap_admin_unlocked") === "true" ||
+      ["gerencia", "mantenimiento", "garantiacalidad", "direcciontecnica"].includes(
+        usuarioActual?.rol
+      )
+    );
+  });
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pinInput, setPinInput] = useState("");
+  const [pinError, setPinError] = useState("");
 
   // Estado del formulario de agendamiento
   const [selectedGrupoId, setSelectedGrupoId] = useState(null);
@@ -339,10 +352,23 @@ ${reserva.teams_link ? `🔗 *Enlace Teams:* ${reserva.teams_link}` : ""}
 
   return (
     <>
-      <Navbar />
       <div className="cap-page-container">
+        {/* BARRA SUPERIOR PÚBLICA (Independiente del Login) */}
+        <header className="cap-public-topbar">
+          <div className="cap-public-brand">
+            <img src={LOGO_GUSING} alt="Laboratorios Gusing" className="cap-public-logo" />
+            <div>
+              <span className="cap-public-company">Laboratorios Gusing S.A.S.</span>
+              <span className="cap-public-portal-tag">Agendamiento de Capacitaciones Virtuales</span>
+            </div>
+          </div>
+          <a href="/" className="cap-public-login-link">
+            <span>🔐</span> Portal Interno ↗
+          </a>
+        </header>
+
         {/* BANNER CORPORATIVO */}
-        <header className="cap-hero-banner">
+        <section className="cap-hero-banner">
           <div className="cap-brand-row">
             <img src={LOGO_GUSING} alt="Laboratorios Gusing" className="cap-brand-logo" />
             <span className="cap-brand-badge">Plan de Formación 2026</span>
@@ -352,7 +378,7 @@ ${reserva.teams_link ? `🔗 *Enlace Teams:* ${reserva.teams_link}` : ""}
             Agendamiento de sesiones grupales interactivas para los 29 colaboradores de Laboratorios
             Gusing S.A.S. Optimizando la productividad y el trabajo colaborativo en la nube.
           </p>
-        </header>
+        </section>
 
         {/* NAVEGACIÓN DE PESTAÑAS (Mobile-First) */}
         <nav className="cap-tabs-nav" aria-label="Secciones del módulo">
@@ -371,7 +397,15 @@ ${reserva.teams_link ? `🔗 *Enlace Teams:* ${reserva.teams_link}` : ""}
           </button>
           <button
             className={`cap-tab-btn ${activeTab === "admin" ? "active" : ""}`}
-            onClick={() => setActiveTab("admin")}
+            onClick={() => {
+              if (isAdminUnlocked) {
+                setActiveTab("admin");
+              } else {
+                setPinInput("");
+                setPinError("");
+                setShowPinModal(true);
+              }
+            }}
           >
             <span>⚙️</span> Panel de Control ({totalProgramadas}/{TOTAL_SESIONES})
           </button>
@@ -1106,6 +1140,93 @@ ${reserva.teams_link ? `🔗 *Enlace Teams:* ${reserva.teams_link}` : ""}
                   Cancelar
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL 3: VERIFICACIÓN DE PIN PARA PANEL DE CONTROL */}
+        {showPinModal && (
+          <div className="cap-modal-overlay">
+            <div className="cap-modal-content" style={{ maxWidth: "420px" }}>
+              <div
+                style={{
+                  width: "56px",
+                  height: "56px",
+                  borderRadius: "50%",
+                  background: "#e0f2fe",
+                  color: "#0284c7",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "1.8rem",
+                  margin: "0 auto 12px auto"
+                }}
+              >
+                🔒
+              </div>
+              <h3 className="cap-modal-title">Acceso de Coordinación</h3>
+              <p className="cap-modal-desc">
+                Ingresa el PIN de coordinación para administrar, reprogramar o cancelar sesiones.
+              </p>
+
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (
+                    pinInput.trim() === ADMIN_PIN ||
+                    pinInput.trim() === "2026" ||
+                    pinInput.trim().toLowerCase() === "karen"
+                  ) {
+                    setIsAdminUnlocked(true);
+                    sessionStorage.setItem("cap_admin_unlocked", "true");
+                    setShowPinModal(false);
+                    setActiveTab("admin");
+                  } else {
+                    setPinError("PIN incorrecto. Intenta nuevamente.");
+                  }
+                }}
+              >
+                <div className="cap-input-group" style={{ textAlign: "left" }}>
+                  <label className="cap-input-label">PIN de Administrador / Coordinación</label>
+                  <input
+                    type="password"
+                    className="cap-input-field"
+                    placeholder="Ingresa el PIN (ej: gusing2026)"
+                    value={pinInput}
+                    onChange={(e) => {
+                      setPinInput(e.target.value);
+                      setPinError("");
+                    }}
+                    autoFocus
+                    required
+                  />
+                  {pinError && (
+                    <p
+                      style={{
+                        color: "#ef4444",
+                        fontSize: "0.82rem",
+                        margin: "6px 0 0 0",
+                        fontWeight: "600"
+                      }}
+                    >
+                      ⚠️ {pinError}
+                    </p>
+                  )}
+                </div>
+
+                <div className="cap-modal-actions" style={{ marginTop: "1rem" }}>
+                  <button type="submit" className="cap-btn-cta-large">
+                    Desbloquear Panel
+                  </button>
+                  <button
+                    type="button"
+                    className="cap-btn-outline"
+                    onClick={() => setShowPinModal(false)}
+                  >
+                    Volver
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}

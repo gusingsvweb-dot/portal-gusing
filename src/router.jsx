@@ -302,10 +302,10 @@ export default function AppRouter() {
         element={authOrRedirect(["produccion", "gerencia", "atencion", "direcciontecnica", "planeacion"], <ConsolidadoFormato />)}
       />
 
-      {/* MÓDULO DE CAPACITACIONES */}
+      {/* MÓDULO DE CAPACITACIONES (PÚBLICO - SIN REQUERIR LOGIN) */}
       <Route
         path="/capacitaciones"
-        element={authOrRedirect(null, <Capacitaciones />)}
+        element={<Capacitaciones />}
       />
 
     </Routes>

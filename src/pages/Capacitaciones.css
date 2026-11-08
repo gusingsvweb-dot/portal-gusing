@@ -13,6 +13,76 @@
   box-sizing: border-box;
 }
 
+/* === PUBLIC STANDALONE TOPBAR (Sin requerir Login) === */
+.cap-public-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-card, rgba(255, 255, 255, 0.95));
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-color, #c5d0db);
+  border-radius: 16px;
+  padding: 0.75rem 1.25rem;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+.cap-public-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cap-public-logo {
+  height: 38px;
+  width: auto;
+  object-fit: contain;
+}
+
+.cap-public-company {
+  display: block;
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #0b3b60;
+  line-height: 1.2;
+}
+
+.dark-theme .cap-public-company {
+  color: #38bdf8;
+}
+
+.cap-public-portal-tag {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-sub, #5f6c7a);
+  font-weight: 500;
+}
+
+.cap-public-login-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  color: #0b3b60;
+  border: 1px solid var(--border-color, #cbd5e1);
+  padding: 6px 14px;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.cap-public-login-link:hover {
+  background: rgba(11, 59, 96, 0.08);
+  border-color: #0b3b60;
+}
+
+.dark-theme .cap-public-login-link {
+  color: #38bdf8;
+  border-color: #334155;
+}
+
 /* === HEADER HERO BANNER === */
 .cap-hero-banner {
   background: linear-gradient(135deg, #0b3b60 0%, #134e7c 50%, #0d6e6e 100%);
