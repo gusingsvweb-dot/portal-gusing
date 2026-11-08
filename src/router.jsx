@@ -39,6 +39,7 @@ import ImportarCronograma from "./pages/ImportarCronograma.jsx";
 import ImportarEquiposExcel from "./pages/ImportarEquiposExcel.jsx";
 import TecnicoMantenimiento from "./pages/TecnicoMantenimiento.jsx";
 import ProyectosMantenimiento from "./pages/ProyectosMantenimiento.jsx";
+import Capacitaciones from "./pages/Capacitaciones.jsx";
 
 
 
@@ -299,6 +300,12 @@ export default function AppRouter() {
       <Route
         path="/consolidado-formato"
         element={authOrRedirect(["produccion", "gerencia", "atencion", "direcciontecnica", "planeacion"], <ConsolidadoFormato />)}
+      />
+
+      {/* MÓDULO DE CAPACITACIONES */}
+      <Route
+        path="/capacitaciones"
+        element={authOrRedirect(null, <Capacitaciones />)}
       />
 
     </Routes>

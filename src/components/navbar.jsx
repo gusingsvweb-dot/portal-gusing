@@ -275,7 +275,7 @@ export default function Navbar() {
     currentMenuKey = "calidad_general";
   }
 
-  const menu = MENUS[currentMenuKey] || (
+  const rawMenu = MENUS[currentMenuKey] || (
     currentMenuKey === "calidad_general" 
       ? {
           title: "Aseguramiento de Calidad",
@@ -283,6 +283,12 @@ export default function Navbar() {
         }
       : MENUS.general
   );
+
+  const capacitacionesItem = { to: "/capacitaciones", label: "Capacitaciones", icon: "🎓" };
+  const menu = {
+    ...rawMenu,
+    items: rawMenu.items ? [...rawMenu.items, capacitacionesItem] : [capacitacionesItem]
+  };
 
   const getNotificationRoute = (n) => {
     const title = (n.titulo || "").toLowerCase();
