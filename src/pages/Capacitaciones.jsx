@@ -709,7 +709,7 @@ ${reserva.teams_link ? `🔗 *Enlace Teams:* ${reserva.teams_link}` : ""}
                         >
                           <div>
                             <div className="cap-slot-time">{slot.label}</div>
-                            <div style={{ fontSize: "0.74rem", opacity: 0.8 }}>Turno {slot.turno}</div>
+                            <div className="cap-slot-shift">Turno {slot.turno}</div>
                           </div>
 
                           <div>
@@ -1133,7 +1133,10 @@ ${reserva.teams_link ? `🔗 *Enlace Teams:* ${reserva.teams_link}` : ""}
                         }`}
                         onClick={() => setNuevoSlotReprog(slot)}
                       >
-                        <span className="cap-slot-time">{slot.label}</span>
+                        <div>
+                          <div className="cap-slot-time">{slot.label}</div>
+                          <div className="cap-slot-shift">Turno {slot.turno}</div>
+                        </div>
                         {ocupadoPor && !esElMismo ? (
                           <span className="cap-slot-status cap-slot-taken">Ocupado</span>
                         ) : (

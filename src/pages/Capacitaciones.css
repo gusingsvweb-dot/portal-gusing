@@ -707,6 +707,7 @@
   border: 1.5px solid #cbd5e1;
   border-radius: 12px;
   background: #ffffff;
+  color: #0b3b60;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -714,6 +715,7 @@
 .dark-theme .cap-date-card {
   background: #0f172a;
   border-color: #334155;
+  color: #f1f5f9;
 }
 
 .cap-date-card:hover {
@@ -723,7 +725,7 @@
 .cap-date-card.selected {
   border-color: #0b3b60;
   background: #0b3b60;
-  color: #ffffff;
+  color: #ffffff !important;
   box-shadow: 0 4px 10px rgba(11, 59, 96, 0.2);
 }
 
@@ -736,25 +738,39 @@
 }
 
 .cap-date-card.selected .cap-date-day-name {
-  color: #93c5fd;
+  color: #93c5fd !important;
 }
 
 .cap-date-day-number {
   font-size: 1.2rem;
   font-weight: 800;
   line-height: 1;
+  color: #0b3b60;
+}
+
+.dark-theme .cap-date-day-number {
+  color: #f1f5f9;
+}
+
+.cap-date-card.selected .cap-date-day-number {
+  color: #ffffff !important;
 }
 
 .cap-date-month {
   font-size: 0.68rem;
   margin-top: 2px;
+  color: #64748b;
+}
+
+.cap-date-card.selected .cap-date-month {
+  color: #e0f2fe !important;
 }
 
 /* Grilla de Horarios */
 .cap-slots-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 7px;
+  gap: 8px;
   margin-top: 0.65rem;
 }
 
@@ -762,61 +778,114 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 12px;
+  padding: 10px 14px;
   border-radius: 12px;
   border: 1.5px solid #cbd5e1;
   background: #ffffff;
+  color: #0b3b60 !important;
   cursor: pointer;
   transition: all 0.2s ease;
-  min-height: 46px;
+  min-height: 48px;
   text-align: left;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
 }
 
 .dark-theme .cap-slot-btn {
   background: #0f172a;
   border-color: #334155;
+  color: #f1f5f9 !important;
 }
 
 .cap-slot-btn:hover:not(:disabled) {
-  border-color: #10b981;
-  background: #f0fdf4;
+  border-color: #0b3b60;
+  background: #f1f5f9;
+  color: #0b3b60 !important;
+}
+
+.dark-theme .cap-slot-btn:hover:not(:disabled) {
+  border-color: #38bdf8;
+  background: #1e293b;
+  color: #38bdf8 !important;
 }
 
 .cap-slot-btn.selected {
-  border-color: #10b981;
-  background: #10b981;
-  color: #ffffff;
-  font-weight: 700;
+  border-color: #0b3b60 !important;
+  background: #0b3b60 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(11, 59, 96, 0.25);
+}
+
+.dark-theme .cap-slot-btn.selected {
+  border-color: #0284c7 !important;
+  background: #0284c7 !important;
+  color: #ffffff !important;
 }
 
 .cap-slot-btn.occupied {
-  opacity: 0.55;
-  background: #f1f5f9;
-  border-color: #cbd5e1;
+  opacity: 0.6;
+  background: #f8fafc;
+  border-color: #e2e8f0;
   cursor: not-allowed;
-  color: #64748b;
+  color: #94a3b8 !important;
 }
 
 .dark-theme .cap-slot-btn.occupied {
   background: #1e293b;
   border-color: #334155;
+  color: #64748b !important;
 }
 
 .cap-slot-time {
-  font-size: 0.88rem;
-  font-weight: 700;
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #0b3b60 !important;
+}
+
+.dark-theme .cap-slot-time {
+  color: #f1f5f9 !important;
+}
+
+.cap-slot-shift {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: #64748b !important;
+  margin-top: 1px;
+}
+
+.dark-theme .cap-slot-shift {
+  color: #94a3b8 !important;
+}
+
+.cap-slot-btn.selected .cap-slot-time {
+  color: #ffffff !important;
+}
+
+.cap-slot-btn.selected .cap-slot-shift {
+  color: #93c5fd !important;
+}
+
+.cap-slot-btn.occupied .cap-slot-time,
+.cap-slot-btn.occupied .cap-slot-shift {
+  color: #94a3b8 !important;
 }
 
 .cap-slot-status {
   font-size: 0.72rem;
-  padding: 2px 7px;
+  padding: 3px 8px;
   border-radius: 8px;
   font-weight: 700;
+  letter-spacing: 0.2px;
 }
 
 .cap-slot-free {
   background: #dcfce7;
   color: #15803d;
+}
+
+.cap-slot-btn.selected .cap-slot-free {
+  background: #ffffff !important;
+  color: #0b3b60 !important;
+  font-weight: 800;
 }
 
 .cap-slot-taken {
